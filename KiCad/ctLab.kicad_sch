@@ -7076,6 +7076,14 @@
 		(pin "2"
 			(uuid "d547681c-5525-41ed-8fba-56d815ed9024")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C20")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Connector:Screw_Terminal_01x02")
@@ -7145,6 +7153,14 @@
 		)
 		(pin "1"
 			(uuid "604682b6-4d86-40fb-967e-3332fc102498")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "PL3")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -7258,6 +7274,14 @@
 		(pin "9"
 			(uuid "220f34f5-8e67-463c-8042-5179792edd73")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "U9")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:C_Polarized")
@@ -7327,6 +7351,14 @@
 		)
 		(pin "1"
 			(uuid "f72f505b-c99b-4e55-91f9-bc5c6903884c")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C15")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -7398,6 +7430,14 @@
 		(pin "2"
 			(uuid "7a2ee680-45ff-41d6-9c8b-4b6f4313fbd6")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C5")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:C")
@@ -7467,6 +7507,14 @@
 		)
 		(pin "2"
 			(uuid "aa1a7dbd-549a-4c2e-b84c-646797dc2b60")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C19")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -7550,6 +7598,14 @@
 		(pin "6"
 			(uuid "36d6c2d0-7c9b-42b9-80fa-052797803ce1")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "TR1")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Regulator_Linear:L7805")
@@ -7622,6 +7678,14 @@
 		)
 		(pin "2"
 			(uuid "d38d9a31-029a-4a7a-8f94-0351c4228bd5")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "U4")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -7699,6 +7763,14 @@
 		(pin "3"
 			(uuid "f55b13be-a26c-4b7b-8f99-a02184579dc3")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "RB3")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:C")
@@ -7768,6 +7840,14 @@
 		)
 		(pin "2"
 			(uuid "53110477-6f79-495e-9e18-75891edf9390")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C2")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -7839,6 +7919,14 @@
 		(pin "2"
 			(uuid "f8965c6a-424c-4fa7-976f-8bb6ed9fc911")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "JP1")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:C")
@@ -7909,6 +7997,14 @@
 		(pin "1"
 			(uuid "e244bd32-18bc-422b-96a1-66b6ee19fced")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C8")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:R")
@@ -7978,6 +8074,14 @@
 		)
 		(pin "2"
 			(uuid "fbe484e1-a95e-4b14-b8ed-f02e5caa2cf1")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "R1")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -8121,6 +8225,14 @@
 		(pin "28"
 			(uuid "5f68c104-d2d6-4ac1-93ea-19d1d185c0f7")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "U5")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:C_Polarized")
@@ -8191,6 +8303,14 @@
 		(pin "1"
 			(uuid "a1c3c2f4-1aae-4fb5-b1b1-2ae6468681e6")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C13")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:C")
@@ -8260,6 +8380,14 @@
 		)
 		(pin "1"
 			(uuid "6dd01d3d-15f5-45bb-bc9a-b6cf89525c9d")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C7")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -8367,6 +8495,14 @@
 		(pin "14"
 			(uuid "cba62c3e-8e63-4c3a-acb7-27cf1c9994e3")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "PL1")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Jumper:Jumper_2_Open")
@@ -8436,6 +8572,14 @@
 		)
 		(pin "2"
 			(uuid "f9b2f85f-517b-4544-bfde-6500d02d01b4")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "JP2")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -8507,6 +8651,14 @@
 		(pin "1"
 			(uuid "c042cf57-fa2a-4bb7-8e5b-d8c03b4b976b")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C18")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:C")
@@ -8576,6 +8728,14 @@
 		)
 		(pin "1"
 			(uuid "a90b7bfc-f1de-4123-a616-e113f4e3d150")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C23")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -8647,6 +8807,14 @@
 		(pin "2"
 			(uuid "8b957db2-aaad-4260-8774-fe5cef1164d7")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "D4")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:R")
@@ -8717,6 +8885,14 @@
 		(pin "2"
 			(uuid "f5d02ed3-6064-4a91-963d-b7840f70a32e")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "R3")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:R")
@@ -8786,6 +8962,14 @@
 		)
 		(pin "2"
 			(uuid "2be3d153-dd9d-4498-9e93-7b65cad2530c")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "R4")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -8866,6 +9050,14 @@
 		(pin "SH"
 			(uuid "d36b42e1-4e4b-4726-8799-40ad1cc82128")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "PL4")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:C")
@@ -8935,6 +9127,14 @@
 		)
 		(pin "2"
 			(uuid "54ae5ef8-7a44-4402-b8d3-fb161e0a4c21")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C24")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -9024,6 +9224,14 @@
 		(pin "7"
 			(uuid "f98a55ed-7b05-4bb3-9a3b-577e60df9133")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "U6")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:C_Polarized")
@@ -9093,6 +9301,14 @@
 		)
 		(pin "2"
 			(uuid "aa9cd93c-8e84-4e21-9591-c9d3df7024ce")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C10")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -9164,6 +9380,14 @@
 		(pin "2"
 			(uuid "03b012de-34b2-4bae-be1c-8317f938280d")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C14")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:R")
@@ -9233,6 +9457,14 @@
 		)
 		(pin "2"
 			(uuid "a9232a25-cae4-4dea-983d-939ca1070e43")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "R7")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -9370,6 +9602,14 @@
 		(pin "17"
 			(uuid "f62fdf7c-7860-4d5e-9045-8ded7b4c883c")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "U10")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:R")
@@ -9440,6 +9680,14 @@
 		(pin "2"
 			(uuid "e991cf53-4868-4eb2-817a-a13b7ac2d09f")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "R5")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:C_Polarized")
@@ -9509,6 +9757,14 @@
 		)
 		(pin "2"
 			(uuid "667a9acc-bbf3-47ad-a3ef-ce3e65df1c91")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C21")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -9583,6 +9839,14 @@
 		(pin "3"
 			(uuid "451695bf-ed1e-4cd7-bfa8-3381baee71be")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "U3")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:C")
@@ -9652,6 +9916,14 @@
 		)
 		(pin "2"
 			(uuid "4f138788-b97b-4f25-83e9-de50061025d2")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C1")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -9729,6 +10001,14 @@
 		(pin "3"
 			(uuid "9a5db7ad-98ec-4d24-aab0-7cfdbd86a06a")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "RB2")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:C_Polarized")
@@ -9798,6 +10078,14 @@
 		)
 		(pin "2"
 			(uuid "dde13b87-ff66-4b33-adfb-de26396e89e9")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C9")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -9869,6 +10157,14 @@
 		(pin "2"
 			(uuid "c13ade2b-5434-4bfb-be6a-ccdd0d3d642b")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "R8")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Diode:1N4148")
@@ -9939,6 +10235,14 @@
 		(pin "2"
 			(uuid "12e7b0b6-fff5-4228-ae1a-7215ea0a261c")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "D3")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:C")
@@ -10008,6 +10312,14 @@
 		)
 		(pin "1"
 			(uuid "e43b7b16-e0d7-497b-81dc-694c9ca194a5")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C4")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -10100,6 +10412,14 @@
 		(pin "7"
 			(uuid "59c3172b-3e0e-4055-94ae-bdaf96590708")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "RS1")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:C")
@@ -10169,6 +10489,14 @@
 		)
 		(pin "2"
 			(uuid "549f975d-0309-4fe4-a495-f8fa60860b1d")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C3")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -10240,6 +10568,14 @@
 		(pin "1"
 			(uuid "a2b4e5f6-bfeb-4ddc-9a22-4addef19e1fc")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "D1")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:C_Polarized")
@@ -10310,6 +10646,14 @@
 		(pin "1"
 			(uuid "90cf1134-b68b-4938-8705-30d7652b1892")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C12")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:C")
@@ -10379,6 +10723,14 @@
 		)
 		(pin "1"
 			(uuid "0cfadf84-79f8-421c-990a-7f92d207a59a")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C22")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -10474,6 +10826,14 @@
 		(pin "7"
 			(uuid "3e64c3b2-ef83-4b65-8e86-ccee7da3bf42")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "PL2")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:C_Polarized")
@@ -10543,6 +10903,14 @@
 		)
 		(pin "1"
 			(uuid "55cb9bec-be65-42a0-a877-80da3acaeb8a")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C17")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -10614,6 +10982,14 @@
 		(pin "1"
 			(uuid "5fa6c209-46ca-4056-9995-bb2692925355")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C16")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Diode:1N4004")
@@ -10683,6 +11059,14 @@
 		)
 		(pin "2"
 			(uuid "b30062f7-206e-4c79-acf2-f17b319a4dd2")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "D2")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -10757,6 +11141,14 @@
 		(pin "1"
 			(uuid "47e849d0-7d22-40f5-b9a8-6078b6687893")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "U1")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:C")
@@ -10826,6 +11218,14 @@
 		)
 		(pin "2"
 			(uuid "030ba26d-c9db-4734-8ba0-1abd0a17bf0e")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C6")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -10900,6 +11300,14 @@
 		(pin "3"
 			(uuid "2621538b-b491-40a9-be31-b3e0da3dacd9")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "U2")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:C_Polarized")
@@ -10969,6 +11377,14 @@
 		)
 		(pin "2"
 			(uuid "684b3487-adca-4ef3-b29b-fc14beee7ccc")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "C11")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -11046,6 +11462,14 @@
 		(pin "3"
 			(uuid "cf5b1987-b8fb-4211-b10e-d7d22affdb48")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "RB1")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:R")
@@ -11116,6 +11540,14 @@
 		(pin "2"
 			(uuid "d07aa6f4-ed25-44bb-8c95-a58cba1a9363")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "R2")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Jumper:Jumper_2_Open")
@@ -11185,6 +11617,14 @@
 		)
 		(pin "1"
 			(uuid "fd52a875-5887-4d4f-893a-53793c98ac06")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "JP3")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -11258,6 +11698,14 @@
 		)
 		(pin "2"
 			(uuid "2b86483d-c90d-4bb2-ba82-d401306b97e9")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "U8")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -11341,6 +11789,14 @@
 		(pin "6"
 			(uuid "80bd758b-d7d5-4f35-a861-beac3168265d")
 		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "TR2")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "Device:L")
@@ -11410,6 +11866,14 @@
 		)
 		(pin "2"
 			(uuid "4d9b8820-d03d-425c-8e48-cf6a53db47c0")
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(reference "L1")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(sheet_instances
