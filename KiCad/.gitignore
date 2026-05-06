@@ -1,0 +1,5 @@
+# lock files
+*.lck
+
+# backup folder
+**/*-backups/
