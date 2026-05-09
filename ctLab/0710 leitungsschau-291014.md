@@ -61,7 +61,7 @@ Die Beschreibung des USB-Interface würde ohne hochintegrierte Chips wie dem FT2
 
 Der XPort-Baustein von Lantronix, im Schaltbild etwas unscheinbar links zu finden, bildet den mit Abstand intelligentesten Teil des IFP-Moduls, wenn nicht des ganzen Systems. In einer etwas überdimensionierten Twisted-Pair-Buchse hat der Hersteller einen kompletten Web-Server untergebracht. Der einige hundert KByte große Flash-Bereich lässt sich mittels des Lantronix-Dienstprogramms „DeviceInstaller“ mit eigenen Webseiten und Java-Applets befüllen. Die Java-Applets haben dabei über eine Lantronix-Library und eine reservierte IP-Portadresse direkten Zugriff auf die serielle Schnittstelle des Bausteins, die in unserem Fall das Bindeglied zu den c't-Lab-Modulen darstellt. Einfacher geht es mit einem Lantronix-Treiber, der auf dem PC eine virtuelle serielle Schnittstelle installiert. Die spielt ähnlich wie beim USB-Chip auch mit Programmen zusammen, die eigentlich nur auf einen COM-Port zugreifen können. Auf der Lantronix-Website finden sich Treiber, Java-Beispiele sowie Bedienungsanleitungen und Installationshinweise.
 
-![[leitungsschau-291014-06.jpeg]]
+![[leitungsschau-291014-06.jpeg|1200]]
 
 *Die blau unterlegten Kästen kennzeichnen die Interface-Optionen; eine davon ist mindestens notwendig. Die Jumper JP1 bis JP3 dienen zum expliziten Abschalten der Schnittstellen, üblicherweise können alle drei gesteckt werden. V3 und V4 benötigen einen kleinen Kühlkörper.*
 
@@ -80,7 +80,7 @@ Das Konzept ermöglicht es auf einfache Weise, Module aus dem gemeinsamen Rack a
 
 Achten Sie vor allem auf eine VDE-gerechte Ausführung auf Lichtnetz-Seite. Das Konzept erfordert leider den Umgang mit 230V-Netzspannung, und der sollte nicht allzu sorglos geschehen. Aufgespleißte Drahtenden oder lockere Verbindungen können tödliche Folgen haben - nicht nur für die Elektronik! Die IFP-Platine ist so ausgelegt, dass zwischen Netz- und Niederspannungsseite immer eine „lichte Weite“ von deutlich mehr als fünf Millimeter gewahrt bleibt; daran sollten Sie sich auch bei der Verdrahtung halten. Auf 230V-Seite ist Litze mit 0,75 mm2 zu verwenden. Für den Anschluss an die Steckdose eignen sich besonders die kombinierten Kaltgeräte-Buchsen mit eingebautem Netzfilter, Netzsicherung und Schalter. Selbst bei einem voll ausgebauten System ist eine 500-mA-Sicherung ausreichend. Der Wert an sich ist nicht kritisch, da die verwendeten Trafos und Spannungsregler kurzschlussfest sind.
 
-![[leitungsschau-291014-07.jpeg]]
+![[leitungsschau-291014-07.jpeg|1200]]
 
 *Bei der Bestückung der IFP-Platine werden die niedrigen Bauteile zuerst eingelötet (Widerstände, vier Drahtbrücken). U5 gehört als SMD-Bauteil natürlich auf die Lötseite (neben USB-Buchse PL4), Pin 1 weist in Richtung A6. Achten sie auch auf die richtige Polarität der Elkos (quadratisches Lötauge = Pluspol)*
 
@@ -106,19 +106,19 @@ Literatur
 
 ### Halbleiter
 
-| ID         | Type                |
-| ---------- | ------------------- |
-| U1         | 7815                |
-| U2         | 7915                |
-| U3, U4     | 7805                |
-| U5         | FT232RL (FTDI)      |
-| U6         | 6N137               |
-| U8         | LF33                |
-| U9         | MAX232              |
+| ID         | Type                 |
+| ---------- | -------------------- |
+| U1         | 7815                 |
+| U2         | 7915                 |
+| U3, U4     | 7805                 |
+| U5         | FT232RL (FTDI)       |
+| U6         | 6N137                |
+| U8         | LF33                 |
+| U9         | MAX232               |
 | U10        | XPort-01 (Lantronix) |
-| D1, D3, D4 | 1N4148              |
-| D2         | 1N4004              |
-| RB1..RB3   | B80C1500            |
+| D1, D3, D4 | 1N4148               |
+| D2         | 1N4004               |
+| RB1..RB3   | B80C1500             |
 
 ### Widerstände
 
@@ -144,19 +144,19 @@ Literatur
 
 ### Sonstiges
 
-| ID      | Type                              |
-| ------- | --------------------------------- |
-| L1      | 10µH axial                        |
-| JP1..JP3 | Jumper (Steckbrücken)            |
-| PL1     | Pfosten 14-pol.                   |
-| PL2     | Pfosten 10-pol.                   |
-| PL3     | Schraubklemme RM 7,5              |
-| PL4     | USB-B Printbuchse                 |
-| RS1     | D-Sub 9-pol. F                    |
-| TR1     | Flachtrafo 2 x 15 V, 6 VA (Block) |
-| TR2     | Flachtrafo 2 x 9 V, 6 VA (Block)  |
-|         | Kühlschellen TO-220 für U3, U4    |
-|         | Platine c't-Lab IFP (eMedia)      |
+| ID       | Type                              |
+| -------- | --------------------------------- |
+| L1       | 10µH axial                        |
+| JP1..JP3 | Jumper (Steckbrücken)             |
+| PL1      | Pfosten 14-pol.                   |
+| PL2      | Pfosten 10-pol.                   |
+| PL3      | Schraubklemme RM 7,5              |
+| PL4      | USB-B Printbuchse                 |
+| RS1      | D-Sub 9-pol. F                    |
+| TR1      | Flachtrafo 2 x 15 V, 6 VA (Block) |
+| TR2      | Flachtrafo 2 x 9 V, 6 VA (Block)  |
+|          | Kühlschellen TO-220 für U3, U4    |
+|          | Platine c't-Lab IFP (eMedia)      |
 
 RSPEAK_STOP
 (cm)
