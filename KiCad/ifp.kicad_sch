@@ -16456,4 +16456,151 @@
 			"bf37618e-f998-4abc-a5d8-16f63780ad0c" "cf14a994-97df-45c5-b2b0-4e3d1a9fd6d8"
 		)
 	)
+	(wire
+		(pts
+			(xy 266.7 40.64) (xy 281.94 40.64)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d1437d7a-9fe8-47db-91d8-7a6ee8711565")
+	)
+	(hierarchical_label "9V | 3"
+		(shape passive)
+		(at 281.94 40.64 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "4623307a-f3c2-45fe-a165-c6501e36c17d")
+	)
+	(wire
+		(pts
+			(xy 266.7 45.72) (xy 281.94 45.72)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "824244bf-b48f-4530-be44-d3d9074fce63")
+	)
+	(hierarchical_label "GND | 3"
+		(shape passive)
+		(at 281.94 45.72 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "4e75ef2b-a72f-40d4-a5ea-603532cd92ef")
+	)
+	(wire
+		(pts
+			(xy 266.7 50.8) (xy 281.94 50.8)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ea45a594-7457-40df-9d56-b402a7fc7c9e")
+	)
+	(hierarchical_label "+15V | 1"
+		(shape passive)
+		(at 281.94 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "2257d1d1-86a2-420e-b566-a90756b22f17")
+	)
+	(wire
+		(pts
+			(xy 266.7 55.88) (xy 281.94 55.88)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "caa4afea-98cf-4479-bf03-b0cd924229dd")
+	)
+	(hierarchical_label "GND | 1"
+		(shape passive)
+		(at 281.94 55.88 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "6850adbf-570c-4bb6-914b-9e176defd60f")
+	)
+	(wire
+		(pts
+			(xy 266.7 60.96) (xy 281.94 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a2fdf041-3dd0-4d5a-bd95-f7af17b589e2")
+	)
+	(hierarchical_label "-15V | 1"
+		(shape passive)
+		(at 281.94 60.96 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "ce90efae-0101-4b9c-89a9-10cc3eab59b6")
+	)
+	(wire
+		(pts
+			(xy 266.7 66.04) (xy 281.94 66.04)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "99a38e7c-1b03-4b28-83a8-a25b8551aa94")
+	)
+	(hierarchical_label "GND | 2"
+		(shape passive)
+		(at 281.94 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "9cf5ac07-eaca-4687-9014-5a5d8c2f6b99")
+	)
+	(wire
+		(pts
+			(xy 266.7 71.12) (xy 281.94 71.12)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "66557a3a-f3b9-49f2-9879-fdf43cbca286")
+	)
+	(hierarchical_label "5V | 2"
+		(shape passive)
+		(at 281.94 71.12 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "f40f4551-eb4a-44cc-85c8-8f1fc3c3da47")
+	)
 )
