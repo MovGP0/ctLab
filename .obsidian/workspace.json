@@ -4,17 +4,21 @@
     "type": "split",
     "children": [
       {
-        "id": "c46ea6dd97536599",
+        "id": "130f6d37c0b5918b",
         "type": "tabs",
         "children": [
           {
-            "id": "0f92d2c7da9f9a65",
+            "id": "4478217dc9bd678f",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "ctLab/0719 kleinkraftwerk-291224.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "New tab"
+              "title": "0719 kleinkraftwerk-291224"
             }
           }
         ]
@@ -153,7 +157,53 @@
       "table-editor-obsidian:Advanced Tables Toolbar": false
     }
   },
-  "active": "0f92d2c7da9f9a65",
+  "active": "4478217dc9bd678f",
   "lastOpenFiles": [
+    "ctLab/0720 kraftverstaerker-291248.md",
+    "ctLab/0719 kleinkraftwerk-291224.md",
+    "ctLab/0718 blick-ins-labor-291202.md",
+    "ctLab/0713 komplementaeres-paar-291076.md",
+    "ctLab/0711 modulbaukasten-291034.md",
+    "ctLab/0710 leitungsschau-291014.md",
+    "KiCad/~ctLab.kicad_sch.lck",
+    "KiCad/~ctLab.kicad_pro.lck",
+    "ctLab/0704 c-t-lab-bausteine-zum-messen-steuern-und-regeln-284113.md",
+    "ct.zip",
+    "ct/ct.zip",
+    "ct/ct.07.10.124-129.zip",
+    "ct/ct.08.12.176-181.pdf",
+    "ct/ct.08.06.222-225.pdf",
+    "ct/ct.08.02.170-175.pdf",
+    "ct/ct.07.26.208-215.pdf",
+    "ct/ct.07.20.196-200.pdf",
+    "ctLab/0710 fernwirkung-291012.md",
+    "ctLab/0802 messwerkeln-291398.md",
+    "Attachements/leitungsschau-291014-06.jpeg",
+    "Attachements/vermessener-klang-291360-02.jpg",
+    "Attachements/vermessener-klang-291360-01.jpg",
+    "Attachements/loetfreies-basteln-291660-03.jpg",
+    "Attachements/loetfreies-basteln-291660-02.jpg",
+    "Attachements/loetfreies-basteln-291660-01.jpg",
+    "Attachements/audio-pedant-291478-03.jpg",
+    "Attachements/audio-pedant-291478-02.jpg",
+    "Attachements/audio-pedant-291478-01.jpg",
+    "Attachements/vermessener-klang-291360-05.jpeg",
+    "Electronics/KiCAD/NGSpice.md",
+    "Electronics/KiCAD/kicad_sch.md",
+    "Electronics/KiCAD/KiCAD MCP.md",
+    "Electronics/KiCAD/KiCAD.md",
+    "Electronics/Appendix/4700/ALU/74181.md",
+    "Electronics/Acronyms.md",
+    "Electronics/Literature.md",
+    "Electronics/Appendix/4700/_Types of the 7400 Logic Families.md",
+    "Electronics/Appendix/4700/ALU/74881.md",
+    "Electronics/Appendix/4700/ALU/74583.md",
+    "Electronics/Appendix/4700/ALU/74385.md",
+    "Electronics/Appendix/4700/ALU/74283.md",
+    "Electronics/Appendix/4700/ALU/74183.md",
+    "Electronics/Appendix/4700/ALU/74182.md",
+    "Electronics/Appendix/4700/ALU/7483.md",
+    "Electronics/Appendix/4700/Parity Generators/74280.md",
+    "Electronics/Appendix/4700/Parity Generators/74180.md"
   ]
 }

@@ -6,6 +6,52 @@
 	(paper "A3")
 	(lib_symbols)
 	(sheet
+		(at 116.84 30.48)
+		(size 45.72 44.45)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "74cd5943-633e-4121-8061-803d69c0160f")
+		(property "Sheetname" "DCG (Direct Current Generator)"
+			(at 116.84 29.7684 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "dcg.kicad_sch"
+			(at 116.84 75.5146 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(page "3")
+				)
+			)
+		)
+	)
+	(sheet
 		(at 30.48 31.75)
 		(size 59.69 40.64)
 		(exclude_from_sim no)

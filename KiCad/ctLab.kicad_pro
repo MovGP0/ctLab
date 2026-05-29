@@ -416,7 +416,7 @@
         "uuid": "207e0f0e-27e8-440d-b34e-edbac4dab547"
       }
     ],
-    "used_designators": "",
+    "used_designators": "#PWR12,#PWR16-18,C20,C25,U7,U11-14",
     "variants": []
   },
   "sheets": [
@@ -427,6 +427,10 @@
     [
       "b26a7a65-419a-400a-bfe0-54512c656443",
       "IFP (Interface and Power Supply)"
+    ],
+    [
+      "74cd5943-633e-4121-8061-803d69c0160f",
+      "DCG (Direct Current Generator)"
     ]
   ],
   "text_variables": {},
