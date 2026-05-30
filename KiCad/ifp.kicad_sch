@@ -6,17 +6,13 @@
 	(paper "A3")
 	(lib_symbols
 		(symbol "Connector:Conn_01x09_Pin"
-			(pin_names
-				(offset 1.016)
-				(hide yes)
-			)
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
 			(in_pos_files yes)
 			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "J"
-				(at 0 12.7 0)
+			(property "Reference" "U10"
+				(at 7.874 7.112 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(effects
@@ -25,8 +21,8 @@
 					)
 				)
 			)
-			(property "Value" "Conn_01x09_Pin"
-				(at 0 -12.7 0)
+			(property "Value" "LF411"
+				(at 8.89 4.4861 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(effects
@@ -35,7 +31,7 @@
 					)
 				)
 			)
-			(property "Footprint" ""
+			(property "Footprint" "Package_DIP:DIP-8_W10.16mm"
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -46,7 +42,7 @@
 					)
 				)
 			)
-			(property "Datasheet" ""
+			(property "Datasheet" "https://www.ti.com/lit/gpn/lf411"
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -57,39 +53,7 @@
 					)
 				)
 			)
-			(property "Description" "Generic connector, single row, 01x09, script generated"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "ki_locked" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "ki_keywords" "connector"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "ki_fp_filters" "Connector*:*_1x??_*"
+			(property "Description" "FET-Input Operational Amplifier"
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -102,216 +66,41 @@
 			)
 			(symbol "Conn_01x09_Pin_1_1"
 				(rectangle
-					(start 0.8636 10.287)
-					(end 0 10.033)
+					(start -5.08 13.97)
+					(end 5.08 -5.08)
 					(stroke
-						(width 0.1524)
-						(type default)
+						(width 0.254)
+						(type solid)
 					)
 					(fill
-						(type outline)
-					)
-				)
-				(rectangle
-					(start 0.8636 7.747)
-					(end 0 7.493)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type outline)
-					)
-				)
-				(rectangle
-					(start 0.8636 5.207)
-					(end 0 4.953)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type outline)
-					)
-				)
-				(rectangle
-					(start 0.8636 2.667)
-					(end 0 2.413)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type outline)
-					)
-				)
-				(rectangle
-					(start 0.8636 0.127)
-					(end 0 -0.127)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type outline)
-					)
-				)
-				(rectangle
-					(start 0.8636 -2.413)
-					(end 0 -2.667)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type outline)
-					)
-				)
-				(rectangle
-					(start 0.8636 -4.953)
-					(end 0 -5.207)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type outline)
-					)
-				)
-				(rectangle
-					(start 0.8636 -7.493)
-					(end 0 -7.747)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type outline)
-					)
-				)
-				(rectangle
-					(start 0.8636 -10.033)
-					(end 0 -10.287)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type outline)
+						(type background)
 					)
 				)
 				(polyline
 					(pts
-						(xy 1.27 10.16) (xy 0.8636 10.16)
+						(xy -4.064 7.62) (xy -4.064 5.08) (xy -1.524 6.35) (xy -4.064 7.62)
 					)
 					(stroke
-						(width 0.1524)
+						(width 0)
 						(type default)
 					)
 					(fill
 						(type none)
 					)
 				)
-				(polyline
-					(pts
-						(xy 1.27 7.62) (xy 0.8636 7.62)
-					)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
+				(text "∞"
+					(at 1.27 6.35 0)
+					(effects
+						(font
+							(size 3.81 3.81)
+						)
 					)
 				)
-				(polyline
-					(pts
-						(xy 1.27 5.08) (xy 0.8636 5.08)
-					)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 1.27 2.54) (xy 0.8636 2.54)
-					)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 1.27 0) (xy 0.8636 0)
-					)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 1.27 -2.54) (xy 0.8636 -2.54)
-					)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 1.27 -5.08) (xy 0.8636 -5.08)
-					)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 1.27 -7.62) (xy 0.8636 -7.62)
-					)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 1.27 -10.16) (xy 0.8636 -10.16)
-					)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(pin passive line
-					(at 5.08 10.16 180)
-					(length 3.81)
-					(name "Pin_1"
+				(pin no_connect line
+					(at -7.62 11.43 0)
+					(length 2.54)
+					(hide yes)
+					(name "NC"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -326,10 +115,10 @@
 						)
 					)
 				)
-				(pin passive line
-					(at 5.08 7.62 180)
-					(length 3.81)
-					(name "Pin_2"
+				(pin input line
+					(at -7.62 -2.54 0)
+					(length 2.54)
+					(name "In-"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -344,10 +133,11 @@
 						)
 					)
 				)
-				(pin passive line
-					(at 5.08 5.08 180)
-					(length 3.81)
-					(name "Pin_3"
+				(pin no_connect line
+					(at -7.62 8.89 0)
+					(length 2.54)
+					(hide yes)
+					(name "NC"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -362,10 +152,28 @@
 						)
 					)
 				)
-				(pin passive line
-					(at 5.08 2.54 180)
-					(length 3.81)
-					(name "Pin_4"
+				(pin input line
+					(at -7.62 2.54 0)
+					(length 2.54)
+					(name "In+"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 0 -7.62 90)
+					(length 2.54)
+					(name "VCC-"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -380,10 +188,11 @@
 						)
 					)
 				)
-				(pin passive line
-					(at 5.08 0 180)
-					(length 3.81)
-					(name "Pin_5"
+				(pin no_connect non_logic
+					(at -7.62 6.35 0)
+					(length 2.54)
+					(hide yes)
+					(name "NC"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -398,10 +207,10 @@
 						)
 					)
 				)
-				(pin passive line
-					(at 5.08 -2.54 180)
-					(length 3.81)
-					(name "Pin_6"
+				(pin output line
+					(at 10.16 0 180)
+					(length 5.08)
+					(name "OUT"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -416,10 +225,10 @@
 						)
 					)
 				)
-				(pin passive line
-					(at 5.08 -5.08 180)
-					(length 3.81)
-					(name "Pin_7"
+				(pin power_in line
+					(at 0 16.51 270)
+					(length 2.54)
+					(name "VCC+"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -427,42 +236,6 @@
 						)
 					)
 					(number "7"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 5.08 -7.62 180)
-					(length 3.81)
-					(name "Pin_8"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "8"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 5.08 -10.16 180)
-					(length 3.81)
-					(name "Pin_9"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "9"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -4285,13 +4058,16 @@
 			(embedded_fonts no)
 		)
 		(symbol "Interface_USB:FT232RL"
+			(pin_names
+				(offset 0.127)
+			)
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
 			(in_pos_files yes)
 			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "U"
-				(at -16.51 22.86 0)
+			(property "Reference" "U5"
+				(at 0.508 1.27 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(effects
@@ -4301,8 +4077,8 @@
 					(justify left)
 				)
 			)
-			(property "Value" "FT232RL"
-				(at 10.16 22.86 0)
+			(property "Value" "NE5532"
+				(at 0.508 -1.27 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(effects
@@ -4312,18 +4088,7 @@
 					(justify left)
 				)
 			)
-			(property "Footprint" "Package_SO:SSOP-28_5.3x10.2mm_P0.65mm"
-				(at 27.94 -22.86 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Datasheet" "https://www.ftdichip.com/Support/Documents/DataSheets/ICs/DS_FT232R.pdf"
+			(property "Footprint" ""
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -4334,7 +4099,7 @@
 					)
 				)
 			)
-			(property "Description" "USB to Serial Interface, SSOP-28"
+			(property "Datasheet" "http://www.ti.com/lit/ds/symlink/ne5532.pdf"
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -4345,7 +4110,7 @@
 					)
 				)
 			)
-			(property "ki_keywords" "FTDI USB Serial"
+			(property "Description" "Dual Low-Noise Operational Amplifiers, DIP-8/SOIC-8"
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -4356,7 +4121,17 @@
 					)
 				)
 			)
-			(property "ki_fp_filters" "SSOP*5.3x10.2mm*P0.65mm*"
+			(property "ki_locked" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_keywords" "dual opamp"
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -4367,10 +4142,22 @@
 					)
 				)
 			)
-			(symbol "FT232RL_0_1"
-				(rectangle
-					(start -16.51 21.59)
-					(end 16.51 -21.59)
+			(property "ki_fp_filters" "SOIC*3.9x4.9mm*P1.27mm* DIP*W7.62mm* TO*99* OnSemi*Micro8* TSSOP*3x3mm*P0.65mm* TSSOP*4.4x3mm*P0.65mm* MSOP*3x3mm*P0.65mm* SSOP*3.9x4.9mm*P0.635mm* LFCSP*2x2mm*P0.5mm* *SIP* SOIC*5.3x6.2mm*P1.27mm*"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "FT232RL_1_1"
+				(polyline
+					(pts
+						(xy -5.08 5.08) (xy 5.08 0) (xy -5.08 -5.08) (xy -5.08 5.08)
+					)
 					(stroke
 						(width 0.254)
 						(type default)
@@ -4379,12 +4166,10 @@
 						(type background)
 					)
 				)
-			)
-			(symbol "FT232RL_1_1"
 				(pin output line
-					(at 20.32 17.78 180)
-					(length 3.81)
-					(name "TXD"
+					(at 7.62 0 180)
+					(length 2.54)
+					(name ""
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -4399,10 +4184,10 @@
 						)
 					)
 				)
-				(pin output output_low
-					(at 20.32 7.62 180)
-					(length 3.81)
-					(name "DTR"
+				(pin input line
+					(at -7.62 -2.54 0)
+					(length 2.54)
+					(name "-"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -4417,10 +4202,10 @@
 						)
 					)
 				)
-				(pin output output_low
-					(at 20.32 12.7 180)
-					(length 3.81)
-					(name "RTS"
+				(pin input line
+					(at -7.62 2.54 0)
+					(length 2.54)
+					(name "+"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -4435,28 +4220,24 @@
 						)
 					)
 				)
-				(pin power_in line
-					(at -2.54 25.4 270)
-					(length 3.81)
-					(name "VCCIO"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
+			)
+			(symbol "FT232RL_2_1"
+				(polyline
+					(pts
+						(xy -5.08 5.08) (xy 5.08 0) (xy -5.08 -5.08) (xy -5.08 5.08)
 					)
-					(number "4"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
 					)
 				)
 				(pin input line
-					(at 20.32 15.24 180)
-					(length 3.81)
-					(name "RXD"
+					(at -7.62 2.54 0)
+					(length 2.54)
+					(name "+"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -4471,10 +4252,10 @@
 						)
 					)
 				)
-				(pin input input_low
-					(at 20.32 0 180)
-					(length 3.81)
-					(name "RI"
+				(pin input line
+					(at -7.62 -2.54 0)
+					(length 2.54)
+					(name "-"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -4489,10 +4270,10 @@
 						)
 					)
 				)
-				(pin power_in line
-					(at 0 -25.4 90)
-					(length 3.81)
-					(name "GND"
+				(pin output line
+					(at 7.62 0 180)
+					(length 2.54)
+					(name ""
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -4507,161 +4288,30 @@
 						)
 					)
 				)
-				(pin input input_low
-					(at 20.32 5.08 180)
-					(length 3.81)
-					(name "DCR"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
+			)
+			(symbol "FT232RL_3_1"
+				(rectangle
+					(start -5.08 3.81)
+					(end 0 -3.81)
+					(stroke
+						(width 0.254)
+						(type solid)
 					)
-					(number "9"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
+					(fill
+						(type background)
 					)
 				)
-				(pin input input_low
-					(at 20.32 2.54 180)
+				(pin power_in line
+					(at -2.54 -7.62 90)
 					(length 3.81)
-					(name "DCD"
+					(name "V-"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "10"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin input input_low
-					(at 20.32 10.16 180)
-					(length 3.81)
-					(name "CTS"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "11"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 20.32 -17.78 180)
-					(length 3.81)
-					(name "CBUS4"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "12"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 20.32 -12.7 180)
-					(length 3.81)
-					(name "CBUS2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "13"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 20.32 -15.24 180)
-					(length 3.81)
-					(name "CBUS3"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "14"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -20.32 10.16 0)
-					(length 3.81)
-					(name "USBD+"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "15"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -20.32 7.62 0)
-					(length 3.81)
-					(name "USBD-"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "16"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin power_out line
-					(at -20.32 17.78 0)
-					(length 3.81)
-					(name "3V3OUT"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "17"
+					(number "4"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -4670,178 +4320,16 @@
 					)
 				)
 				(pin power_in line
-					(at 2.54 -25.4 90)
+					(at -2.54 7.62 270)
 					(length 3.81)
-					(name "GND"
+					(name "V+"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "18"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at -20.32 0 0)
-					(length 3.81)
-					(name "~{RESET}"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "19"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin power_in line
-					(at 2.54 25.4 270)
-					(length 3.81)
-					(name "VCC"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "20"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin power_in line
-					(at 5.08 -25.4 90)
-					(length 3.81)
-					(name "GND"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "21"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 20.32 -10.16 180)
-					(length 3.81)
-					(name "CBUS1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "22"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 20.32 -7.62 180)
-					(length 3.81)
-					(name "CBUS0"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "23"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin power_in line
-					(at -5.08 -25.4 90)
-					(length 3.81)
-					(name "AGND"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "25"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at -20.32 -17.78 0)
-					(length 3.81)
-					(name "TEST"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "26"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at -20.32 -5.08 0)
-					(length 3.81)
-					(name "OSCI"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "27"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin output line
-					(at -20.32 -10.16 0)
-					(length 3.81)
-					(name "OSCO"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "28"
+					(number "8"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -7026,12 +6514,6 @@
 		(uuid "14e7df5c-b79d-472c-8a2c-e192a9cd3f18")
 	)
 	(junction
-		(at 83.82 250.19)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "18823d22-a997-4c84-bdb8-368670da2f60")
-	)
-	(junction
 		(at 189.23 60.96)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -7206,12 +6688,6 @@
 		(uuid "a3dd9e02-bc63-4730-bb08-d6e3fc996ec0")
 	)
 	(junction
-		(at 91.44 250.19)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "a7d75585-74cd-444e-bac8-fbb8c7552f37")
-	)
-	(junction
 		(at 281.94 123.19)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -7314,22 +6790,10 @@
 		(uuid "cb314e0d-92b5-4e5c-9ec1-1ebf5c18cb6b")
 	)
 	(junction
-		(at 27.94 176.53)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "d11cc71a-ee09-47fd-8287-0be958c70332")
-	)
-	(junction
 		(at 241.3 64.77)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "d340dd85-7412-4ceb-878c-c0d3a4d84998")
-	)
-	(junction
-		(at 88.9 250.19)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "d350887e-bfd5-47de-85cc-7490e2593b8b")
 	)
 	(junction
 		(at 199.39 45.72)
@@ -7895,16 +7359,6 @@
 			(type default)
 		)
 		(uuid "166e6760-36d3-4eb7-b3cc-e2a39ffb0824")
-	)
-	(wire
-		(pts
-			(xy 88.9 250.19) (xy 91.44 250.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "17abb2d6-27e0-4404-8deb-e5251df35e33")
 	)
 	(wire
 		(pts
@@ -8627,16 +8081,6 @@
 	)
 	(wire
 		(pts
-			(xy 83.82 250.19) (xy 87.63 250.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "65a97238-929c-42c2-ad8a-cfb046724b15")
-	)
-	(wire
-		(pts
 			(xy 259.08 198.12) (xy 267.97 198.12)
 		)
 		(stroke
@@ -8981,7 +8425,7 @@
 	)
 	(wire
 		(pts
-			(xy 83.82 250.19) (xy 68.58 250.19)
+			(xy 68.58 250.19) (xy 87.63 250.19)
 		)
 		(stroke
 			(width 0)
@@ -9121,16 +8565,6 @@
 			(type default)
 		)
 		(uuid "933c7602-47ee-42f0-9a00-91fea15da3c3")
-	)
-	(wire
-		(pts
-			(xy 91.44 250.19) (xy 93.98 250.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "94d56907-658e-4fd6-8b79-c2c061f5ef34")
 	)
 	(wire
 		(pts
@@ -9336,7 +8770,7 @@
 	)
 	(wire
 		(pts
-			(xy 87.63 250.19) (xy 88.9 250.19)
+			(xy 87.63 250.19) (xy 93.98 250.19)
 		)
 		(stroke
 			(width 0)
@@ -11624,23 +11058,25 @@
 		(dnp no)
 		(uuid "3126d700-2079-4aee-a4c5-86c388df538e")
 		(property "Reference" "U5"
-			(at 88.646 215.646 0)
+			(at 89.408 223.52 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left)
 			)
 		)
-		(property "Value" "FT232RL"
-			(at 88.646 218.948 0)
+		(property "Value" "NE5532"
+			(at 89.408 226.06 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left)
 			)
 		)
 		(property "Footprint" ""
@@ -11654,7 +11090,7 @@
 				)
 			)
 		)
-		(property "Datasheet" "https://ftdichip.com/wp-content/uploads/2020/08/DS_FT232R.pdf"
+		(property "Datasheet" "http://www.ti.com/lit/ds/symlink/ne5532.pdf"
 			(at 88.9 224.79 0)
 			(hide yes)
 			(show_name no)
@@ -11665,8 +11101,9 @@
 				)
 			)
 		)
-		(property "Description" "USB Controller"
+		(property "Description" "Dual Low-Noise Operational Amplifiers, DIP-8/SOIC-8"
 			(at 88.9 224.79 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -11681,24 +11118,6 @@
 		(pin "4"
 			(uuid "35a1f2f5-9f8f-4cf7-9d49-6c24ee54c4d9")
 		)
-		(pin "22"
-			(uuid "063c1d8b-e3d5-4e59-9c3d-07f99ce6c570")
-		)
-		(pin "13"
-			(uuid "585d5af4-0225-401e-bf90-abc4c3516c1b")
-		)
-		(pin "9"
-			(uuid "fd47f220-fdb4-47b7-898d-7d34a839425b")
-		)
-		(pin "10"
-			(uuid "9dd64eef-30b5-4ed6-8923-9fbfbb472513")
-		)
-		(pin "12"
-			(uuid "68cb8e18-a288-4565-ae88-898c8c96f9b4")
-		)
-		(pin "16"
-			(uuid "b228c391-ce4e-4b1a-a5eb-66c32be35708")
-		)
 		(pin "1"
 			(uuid "c12cbdd4-a300-4064-9e97-5b1730b52e5f")
 		)
@@ -11711,50 +11130,18 @@
 		(pin "3"
 			(uuid "7b2b3536-cd0e-4b19-9ed2-35a6c1599b10")
 		)
-		(pin "11"
-			(uuid "047eed30-c114-431c-aa47-3dde3e788cbd")
-		)
-		(pin "14"
+		(pin "8"
 			(uuid "346ad3d7-6d7b-4cf5-8e08-bbe741a9a253")
 		)
 		(pin "6"
 			(uuid "6776067d-fede-4471-8473-dbd16fa5b235")
 		)
-		(pin "19"
-			(uuid "21cfe9ff-b0c2-4870-a687-5974835667ac")
-		)
-		(pin "15"
-			(uuid "234c5976-aa77-4ce4-bdc5-c540766f07e3")
-		)
-		(pin "20"
-			(uuid "ef1fcd04-007a-42c5-a502-4578505745ff")
-		)
-		(pin "21"
-			(uuid "9fd3ddbd-f8ff-41ef-8e67-69834c290877")
-		)
-		(pin "18"
-			(uuid "dc521838-fb54-4381-af3e-32715eb5cba6")
-		)
-		(pin "17"
-			(uuid "6d6ebcd1-8680-4512-bdcf-482446fb707a")
-		)
-		(pin "23"
-			(uuid "9b78104c-a9b3-4644-a83a-3a6bcc587aa5")
-		)
-		(pin "25"
-			(uuid "6b713298-c28d-468e-a55f-a3e328b93abe")
-		)
-		(pin "26"
-			(uuid "6b2fd0f1-fc5e-4f35-8b9c-7c04bd1fa2b8")
-		)
-		(pin "27"
-			(uuid "db061c8f-4311-4b6a-b7b1-ffcfb9f1571f")
-		)
-		(pin "28"
-			(uuid "5f68c104-d2d6-4ac1-93ea-19d1d185c0f7")
-		)
 		(instances
 			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/74cd5943-633e-4121-8061-803d69c0160f"
+					(reference "U5")
+					(unit 1)
+				)
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
 					(reference "U5")
 					(unit 1)
@@ -12819,7 +12206,7 @@
 		(dnp no)
 		(uuid "6f8918a8-bf86-4f90-8eeb-676d67765268")
 		(property "Reference" "U10"
-			(at 21.844 149.606 0)
+			(at 30.734 161.798 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -12828,8 +12215,8 @@
 				)
 			)
 		)
-		(property "Value" "XPort-01"
-			(at 24.13 152.4 0)
+		(property "Value" "LF411"
+			(at 31.75 164.4239 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -12838,7 +12225,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Package_DIP:DIP-8_W10.16mm"
 			(at 22.86 168.91 0)
 			(hide yes)
 			(show_name no)
@@ -12849,7 +12236,7 @@
 				)
 			)
 		)
-		(property "Datasheet" ""
+		(property "Datasheet" "https://www.ti.com/lit/gpn/lf411"
 			(at 22.86 168.91 0)
 			(hide yes)
 			(show_name no)
@@ -12860,8 +12247,9 @@
 				)
 			)
 		)
-		(property "Description" "Ethernet-Controller"
-			(at 28.956 155.448 0)
+		(property "Description" "FET-Input Operational Amplifier"
+			(at 22.86 168.91 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -12879,11 +12267,8 @@
 		(pin "4"
 			(uuid "eaadf25d-5a94-485d-9c4c-30578d5f4ae0")
 		)
-		(pin "8"
+		(pin "3"
 			(uuid "69e64b2b-b90d-4935-8789-9f7a5527055e")
-		)
-		(pin "9"
-			(uuid "e8b4e1c2-cb26-4f28-8cba-57956c1fc4df")
 		)
 		(pin "6"
 			(uuid "ea4bfcf3-8ed5-44ca-a7df-ba258df45c12")
@@ -12899,6 +12284,10 @@
 		)
 		(instances
 			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/74cd5943-633e-4121-8061-803d69c0160f"
+					(reference "U10")
+					(unit 1)
+				)
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
 					(reference "U10")
 					(unit 1)

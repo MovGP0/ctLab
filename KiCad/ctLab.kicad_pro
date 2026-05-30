@@ -416,7 +416,7 @@
         "uuid": "207e0f0e-27e8-440d-b34e-edbac4dab547"
       }
     ],
-    "used_designators": "PL5-7,R6,R9-12,J1-3,U12,U14,JP4-7,#PWR19-44,Q1-2,C20,C25-28,D5-6,LED1,L2-3,CONN1-5",
+    "used_designators": "U7,U14-15,IC1-2,Q1-6,Q8-9,Q13-14,XTAL2,#PWR44-47,L3,D5-10,C28-39,R10-14,R16-23,R25-35,R39,R41,R45,R47,R51-52,R54,R56-60,R62,JP6-10,PL7-9,J1-2",
     "variants": []
   },
   "sheets": [

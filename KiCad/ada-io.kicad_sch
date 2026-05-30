@@ -15652,10 +15652,10 @@
 			)
 		)
 		(pin "1"
-			(uuid "1bf36848-d85b-4ec9-b6e7-c7aecb3a9270")
+			(uuid "1bf36848-d85b-4ec9-b6e7-c7aecb3a9271")
 		)
 		(pin "2"
-			(uuid "b2bfd724-b08e-4993-a1f1-a55b8ef3aca6")
+			(uuid "b2bfd724-b08e-4993-a1f1-a55b8ef3aca7")
 		)
 		(instances
 			(project "ctLab"
@@ -19274,10 +19274,10 @@
 			)
 		)
 		(pin "1"
-			(uuid "ee193dee-4506-46a9-9fbe-b3a416f65c42")
+			(uuid "ee193dee-4506-46a9-9fbe-b3a416f65c43")
 		)
 		(pin "2"
-			(uuid "2c58a616-84c0-425e-b62c-ad785b0a4a49")
+			(uuid "2c58a616-84c0-425e-b62c-ad785b0a4a4a")
 		)
 		(instances
 			(project "ctLab"
