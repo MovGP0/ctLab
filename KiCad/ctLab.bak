@@ -511,7 +511,7 @@
 				)
 			)
 			(pin input line
-				(at 0 -7.62 90)
+				(at 0 11.43 270)
 				(length 2.54)
 				(name "V-"
 					(effects
@@ -529,7 +529,7 @@
 				)
 			)
 			(pin input line
-				(at 0 11.43 270)
+				(at 0 -7.62 90)
 				(length 2.54)
 				(name "V+"
 					(effects
