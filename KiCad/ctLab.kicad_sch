@@ -52,6 +52,52 @@
 		)
 	)
 	(sheet
+		(at 187.96 31.75)
+		(size 63.5 40.64)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "7860bb0e-85fa-4be5-a246-ac3340316da3")
+		(property "Sheetname" "ADA-IO (Analog Digital Analog IO)"
+			(at 187.96 31.0384 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "ada-io.kicad_sch"
+			(at 187.96 72.9746 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(page "4")
+				)
+			)
+		)
+	)
+	(sheet
 		(at 30.48 31.75)
 		(size 59.69 40.64)
 		(exclude_from_sim no)

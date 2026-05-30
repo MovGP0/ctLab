@@ -416,7 +416,7 @@
         "uuid": "207e0f0e-27e8-440d-b34e-edbac4dab547"
       }
     ],
-    "used_designators": "#PWR12,#PWR16-18,C20,C25,U7,U11-14",
+    "used_designators": "PL5-7,R6,R9-12,J1-3,U12,U14,JP4-7,#PWR19-44,Q1-2,C20,C25-28,D5-6,LED1,L2-3,CONN1-5",
     "variants": []
   },
   "sheets": [
@@ -431,6 +431,10 @@
     [
       "74cd5943-633e-4121-8061-803d69c0160f",
       "DCG (Direct Current Generator)"
+    ],
+    [
+      "7860bb0e-85fa-4be5-a246-ac3340316da3",
+      "ADA-IO (Analog Digital Analog IO)"
     ]
   ],
   "text_variables": {},
