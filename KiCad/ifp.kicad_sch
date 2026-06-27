@@ -11998,10 +11998,6 @@
 		)
 		(instances
 			(project "ctLab"
-				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/74cd5943-633e-4121-8061-803d69c0160f"
-					(reference "IFP.U6")
-					(unit 1)
-				)
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
 					(reference "IFP.U6")
 					(unit 1)
@@ -12739,10 +12735,6 @@
 		)
 		(instances
 			(project "ctLab"
-				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/74cd5943-633e-4121-8061-803d69c0160f"
-					(reference "IFP.U10")
-					(unit 1)
-				)
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
 					(reference "IFP.U10")
 					(unit 1)

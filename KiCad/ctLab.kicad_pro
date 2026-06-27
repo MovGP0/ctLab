@@ -416,7 +416,7 @@
         "uuid": "207e0f0e-27e8-440d-b34e-edbac4dab547"
       }
     ],
-    "used_designators": "U16-17,#PWR66-74,RV1-3,R45",
+    "used_designators": "DCG.R1,DCG.R3,DCG.R6-7,DCG.R9,DCG.R17,DCG.R19,DCG.R23,DCG.R28,DCG.R38,DCG.R45,DCG.R47,DCG.R63-64,DCG.U13,DCG.U17,DCG.C1,DCG.C4-5,DCG.C10,DCG.C13-19,DCG.C21,DCG.C25-26,#PWR82,#PWR92-118,DCG.L1,DCG.D3,IFP.PL5,DCG.PL4-5",
     "variants": []
   },
   "sheets": [
