@@ -12,27 +12,29 @@
 			(in_pos_files yes)
 			(duplicate_pin_numbers_are_jumpers no)
 			(property "Reference" "U10"
-				(at 7.874 7.112 0)
+				(at -2.032 1.27 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
+					(justify left)
 				)
 			)
 			(property "Value" "LF411"
-				(at 8.89 4.4861 0)
+				(at -2.286 -0.762 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
+					(justify left)
 				)
 			)
 			(property "Footprint" "Package_DIP:DIP-8_W10.16mm"
-				(at 0 0 0)
+				(at -21.082 -15.494 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(hide yes)
@@ -43,7 +45,7 @@
 				)
 			)
 			(property "Datasheet" "https://www.ti.com/lit/gpn/lf411"
-				(at 0 0 0)
+				(at -20.828 -18.542 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(hide yes)
@@ -53,21 +55,21 @@
 					)
 				)
 			)
-			(property "Description" "FET-Input Operational Amplifier"
-				(at 0 0 0)
+			(property "Description" "DIL"
+				(at -2.286 -2.794 0)
 				(show_name no)
 				(do_not_autoplace no)
-				(hide yes)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
+					(justify left)
 				)
 			)
 			(symbol "Conn_01x09_Pin_1_1"
 				(rectangle
-					(start -5.08 13.97)
-					(end 5.08 -11.43)
+					(start -10.16 11.43)
+					(end 10.16 -10.16)
 					(stroke
 						(width 0.254)
 						(type solid)
@@ -78,7 +80,7 @@
 				)
 				(polyline
 					(pts
-						(xy -4.064 7.62) (xy -4.064 5.08) (xy -1.524 6.35) (xy -4.064 7.62)
+						(xy -4.064 6.35) (xy -4.064 3.81) (xy -1.524 5.08) (xy -4.064 6.35)
 					)
 					(stroke
 						(width 0)
@@ -89,7 +91,7 @@
 					)
 				)
 				(text "∞"
-					(at 1.27 6.35 0)
+					(at 1.27 4.826 0)
 					(effects
 						(font
 							(size 3.81 3.81)
@@ -97,9 +99,9 @@
 					)
 				)
 				(pin input line
-					(at -7.62 -6.35 0)
+					(at -12.7 -2.54 0)
 					(length 2.54)
-					(name "N1"
+					(name "B1"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -115,7 +117,7 @@
 					)
 				)
 				(pin input line
-					(at -7.62 -2.54 0)
+					(at -12.7 2.54 0)
 					(length 2.54)
 					(name "In-"
 						(effects
@@ -132,27 +134,8 @@
 						)
 					)
 				)
-				(pin no_connect non_logic
-					(at -7.62 21.59 0)
-					(length 2.54)
-					(hide yes)
-					(name "NC"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "3"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
 				(pin input line
-					(at -7.62 2.54 0)
+					(at -12.7 7.62 0)
 					(length 2.54)
 					(name "In+"
 						(effects
@@ -170,7 +153,7 @@
 					)
 				)
 				(pin power_in line
-					(at 0 -13.97 90)
+					(at 0 -12.7 90)
 					(length 2.54)
 					(name "VCC-"
 						(effects
@@ -188,9 +171,9 @@
 					)
 				)
 				(pin input line
-					(at -7.62 -8.89 0)
+					(at -12.7 -7.62 0)
 					(length 2.54)
-					(name "N2"
+					(name "B2"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -206,7 +189,7 @@
 					)
 				)
 				(pin output line
-					(at 10.16 0 180)
+					(at 15.24 5.08 180)
 					(length 5.08)
 					(name "OUT"
 						(effects
@@ -224,7 +207,7 @@
 					)
 				)
 				(pin power_in line
-					(at 0 16.51 270)
+					(at 0 13.97 270)
 					(length 2.54)
 					(name "VCC+"
 						(effects
@@ -241,8 +224,8 @@
 						)
 					)
 				)
-				(pin no_connect non_logic
-					(at -7.62 19.05 0)
+				(pin no_connect line
+					(at 12.7 -7.62 180)
 					(length 2.54)
 					(hide yes)
 					(name "NC"
@@ -4358,36 +4341,37 @@
 			(embedded_fonts no)
 		)
 		(symbol "Isolator:6N137"
-			(pin_names
-				(offset 0)
-			)
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
 			(in_pos_files yes)
 			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "U"
-				(at -4.064 8.89 0)
+			(property "Reference" "U6"
+				(at 7.366 9.906 0)
 				(show_name no)
 				(do_not_autoplace no)
+				(hide yes)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
+					(justify left)
 				)
 			)
-			(property "Value" "6N137"
-				(at 0 -8.89 0)
+			(property "Value" "LF411"
+				(at 7.366 7.62 0)
 				(show_name no)
 				(do_not_autoplace no)
+				(hide yes)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
+					(justify left)
 				)
 			)
-			(property "Footprint" "Package_DIP:DIP-8_W7.62mm"
-				(at 0 -12.7 0)
+			(property "Footprint" "Package_DIP:DIP-8_W10.16mm"
+				(at -21.082 -15.494 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(hide yes)
@@ -4397,8 +4381,8 @@
 					)
 				)
 			)
-			(property "Datasheet" "https://docs.broadcom.com/docs/AV02-0940EN"
-				(at -21.59 13.97 0)
+			(property "Datasheet" "https://www.ti.com/lit/gpn/lf411"
+				(at -20.828 -18.542 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(hide yes)
@@ -4408,8 +4392,8 @@
 					)
 				)
 			)
-			(property "Description" "Single High Speed LSTTL/TTL Compatible Optocoupler with enable, dV/dt 1000/us, VCM 10, max 7V VCC, DIP-8"
-				(at 0 0 0)
+			(property "Description" "DIL"
+				(at 7.366 5.334 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(hide yes)
@@ -4417,111 +4401,16 @@
 					(font
 						(size 1.27 1.27)
 					)
-				)
-			)
-			(property "ki_keywords" "High speed optically coupled gates enable"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "ki_fp_filters" "DIP*W7.62mm*"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(symbol "6N137_0_1"
-				(polyline
-					(pts
-						(xy -5.08 -2.54) (xy -3.937 -2.54) (xy -3.937 2.54) (xy -5.08 2.54)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -2.794 -0.254) (xy -1.717 -1.331) (xy -2.076 -1.152) (xy -1.896 -0.972) (xy -1.717 -1.331)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -2.794 -1.016) (xy -1.717 -2.093) (xy -2.076 -1.914) (xy -1.896 -1.734) (xy -1.717 -2.093)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 0 -6.35) (xy -2.286 -6.35) (xy -2.286 -4.064)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 1.27 -5.08) (xy 1.27 -6.35) (xy 0 -6.35) (xy 0 -7.62)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 3.175 -2.667) (xy 0.635 -4.445) (xy 0.635 -0.889) (xy 3.175 -2.667)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
+					(justify left)
 				)
 			)
 			(symbol "6N137_1_1"
 				(rectangle
-					(start -5.08 7.62)
-					(end 5.08 -7.62)
+					(start -10.16 11.43)
+					(end 10.16 -10.16)
 					(stroke
 						(width 0.254)
-						(type default)
+						(type solid)
 					)
 					(fill
 						(type background)
@@ -4529,31 +4418,7 @@
 				)
 				(polyline
 					(pts
-						(xy -4.572 -0.635) (xy -3.302 -0.635)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -3.937 -0.635) (xy -4.572 0.635) (xy -3.302 0.635) (xy -3.937 -0.635)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -2.286 7.366) (xy -2.286 6.096)
+						(xy -4.064 6.35) (xy -4.064 3.81) (xy -1.524 5.08) (xy -4.064 6.35)
 					)
 					(stroke
 						(width 0)
@@ -4563,238 +4428,21 @@
 						(type none)
 					)
 				)
-				(polyline
-					(pts
-						(xy -2.286 5.08) (xy -2.286 3.81)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
+				(text "∞"
+					(at 1.27 4.826 0)
+					(effects
+						(font
+							(size 3.81 3.81)
+						)
 					)
 				)
-				(polyline
-					(pts
-						(xy -2.286 2.794) (xy -2.286 1.524)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -2.286 0.508) (xy -2.286 -0.762)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -2.286 -1.778) (xy -2.286 -3.048)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -1.27 -1.905) (xy 0 -1.905)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -0.635 -1.905) (xy -0.635 -1.524) (xy 0.508 -1.524)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -0.635 -1.905) (xy -1.27 -3.175) (xy 0 -3.175) (xy -0.635 -1.905)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -0.635 -3.302) (xy -0.635 -3.683) (xy 0.635 -3.683)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(circle
-					(center 0 -6.35)
-					(radius 0.127)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type outline)
-					)
-				)
-				(polyline
-					(pts
-						(xy 1.27 -1.27) (xy 1.27 1.27) (xy 0 1.27) (xy 0 7.62)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 1.27 -4.064) (xy 1.27 -6.35) (xy 4.445 -6.35)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(circle
-					(center 1.27 -6.35)
-					(radius 0.127)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type outline)
-					)
-				)
-				(circle
-					(center 2.032 -1.397)
-					(radius 0.254)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 2.1844 -1.1684) (xy 2.413 -0.889) (xy 2.413 2.54) (xy 5.08 2.54)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 3.175 -2.667) (xy 4.445 -3.302) (xy 4.445 -6.35)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 3.175 -2.667) (xy 3.175 -1.016) (xy 3.683 -1.016) (xy 3.683 -1.397)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 3.175 -2.667) (xy 3.175 -4.318) (xy 2.667 -4.318) (xy 2.667 -3.937)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 3.175 -2.667) (xy 4.445 -2.032) (xy 4.445 0) (xy 5.08 0)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 4.445 -3.302) (xy 4.161 -3.018) (xy 4.047 -3.246) (xy 4.445 -3.302)
-					)
-					(stroke
-						(width 0.127)
-						(type default)
-					)
-					(fill
-						(type outline)
-					)
-				)
-				(pin passive line
-					(at -7.62 5.08 0)
+				(pin input line
+					(at -12.7 -2.54 0)
 					(length 2.54)
-					(name "NC"
+					(name "B1"
 						(effects
 							(font
-								(size 0.635 0.635)
+								(size 1.27 1.27)
 							)
 						)
 					)
@@ -4806,13 +4454,13 @@
 						)
 					)
 				)
-				(pin passive line
-					(at -7.62 2.54 0)
+				(pin input line
+					(at -12.7 2.54 0)
 					(length 2.54)
-					(name "A"
+					(name "In-"
 						(effects
 							(font
-								(size 0.635 0.635)
+								(size 1.27 1.27)
 							)
 						)
 					)
@@ -4824,13 +4472,13 @@
 						)
 					)
 				)
-				(pin passive line
-					(at -7.62 -2.54 0)
+				(pin input line
+					(at -12.7 7.62 0)
 					(length 2.54)
-					(name "C"
+					(name "In+"
 						(effects
 							(font
-								(size 0.635 0.635)
+								(size 1.27 1.27)
 							)
 						)
 					)
@@ -4842,13 +4490,32 @@
 						)
 					)
 				)
-				(pin passive line
-					(at -7.62 -5.08 0)
+				(pin no_connect line
+					(at 12.7 -2.54 180)
 					(length 2.54)
+					(hide yes)
 					(name "NC"
 						(effects
 							(font
-								(size 0.635 0.635)
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 0 -12.7 90)
+					(length 2.54)
+					(name "VCC-"
+						(effects
+							(font
+								(size 1.27 1.27)
 							)
 						)
 					)
@@ -4860,13 +4527,13 @@
 						)
 					)
 				)
-				(pin power_in line
-					(at 0 -10.16 90)
+				(pin input line
+					(at -12.7 -7.62 0)
 					(length 2.54)
-					(name "GND"
+					(name "B2"
 						(effects
 							(font
-								(size 0.635 0.635)
+								(size 1.27 1.27)
 							)
 						)
 					)
@@ -4878,13 +4545,13 @@
 						)
 					)
 				)
-				(pin open_collector line
-					(at 7.62 0 180)
-					(length 2.54)
-					(name "VO"
+				(pin output line
+					(at 15.24 5.08 180)
+					(length 5.08)
+					(name "OUT"
 						(effects
 							(font
-								(size 0.635 0.635)
+								(size 1.27 1.27)
 							)
 						)
 					)
@@ -4896,13 +4563,13 @@
 						)
 					)
 				)
-				(pin input line
-					(at 7.62 2.54 180)
+				(pin power_in line
+					(at 0 13.97 270)
 					(length 2.54)
-					(name "EN"
+					(name "VCC+"
 						(effects
 							(font
-								(size 0.635 0.635)
+								(size 1.27 1.27)
 							)
 						)
 					)
@@ -4914,13 +4581,14 @@
 						)
 					)
 				)
-				(pin power_in line
-					(at 0 10.16 270)
+				(pin no_connect line
+					(at 12.7 -7.62 180)
 					(length 2.54)
-					(name "VCC"
+					(hide yes)
+					(name "NC"
 						(effects
 							(font
-								(size 0.635 0.635)
+								(size 1.27 1.27)
 							)
 						)
 					)
@@ -10770,7 +10438,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "03e3854e-40d4-4100-88e8-dc43228d3458")
-		(property "Reference" "PL3"
+		(property "Reference" "IFP.PL3"
 			(at 39.078 19.218 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10831,7 +10499,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "PL3")
+					(reference "IFP.PL3")
 					(unit 1)
 				)
 			)
@@ -10848,7 +10516,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "081e5d26-7e51-43e9-af6f-59eafaa87035")
-		(property "Reference" "C13"
+		(property "Reference" "IFP.C13"
 			(at 128.778 226.314 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10909,7 +10577,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C13")
+					(reference "IFP.C13")
 					(unit 1)
 				)
 			)
@@ -11004,7 +10672,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "0c3c57fc-2e13-4099-aff9-c65fdcd12e5b")
-		(property "Reference" "U9"
+		(property "Reference" "IFP.U9"
 			(at 240.03 204.724 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11107,7 +10775,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "U9")
+					(reference "IFP.U9")
 					(unit 1)
 				)
 			)
@@ -11202,7 +10870,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "12838305-ccea-406b-8e78-665344dc4346")
-		(property "Reference" "C22"
+		(property "Reference" "IFP.C22"
 			(at 115.443 225.933 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11263,7 +10931,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C22")
+					(reference "IFP.C22")
 					(unit 1)
 				)
 			)
@@ -11359,7 +11027,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "1a109a58-3978-4634-bd9d-b2eddcf892cd")
-		(property "Reference" "RB3"
+		(property "Reference" "IFP.RB3"
 			(at 118.872 118.364 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11426,7 +11094,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "RB3")
+					(reference "IFP.RB3")
 					(unit 1)
 				)
 			)
@@ -11443,7 +11111,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "1efa19e5-34bb-4912-ab2b-9da9c9750f92")
-		(property "Reference" "C6"
+		(property "Reference" "IFP.C6"
 			(at 150.876 95.25 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11504,7 +11172,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C6")
+					(reference "IFP.C6")
 					(unit 1)
 				)
 			)
@@ -11599,7 +11267,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "27414d25-452b-452d-9a49-bfd80867d9f1")
-		(property "Reference" "C5"
+		(property "Reference" "IFP.C5"
 			(at 200.66 95.25 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11660,7 +11328,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C5")
+					(reference "IFP.C5")
 					(unit 1)
 				)
 			)
@@ -11677,7 +11345,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "296c1092-6985-468a-9941-0023ab2567aa")
-		(property "Reference" "R5"
+		(property "Reference" "IFP.R5"
 			(at 118.364 166.116 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11738,7 +11406,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "R5")
+					(reference "IFP.R5")
 					(unit 1)
 				)
 			)
@@ -11833,7 +11501,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "3126d700-2079-4aee-a4c5-86c388df538e")
-		(property "Reference" "U5"
+		(property "Reference" "IFP.U5"
 			(at 89.408 223.52 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11915,7 +11583,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "U5")
+					(reference "IFP.U5")
 					(unit 1)
 				)
 			)
@@ -11932,7 +11600,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "39b851be-e351-4320-84e6-394bb21c271b")
-		(property "Reference" "C3"
+		(property "Reference" "IFP.C3"
 			(at 183.642 35.306 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11993,7 +11661,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C3")
+					(reference "IFP.C3")
 					(unit 1)
 				)
 			)
@@ -12087,7 +11755,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "40a24547-b45c-428b-9cc6-e8b5afb1a211")
-		(property "Reference" "C17"
+		(property "Reference" "IFP.C17"
 			(at 273.558 199.644 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12148,7 +11816,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C17")
+					(reference "IFP.C17")
 					(unit 1)
 				)
 			)
@@ -12243,28 +11911,32 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "44ef26a7-c576-4774-bef8-8365ec15d615")
-		(property "Reference" "U6"
-			(at 306.07 104.14 0)
+		(property "Reference" "IFP.U6"
+			(at 323.596 110.744 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left)
 			)
 		)
-		(property "Value" "6N{136..137}"
-			(at 310.896 106.68 0)
+		(property "Value" "LF411"
+			(at 323.596 113.03 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left)
 			)
 		)
-		(property "Footprint" ""
-			(at 316.23 120.65 0)
+		(property "Footprint" "Package_DIP:DIP-8_W10.16mm"
+			(at 295.148 136.144 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12274,8 +11946,8 @@
 				)
 			)
 		)
-		(property "Datasheet" "https://www.vishay.com/docs/84732/6n137.pdf?utm_source=chatgpt.com"
-			(at 316.23 120.65 0)
+		(property "Datasheet" "https://www.ti.com/lit/gpn/lf411"
+			(at 295.402 139.192 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12285,14 +11957,16 @@
 				)
 			)
 		)
-		(property "Description" "High Speed Optocoupler"
-			(at 316.23 109.22 0)
+		(property "Description" "DIL"
+			(at 323.596 115.316 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left)
 			)
 		)
 		(pin "4"
@@ -12319,10 +11993,17 @@
 		(pin "7"
 			(uuid "f66327a1-84e8-4029-a8fe-7630a5d759ac")
 		)
+		(pin "3"
+			(uuid "3fa21f4d-8e79-428d-a557-71314ff3556a")
+		)
 		(instances
 			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/74cd5943-633e-4121-8061-803d69c0160f"
+					(reference "IFP.U6")
+					(unit 1)
+				)
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "U6")
+					(reference "IFP.U6")
 					(unit 1)
 				)
 			)
@@ -12417,7 +12098,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "49ed98ad-3ac5-4bf9-ab73-218b2533c432")
-		(property "Reference" "C15"
+		(property "Reference" "IFP.C15"
 			(at 40.64 170.18 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12478,7 +12159,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C15")
+					(reference "IFP.C15")
 					(unit 1)
 				)
 			)
@@ -12652,7 +12333,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "6312947e-14d2-45ca-9f33-1b8594ec271f")
-		(property "Reference" "D1"
+		(property "Reference" "IFP.D1"
 			(at 116.84 182.88 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12713,7 +12394,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "D1")
+					(reference "IFP.D1")
 					(unit 1)
 				)
 			)
@@ -12808,7 +12489,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "694e2a8a-e47b-496b-b384-d218b43f7d70")
-		(property "Reference" "U3"
+		(property "Reference" "IFP.U3"
 			(at 180.34 78.994 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12872,7 +12553,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "U3")
+					(reference "IFP.U3")
 					(unit 1)
 				)
 			)
@@ -12889,7 +12570,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "6d27604d-8c47-45f7-ab4d-23dd30945ea4")
-		(property "Reference" "PL4"
+		(property "Reference" "IFP.PL4"
 			(at 30.734 203.032 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12960,7 +12641,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "PL4")
+					(reference "IFP.PL4")
 					(unit 1)
 				)
 			)
@@ -12977,28 +12658,30 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "6f8918a8-bf86-4f90-8eeb-676d67765268")
-		(property "Reference" "U10"
-			(at 30.734 161.798 0)
+		(property "Reference" "IFP.U10"
+			(at 20.828 167.64 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left)
 			)
 		)
 		(property "Value" "LF411"
-			(at 31.75 164.4239 0)
+			(at 20.574 169.672 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left)
 			)
 		)
 		(property "Footprint" "Package_DIP:DIP-8_W10.16mm"
-			(at 22.86 168.91 0)
+			(at 1.778 184.404 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13009,7 +12692,7 @@
 			)
 		)
 		(property "Datasheet" "https://www.ti.com/lit/gpn/lf411"
-			(at 22.86 168.91 0)
+			(at 2.032 187.452 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13019,15 +12702,15 @@
 				)
 			)
 		)
-		(property "Description" "FET-Input Operational Amplifier"
-			(at 22.86 168.91 0)
-			(hide yes)
+		(property "Description" "DIL"
+			(at 20.574 171.704 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left)
 			)
 		)
 		(pin "5"
@@ -13048,9 +12731,6 @@
 		(pin "2"
 			(uuid "016a5c24-a64d-4f9b-9084-84e50bae3e0b")
 		)
-		(pin "3"
-			(uuid "98553085-1d05-41c8-948e-57c465d81549")
-		)
 		(pin "7"
 			(uuid "49116663-f947-4e29-991b-e547e08ab0ce")
 		)
@@ -13060,11 +12740,11 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/74cd5943-633e-4121-8061-803d69c0160f"
-					(reference "U10")
+					(reference "IFP.U10")
 					(unit 1)
 				)
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "U10")
+					(reference "IFP.U10")
 					(unit 1)
 				)
 			)
@@ -13082,8 +12762,8 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "6fb3276a-6812-4130-8e37-7b3e7ad17015")
-		(property "Reference" "TR2"
-			(at 82.55 83.0128 0)
+		(property "Reference" "IFP.TR2"
+			(at 82.55 83.82 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -13093,7 +12773,7 @@
 			)
 		)
 		(property "Value" "Flachtrafo 2 x 9 V, 6 VA (Block)"
-			(at 82.55 85.5528 0)
+			(at 82.55 86.36 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -13162,7 +12842,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "TR2")
+					(reference "IFP.TR2")
 					(unit 1)
 				)
 			)
@@ -13179,7 +12859,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "70506e43-b910-498b-b8c4-93e7ddfa5d65")
-		(property "Reference" "C18"
+		(property "Reference" "IFP.C18"
 			(at 207.01 199.39 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13240,7 +12920,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C18")
+					(reference "IFP.C18")
 					(unit 1)
 				)
 			)
@@ -13257,7 +12937,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "7179a374-cadf-4537-9ead-21c362bedbbf")
-		(property "Reference" "C19"
+		(property "Reference" "IFP.C19"
 			(at 50.8 170.18 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13318,7 +12998,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C19")
+					(reference "IFP.C19")
 					(unit 1)
 				)
 			)
@@ -13335,7 +13015,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "77c6ab4d-55bb-43ee-9391-0c752749f18b")
-		(property "Reference" "C9"
+		(property "Reference" "IFP.C9"
 			(at 130.048 37.338 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13396,7 +13076,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C9")
+					(reference "IFP.C9")
 					(unit 1)
 				)
 			)
@@ -13413,7 +13093,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "801d5ddc-4ee3-4b02-80ec-d9b7f025d327")
-		(property "Reference" "U4"
+		(property "Reference" "IFP.U4"
 			(at 181.356 113.03 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13477,7 +13157,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "U4")
+					(reference "IFP.U4")
 					(unit 1)
 				)
 			)
@@ -13494,7 +13174,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "807bc1af-5ba8-46e0-90ba-98895e3da0f9")
-		(property "Reference" "C24"
+		(property "Reference" "IFP.C24"
 			(at 42.164 236.982 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13555,7 +13235,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C24")
+					(reference "IFP.C24")
 					(unit 1)
 				)
 			)
@@ -13572,7 +13252,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "8427870b-74e7-4aab-8976-f0814993ec3e")
-		(property "Reference" "C1"
+		(property "Reference" "IFP.C1"
 			(at 146.558 37.084 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13633,7 +13313,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C1")
+					(reference "IFP.C1")
 					(unit 1)
 				)
 			)
@@ -13650,7 +13330,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "84c42d9e-fed2-4584-91ae-ecf63cf65e0e")
-		(property "Reference" "TR1"
+		(property "Reference" "IFP.TR1"
 			(at 81.28 23.368 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13729,7 +13409,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "TR1")
+					(reference "IFP.TR1")
 					(unit 1)
 				)
 			)
@@ -13747,7 +13427,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "86e6781e-d781-453d-bd13-4a7c2e65ea7f")
-		(property "Reference" "RB2"
+		(property "Reference" "IFP.RB2"
 			(at 116.84 82.55 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13814,7 +13494,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "RB2")
+					(reference "IFP.RB2")
 					(unit 1)
 				)
 			)
@@ -13831,7 +13511,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "8aab7694-c055-4b70-8866-bc2dbaa14724")
-		(property "Reference" "R3"
+		(property "Reference" "IFP.R3"
 			(at 151.384 166.116 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13892,7 +13572,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "R3")
+					(reference "IFP.R3")
 					(unit 1)
 				)
 			)
@@ -13910,7 +13590,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "8ee3d0d1-633f-4778-ab1c-881bfad8c4a3")
-		(property "Reference" "C2"
+		(property "Reference" "IFP.C2"
 			(at 183.134 50.546 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13971,7 +13651,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C2")
+					(reference "IFP.C2")
 					(unit 1)
 				)
 			)
@@ -13989,7 +13669,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "8f5f7144-14cf-41a7-8614-d32df31acaf0")
-		(property "Reference" "C16"
+		(property "Reference" "IFP.C16"
 			(at 205.994 205.74 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -14050,7 +13730,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C16")
+					(reference "IFP.C16")
 					(unit 1)
 				)
 			)
@@ -14223,7 +13903,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "a1628dbe-b115-4d0f-9a87-7eb162ce9edc")
-		(property "Reference" "D3"
+		(property "Reference" "IFP.D3"
 			(at 128.27 182.88 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -14284,7 +13964,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "D3")
+					(reference "IFP.D3")
 					(unit 1)
 				)
 			)
@@ -14379,7 +14059,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "aa423dd7-e7c8-4709-b0e2-f19bfb4668ed")
-		(property "Reference" "RS1"
+		(property "Reference" "IFP.RS1"
 			(at 189.738 230.886 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -14461,7 +14141,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "RS1")
+					(reference "IFP.RS1")
 					(unit 1)
 				)
 			)
@@ -14478,7 +14158,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "b0ec00e4-87eb-40fd-902b-a544129647b3")
-		(property "Reference" "C8"
+		(property "Reference" "IFP.C8"
 			(at 155.448 128.778 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -14539,7 +14219,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C8")
+					(reference "IFP.C8")
 					(unit 1)
 				)
 			)
@@ -14556,7 +14236,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "b35f441c-7e6a-4791-90c6-16140b1716bc")
-		(property "Reference" "R4"
+		(property "Reference" "IFP.R4"
 			(at 276.606 213.868 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -14617,7 +14297,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "R4")
+					(reference "IFP.R4")
 					(unit 1)
 				)
 			)
@@ -14712,7 +14392,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "bd7ff5bb-2698-4ac2-a6be-521a3d960af6")
-		(property "Reference" "D4"
+		(property "Reference" "IFP.D4"
 			(at 144.78 182.88 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -14773,7 +14453,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "D4")
+					(reference "IFP.D4")
 					(unit 1)
 				)
 			)
@@ -14790,7 +14470,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "be14b0fa-5d8e-4d88-9bee-994f78ddfac6")
-		(property "Reference" "C12"
+		(property "Reference" "IFP.C12"
 			(at 135.128 130.81 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -14851,7 +14531,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C12")
+					(reference "IFP.C12")
 					(unit 1)
 				)
 			)
@@ -14868,7 +14548,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "bf777a1d-75c4-43d6-ade8-048a3d819ff5")
-		(property "Reference" "C14"
+		(property "Reference" "IFP.C14"
 			(at 81.28 170.18 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -14929,7 +14609,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C14")
+					(reference "IFP.C14")
 					(unit 1)
 				)
 			)
@@ -14946,7 +14626,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "c01b3417-d5c9-4266-a9c6-666b615d5f94")
-		(property "Reference" "U2"
+		(property "Reference" "IFP.U2"
 			(at 179.324 110.744 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15140,7 +14820,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "U2")
+					(reference "IFP.U2")
 					(unit 1)
 				)
 			)
@@ -15157,7 +14837,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "c1bbc1ce-adb3-48d3-8516-368523cbdd56")
-		(property "Reference" "JP3"
+		(property "Reference" "IFP.JP3"
 			(at 110.744 196.85 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15218,7 +14898,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "JP3")
+					(reference "IFP.JP3")
 					(unit 1)
 				)
 			)
@@ -15236,7 +14916,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "c4c9bd33-cfe2-4282-871b-0057cd7c7217")
-		(property "Reference" "D2"
+		(property "Reference" "IFP.D2"
 			(at 59.69 190.5 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15297,7 +14977,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "D2")
+					(reference "IFP.D2")
 					(unit 1)
 				)
 			)
@@ -15314,7 +14994,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "cd8c2306-df99-4e27-8952-bb619554b8ce")
-		(property "Reference" "R1"
+		(property "Reference" "IFP.R1"
 			(at 221.996 33.02 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15375,7 +15055,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "R1")
+					(reference "IFP.R1")
 					(unit 1)
 				)
 			)
@@ -15392,7 +15072,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "ce4adc49-f8a6-4b54-99bb-08ad9b09c64f")
-		(property "Reference" "R8"
+		(property "Reference" "IFP.R8"
 			(at 54.61 239.014 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15453,7 +15133,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "R8")
+					(reference "IFP.R8")
 					(unit 1)
 				)
 			)
@@ -15471,7 +15151,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "ce6cb3bd-6c89-463a-992d-1d1bbc9510e1")
-		(property "Reference" "C4"
+		(property "Reference" "IFP.C4"
 			(at 145.288 53.848 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15532,7 +15212,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C4")
+					(reference "IFP.C4")
 					(unit 1)
 				)
 			)
@@ -15549,7 +15229,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "cf14a994-97df-45c5-b2b0-4e3d1a9fd6d8")
-		(property "Reference" "C7"
+		(property "Reference" "IFP.C7"
 			(at 200.66 127 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15610,7 +15290,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C7")
+					(reference "IFP.C7")
 					(unit 1)
 				)
 			)
@@ -15627,7 +15307,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "d0b1769f-f840-47d6-b385-56c386204c0c")
-		(property "Reference" "R7"
+		(property "Reference" "IFP.R7"
 			(at 51.308 220.218 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15688,7 +15368,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "R7")
+					(reference "IFP.R7")
 					(unit 1)
 				)
 			)
@@ -15705,7 +15385,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "d68578c8-276a-46c5-82be-79e9349ffe41")
-		(property "Reference" "U1"
+		(property "Reference" "IFP.U1"
 			(at 168.402 18.796 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15769,7 +15449,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "U1")
+					(reference "IFP.U1")
 					(unit 1)
 				)
 			)
@@ -15786,7 +15466,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "da0b6f8c-5bb8-4672-afd9-f8ea587b96ee")
-		(property "Reference" "C21"
+		(property "Reference" "IFP.C21"
 			(at 187.452 210.312 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15847,7 +15527,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C21")
+					(reference "IFP.C21")
 					(unit 1)
 				)
 			)
@@ -15864,7 +15544,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "db2f508e-5eda-442d-9459-3e3f20fb2ab1")
-		(property "Reference" "C10"
+		(property "Reference" "IFP.C10"
 			(at 124.968 54.864 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15925,7 +15605,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C10")
+					(reference "IFP.C10")
 					(unit 1)
 				)
 			)
@@ -15942,7 +15622,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "dc8cc0fe-9f0f-4149-98de-401c5f060132")
-		(property "Reference" "C23"
+		(property "Reference" "IFP.C23"
 			(at 64.008 199.898 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -16003,7 +15683,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C23")
+					(reference "IFP.C23")
 					(unit 1)
 				)
 			)
@@ -16020,7 +15700,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "e4286248-2fe4-49a0-823c-eae284ce1429")
-		(property "Reference" "C11"
+		(property "Reference" "IFP.C11"
 			(at 132.08 94.488 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -16081,7 +15761,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "C11")
+					(reference "IFP.C11")
 					(unit 1)
 				)
 			)
@@ -16176,7 +15856,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "e978e535-4283-4eef-bc2e-81126a7b52ec")
-		(property "Reference" "PL1"
+		(property "Reference" "IFP.PL1"
 			(at 248.92 55.88 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -16274,7 +15954,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "PL1")
+					(reference "IFP.PL1")
 					(unit 1)
 				)
 			)
@@ -16291,7 +15971,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "e9cc2bb6-2838-479d-a454-00fd7af33f41")
-		(property "Reference" "L1"
+		(property "Reference" "IFP.L1"
 			(at 44.704 187.96 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -16352,7 +16032,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "L1")
+					(reference "IFP.L1")
 					(unit 1)
 				)
 			)
@@ -16370,7 +16050,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "ebf8988b-6d41-4997-b047-971e761d14cf")
-		(property "Reference" "RB1"
+		(property "Reference" "IFP.RB1"
 			(at 115.824 24.638 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -16437,7 +16117,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "RB1")
+					(reference "IFP.RB1")
 					(unit 1)
 				)
 			)
@@ -16532,7 +16212,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "f16ef8bb-ef76-4df1-a4c7-8f26ca726b51")
-		(property "Reference" "JP2"
+		(property "Reference" "IFP.JP2"
 			(at 128.27 196.85 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -16593,7 +16273,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "JP2")
+					(reference "IFP.JP2")
 					(unit 1)
 				)
 			)
@@ -16610,7 +16290,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "f286f129-9494-4910-af78-0e304a1b350e")
-		(property "Reference" "PL2"
+		(property "Reference" "IFP.PL2"
 			(at 270.764 110.49 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -16695,7 +16375,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "PL2")
+					(reference "IFP.PL2")
 					(unit 1)
 				)
 			)
@@ -16712,7 +16392,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "f65b768c-b01f-4db8-9cc1-0dc2ac76ebd0")
-		(property "Reference" "U8"
+		(property "Reference" "IFP.U8"
 			(at 62.23 159.004 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -16776,7 +16456,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "U8")
+					(reference "IFP.U8")
 					(unit 1)
 				)
 			)
@@ -16793,7 +16473,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "f8571a66-c08c-44af-84e7-3b93ac4d79b6")
-		(property "Reference" "JP1"
+		(property "Reference" "IFP.JP1"
 			(at 144.78 196.85 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -16854,7 +16534,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "JP1")
+					(reference "IFP.JP1")
 					(unit 1)
 				)
 			)
@@ -16949,7 +16629,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "fc5e6f02-ba2c-4cf6-a586-a381b87b0eb8")
-		(property "Reference" "R2"
+		(property "Reference" "IFP.R2"
 			(at 300.736 130.556 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -17010,7 +16690,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/b26a7a65-419a-400a-bfe0-54512c656443"
-					(reference "R2")
+					(reference "IFP.R2")
 					(unit 1)
 				)
 			)

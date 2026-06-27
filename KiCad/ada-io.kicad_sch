@@ -14725,7 +14725,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "09862791-f725-498e-b2b7-be0b3b9ed417")
-		(property "Reference" "PL2"
+		(property "Reference" "ADAIO.PL2"
 			(at 43.18 111.76 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -14811,7 +14811,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "PL2")
+					(reference "ADAIO.PL2")
 					(unit 1)
 				)
 			)
@@ -14828,7 +14828,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "0b45105f-397e-4978-aeda-9d9dba2c5cb0")
-		(property "Reference" "U12"
+		(property "Reference" "ADAIO.U12"
 			(at 299.212 109.728 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15010,7 +15010,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "U12")
+					(reference "ADAIO.U12")
 					(unit 1)
 				)
 			)
@@ -15027,7 +15027,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "10772515-cde1-4843-95fa-850c410eec0f")
-		(property "Reference" "CONN3"
+		(property "Reference" "ADAIO.CONN3"
 			(at 159.766 118.11 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15180,7 +15180,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "CONN3")
+					(reference "ADAIO.CONN3")
 					(unit 1)
 				)
 			)
@@ -15197,7 +15197,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "125e3470-516a-4a6a-8a00-a6b7238b0c83")
-		(property "Reference" "JP4"
+		(property "Reference" "ADAIO.JP4"
 			(at 50.546 80.264 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15259,7 +15259,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "JP4")
+					(reference "ADAIO.JP4")
 					(unit 1)
 				)
 			)
@@ -15277,7 +15277,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "178ab629-4d0e-4add-9d87-356bc9f3bc31")
-		(property "Reference" "R5"
+		(property "Reference" "ADAIO.R5"
 			(at 58.42 180.34 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15341,7 +15341,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "R5")
+					(reference "ADAIO.R5")
 					(unit 1)
 				)
 			)
@@ -15359,7 +15359,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "1afaf972-457e-4be8-ae92-e3e13cddee42")
-		(property "Reference" "R2"
+		(property "Reference" "ADAIO.R2"
 			(at 58.42 133.35 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15421,7 +15421,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "R2")
+					(reference "ADAIO.R2")
 					(unit 1)
 				)
 			)
@@ -15516,7 +15516,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "232a7732-89b9-46ca-89df-310ed8ea7072")
-		(property "Reference" "R6"
+		(property "Reference" "ADAIO.R6"
 			(at 290.83 39.37 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15580,7 +15580,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "R6")
+					(reference "ADAIO.R6")
 					(unit 1)
 				)
 			)
@@ -15597,7 +15597,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "24e49a2a-2207-41ac-a2f8-f011caae1783")
-		(property "Reference" "C20"
+		(property "Reference" "ADAIO.C20"
 			(at 161.29 37.846 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15659,7 +15659,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "C20")
+					(reference "ADAIO.C20")
 					(unit 1)
 				)
 			)
@@ -15676,7 +15676,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "254bcc35-2e4e-4667-b02f-4e3a42e8aa65")
-		(property "Reference" "PL4"
+		(property "Reference" "ADAIO.PL4"
 			(at 376.428 115.062 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15762,7 +15762,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "PL4")
+					(reference "ADAIO.PL4")
 					(unit 1)
 				)
 			)
@@ -15934,7 +15934,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "3b0e8f58-463d-4034-9b96-780b205041d8")
-		(property "Reference" "R4"
+		(property "Reference" "ADAIO.R4"
 			(at 68.58 180.34 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -15998,7 +15998,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "R4")
+					(reference "ADAIO.R4")
 					(unit 1)
 				)
 			)
@@ -16015,7 +16015,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "406748d7-7f0f-4843-b9dc-a6b53915a0a5")
-		(property "Reference" "JP3"
+		(property "Reference" "ADAIO.JP3"
 			(at 50.546 86.614 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -16077,7 +16077,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "JP3")
+					(reference "ADAIO.JP3")
 					(unit 1)
 				)
 			)
@@ -16095,7 +16095,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "4347465a-351f-4b3f-b3d1-44827e7f0dc6")
-		(property "Reference" "R9"
+		(property "Reference" "ADAIO.R9"
 			(at 45.72 180.34 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -16159,7 +16159,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "R9")
+					(reference "ADAIO.R9")
 					(unit 1)
 				)
 			)
@@ -16176,7 +16176,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "44200dd9-c580-48e0-b4cc-c3e3829d1ab2")
-		(property "Reference" "PL1"
+		(property "Reference" "ADAIO.PL1"
 			(at 129.54 26.67 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -16274,7 +16274,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "PL1")
+					(reference "ADAIO.PL1")
 					(unit 1)
 				)
 			)
@@ -16291,7 +16291,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "443893e2-34a4-48cc-9386-341f211cb80e")
-		(property "Reference" "C2"
+		(property "Reference" "ADAIO.C2"
 			(at 283.972 78.994 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -16355,7 +16355,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "C2")
+					(reference "ADAIO.C2")
 					(unit 1)
 				)
 			)
@@ -16759,7 +16759,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "66679351-36e7-4e90-a0c8-2b192914b8ce")
-		(property "Reference" "XTAL1"
+		(property "Reference" "ADAIO.XTAL1"
 			(at 282.194 55.118 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -16823,7 +16823,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "XTAL1")
+					(reference "ADAIO.XTAL1")
 					(unit 1)
 				)
 			)
@@ -17152,7 +17152,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "6f60346f-913a-4490-88a2-a2fe5f7db0f5")
-		(property "Reference" "R8"
+		(property "Reference" "ADAIO.R8"
 			(at 101.6 137.16 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -17216,7 +17216,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "R8")
+					(reference "ADAIO.R8")
 					(unit 1)
 				)
 			)
@@ -17310,7 +17310,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "7442f8e9-c8cb-4c89-9def-7cff15331430")
-		(property "Reference" "C6"
+		(property "Reference" "ADAIO.C6"
 			(at 278.13 73.406 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -17372,7 +17372,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "C6")
+					(reference "ADAIO.C6")
 					(unit 1)
 				)
 			)
@@ -17466,7 +17466,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "789452b3-30a7-41fc-82af-0ddc39088294")
-		(property "Reference" "U2"
+		(property "Reference" "ADAIO.U2"
 			(at 90.424 194.564 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -17660,7 +17660,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "U2")
+					(reference "ADAIO.U2")
 					(unit 1)
 				)
 			)
@@ -17677,7 +17677,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "7a9bcecb-c71d-4832-84a9-be970e745767")
-		(property "Reference" "C25"
+		(property "Reference" "ADAIO.C25"
 			(at 173.736 38.1 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -17738,7 +17738,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "C25")
+					(reference "ADAIO.C25")
 					(unit 1)
 				)
 			)
@@ -17755,7 +17755,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "7c54bb94-1b76-4fd4-a27d-9d318841f705")
-		(property "Reference" "JP1"
+		(property "Reference" "ADAIO.JP1"
 			(at 59.944 122.174 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -17818,7 +17818,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "JP1")
+					(reference "ADAIO.JP1")
 					(unit 1)
 				)
 			)
@@ -17835,7 +17835,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "8593a597-de92-439f-994a-82865cbe2fb8")
-		(property "Reference" "R3"
+		(property "Reference" "ADAIO.R3"
 			(at 265.938 67.564 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -17899,7 +17899,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "R3")
+					(reference "ADAIO.R3")
 					(unit 1)
 				)
 			)
@@ -17916,7 +17916,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "896e4e9b-fa94-48cb-9f8a-02bbe261c25b")
-		(property "Reference" "PL5"
+		(property "Reference" "ADAIO.PL5"
 			(at 370.586 38.354 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18002,7 +18002,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "PL5")
+					(reference "ADAIO.PL5")
 					(unit 1)
 				)
 			)
@@ -18020,7 +18020,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "906bcc9a-1c40-44d3-a900-9b913880d6dd")
-		(property "Reference" "L2"
+		(property "Reference" "ADAIO.L2"
 			(at 306.07 31.75 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18082,7 +18082,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "L2")
+					(reference "ADAIO.L2")
 					(unit 1)
 				)
 			)
@@ -18099,7 +18099,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "920614c8-7971-4bdb-ac0f-d45a7c97a979")
-		(property "Reference" "JP5"
+		(property "Reference" "ADAIO.JP5"
 			(at 50.546 73.914 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18161,7 +18161,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "JP5")
+					(reference "ADAIO.JP5")
 					(unit 1)
 				)
 			)
@@ -18256,7 +18256,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "9b7318c0-2bb4-45d2-bbd8-34baf897eea0")
-		(property "Reference" "PL3"
+		(property "Reference" "ADAIO.PL3"
 			(at 43.18 133.35 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18342,7 +18342,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "PL3")
+					(reference "ADAIO.PL3")
 					(unit 1)
 				)
 			)
@@ -18360,7 +18360,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "9bf9d267-b66d-4ee6-943b-1e19fde4dd34")
-		(property "Reference" "R1"
+		(property "Reference" "ADAIO.R1"
 			(at 72.39 109.22 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18422,7 +18422,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "R1")
+					(reference "ADAIO.R1")
 					(unit 1)
 				)
 			)
@@ -18440,7 +18440,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "a673f596-75c0-4e98-aa2f-f9ee96cfea57")
-		(property "Reference" "LED1"
+		(property "Reference" "ADAIO.LED1"
 			(at 46.99 189.5475 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18516,7 +18516,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "LED1")
+					(reference "ADAIO.LED1")
 					(unit 1)
 				)
 			)
@@ -18611,7 +18611,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "a865ff6d-53a1-4232-bda8-eecf9a487e02")
-		(property "Reference" "CONN1"
+		(property "Reference" "ADAIO.CONN1"
 			(at 161.036 64.77 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18764,7 +18764,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "CONN1")
+					(reference "ADAIO.CONN1")
 					(unit 1)
 				)
 			)
@@ -18781,7 +18781,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "b49ac6c1-1255-4993-966c-e11e563c0250")
-		(property "Reference" "CONN4"
+		(property "Reference" "ADAIO.CONN4"
 			(at 213.106 118.11 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18934,7 +18934,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "CONN4")
+					(reference "ADAIO.CONN4")
 					(unit 1)
 				)
 			)
@@ -19029,7 +19029,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "c13ff456-de18-44ba-9f48-81e226160aeb")
-		(property "Reference" "JP2"
+		(property "Reference" "ADAIO.JP2"
 			(at 54.864 122.174 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19092,7 +19092,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "JP2")
+					(reference "ADAIO.JP2")
 					(unit 1)
 				)
 			)
@@ -19110,7 +19110,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "c22537e4-6b04-4b52-a528-ab1bed429add")
-		(property "Reference" "C27"
+		(property "Reference" "ADAIO.C27"
 			(at 318.77 40.64 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19174,7 +19174,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "C27")
+					(reference "ADAIO.C27")
 					(unit 1)
 				)
 			)
@@ -19502,7 +19502,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "e3af3421-57c1-4912-88fc-d9d42bd758db")
-		(property "Reference" "CONN5"
+		(property "Reference" "ADAIO.CONN5"
 			(at 158.496 172.72 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19655,7 +19655,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "CONN5")
+					(reference "ADAIO.CONN5")
 					(unit 1)
 				)
 			)
@@ -19673,7 +19673,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "e80a71df-0618-44ca-9020-7715ca8b0714")
-		(property "Reference" "C7"
+		(property "Reference" "ADAIO.C7"
 			(at 278.13 53.34 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19735,7 +19735,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "C7")
+					(reference "ADAIO.C7")
 					(unit 1)
 				)
 			)
@@ -19829,7 +19829,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "f222a4ba-6325-4e25-87cc-62e7e4125660")
-		(property "Reference" "PL6"
+		(property "Reference" "ADAIO.PL6"
 			(at 374.396 79.502 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19915,7 +19915,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "PL6")
+					(reference "ADAIO.PL6")
 					(unit 1)
 				)
 			)
@@ -20009,7 +20009,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "f72102c0-a2fb-498d-a444-f53c80f5cb4e")
-		(property "Reference" "C26"
+		(property "Reference" "ADAIO.C26"
 			(at 191.516 38.354 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -20071,7 +20071,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "C26")
+					(reference "ADAIO.C26")
 					(unit 1)
 				)
 			)
@@ -20088,7 +20088,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "fa135482-7e83-43a9-b7e0-f969dbe98b93")
-		(property "Reference" "CONN2"
+		(property "Reference" "ADAIO.CONN2"
 			(at 211.836 64.77 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -20241,7 +20241,7 @@
 		(instances
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547/7860bb0e-85fa-4be5-a246-ac3340316da3"
-					(reference "CONN2")
+					(reference "ADAIO.CONN2")
 					(unit 1)
 				)
 			)
