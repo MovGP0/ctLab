@@ -416,7 +416,7 @@
         "uuid": "207e0f0e-27e8-440d-b34e-edbac4dab547"
       }
     ],
-    "used_designators": "U2-9,J1-2,R1-4,IC1-3,TRMSC.U5-11,#PWR160-175,D1-7,C1-16,TRMSC.C1-2",
+    "used_designators": "JP1-2,R1-4,R6-14,TRMSC.U2,TRMSC.U4,TRMSC.U6,J1-2,RV1-2,TRMSC.C1-2,TRMSC.C12,#PWR163,#PWR176-207,TRMSC.JP1,TRMSC.JP3,TRMSC.PL5,TRMSC.R5,TRMSC.R7,TRMSC.R11-12,TRMSC.R16-17,TRMSC.D4",
     "variants": []
   },
   "sheets": [
@@ -446,7 +446,7 @@
     ],
     [
       "2e98da57-78c6-425d-95a4-616e4b2363c1",
-      "TRMSC"
+      "TRMSC (True Root-Mean-Square Converter)"
     ]
   ],
   "text_variables": {},
