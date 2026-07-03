@@ -416,7 +416,7 @@
         "uuid": "207e0f0e-27e8-440d-b34e-edbac4dab547"
       }
     ],
-    "used_designators": "DCG.PL8,R1-4,DCG.R45,U2-4,D1-4,#PWR130-159,SW1-4,C1-4",
+    "used_designators": "U2-9,J1-2,R1-4,IC1-3,TRMSC.U5-11,#PWR160-175,D1-7,C1-16,TRMSC.C1-2",
     "variants": []
   },
   "sheets": [
@@ -439,6 +439,14 @@
     [
       "0e02d684-fc57-4fd8-a14c-3c96e9a11916",
       "PM8"
+    ],
+    [
+      "58de1d65-1343-42b9-9c66-a65c14315b87",
+      "DDS (Digital Signal-Generator)"
+    ],
+    [
+      "2e98da57-78c6-425d-95a4-616e4b2363c1",
+      "TRMSC"
     ]
   ],
   "text_variables": {},

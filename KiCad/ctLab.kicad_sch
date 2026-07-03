@@ -52,6 +52,98 @@
 		)
 	)
 	(sheet
+		(at 116.84 93.98)
+		(size 54.61 38.1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "2e98da57-78c6-425d-95a4-616e4b2363c1")
+		(property "Sheetname" "TRMSC"
+			(at 116.84 93.2684 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "trsmc.kicad_sch"
+			(at 116.84 132.6646 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(page "7")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 33.02 92.71)
+		(size 58.42 39.37)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "58de1d65-1343-42b9-9c66-a65c14315b87")
+		(property "Sheetname" "DDS (Digital Signal-Generator)"
+			(at 33.02 91.9984 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "dds.kicad_sch"
+			(at 33.02 132.6646 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(page "6")
+				)
+			)
+		)
+	)
+	(sheet
 		(at 116.84 30.48)
 		(size 45.72 44.45)
 		(exclude_from_sim no)
