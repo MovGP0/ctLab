@@ -416,7 +416,7 @@
         "uuid": "207e0f0e-27e8-440d-b34e-edbac4dab547"
       }
     ],
-    "used_designators": "R1-2,DCG.U1,DCG.JP4-5,#PWR77-81,#PWR85,#PWR119-129,DCG.R8,DCG.R18,DCG.R20-23,DCG.R27,DCG.R29-31,DCG.R35-36,DCG.R45,DCG.R48-49,DCG.R51-52,DCG.R56,DCG.R58-60,DCG.C6,DCG.C9,DCG.C27-30,DCG.C34,DCG.LED1,DCG.LED4,U1-2,IFP.PL3,DCG.Q2-4,DCG.Q6-7,DCG.Q12,C1-2,IFP.U2,IC1-2,J1",
+    "used_designators": "DCG.PL8,R1-4,DCG.R45,U2-4,D1-4,#PWR130-159,SW1-4,C1-4",
     "variants": []
   },
   "sheets": [
@@ -435,6 +435,10 @@
     [
       "7860bb0e-85fa-4be5-a246-ac3340316da3",
       "ADA-IO (Analog Digital Analog IO)"
+    ],
+    [
+      "0e02d684-fc57-4fd8-a14c-3c96e9a11916",
+      "PM8"
     ]
   ],
   "text_variables": {},

@@ -6,6 +6,52 @@
 	(paper "A3")
 	(lib_symbols)
 	(sheet
+		(at 274.32 31.75)
+		(size 74.93 41.91)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "0e02d684-fc57-4fd8-a14c-3c96e9a11916")
+		(property "Sheetname" "PM8"
+			(at 274.32 31.0384 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "pm8.kicad_sch"
+			(at 274.32 74.2446 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(page "5")
+				)
+			)
+		)
+	)
+	(sheet
 		(at 116.84 30.48)
 		(size 45.72 44.45)
 		(exclude_from_sim no)
