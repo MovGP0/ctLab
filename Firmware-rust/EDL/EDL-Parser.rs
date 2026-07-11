@@ -23,8 +23,23 @@ pub use modify::Modify;
 /// Compiler-checked EDL mnemonic and base-subchannel mapping shared with the foreground state machine.
 pub use crate::edl::CmdWhich;
 
-/// Fixed EEPROM option positions shared with the foreground EDL state machine.
-pub use crate::edl::OptionSlot;
+/// Shared EDL domain types used while decoding indexed protocol subchannels.
+pub use crate::edl::{Lm75Sensor, OptionSlot, Shunt, VoltageRange};
+
+/// Semantic operation represented by a validated EDL protocol subchannel.
+#[path = "edl_parser/edl_sub_channel.rs"]
+mod edl_sub_channel;
+pub use edl_sub_channel::EdlSubChannel;
+
+/// Invalid raw subchannel reported when protocol decoding cannot produce an operation.
+#[path = "edl_parser/invalid_sub_channel.rs"]
+mod invalid_sub_channel;
+pub use invalid_sub_channel::InvalidSubChannel;
+
+/// Validated operation paired with its exact wire identity for response framing.
+#[path = "edl_parser/resolved_sub_channel.rs"]
+mod resolved_sub_channel;
+pub use resolved_sub_channel::ResolvedSubChannel;
 
 const DACI_COUNT: usize = 4;
 const ADCU_COUNT: usize = 2;

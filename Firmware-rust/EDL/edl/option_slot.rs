@@ -83,4 +83,33 @@ impl OptionSlot {
     pub const fn index(self) -> usize {
         self as usize
     }
+
+    /// Resolves a persisted array position without allowing an invalid option index.
+    pub const fn from_index(index: usize) -> Option<Self> {
+        match index {
+            0 => Some(Self::InitialVoltage),
+            1 => Some(Self::InitialCurrent),
+            2 => Some(Self::LowVoltageDivider),
+            3 => Some(Self::HighVoltageDivider),
+            4 => Some(Self::CurrentMeasurementGain),
+            5 => Some(Self::ReferenceVoltage),
+            6 => Some(Self::MaximumPower),
+            7 => Some(Self::SenseResistanceA),
+            8 => Some(Self::SenseResistanceB),
+            9 => Some(Self::SenseResistanceC),
+            10 => Some(Self::SenseResistanceD),
+            11 => Some(Self::MaximumCurrentA),
+            12 => Some(Self::MaximumCurrentB),
+            13 => Some(Self::MaximumCurrentC),
+            14 => Some(Self::MaximumCurrentD),
+            15 => Some(Self::HighVoltageLimit),
+            16 => Some(Self::LowVoltageLimit),
+            17 => Some(Self::InstalledHardware),
+            18 => Some(Self::InitialCurrentPercent),
+            19 => Some(Self::InitialRippleOnTime),
+            20 => Some(Self::InitialRippleOffTime),
+            21 => Some(Self::FanOnTemperature),
+            _ => None,
+        }
+    }
 }

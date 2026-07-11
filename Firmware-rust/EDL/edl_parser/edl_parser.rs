@@ -327,243 +327,246 @@ impl EdlParser {
         self.digits = 1;
         self.nachkomma = 4;
 
-        match self.sub_ch {
-            0 => {
+        let Ok(resolved) = ResolvedSubChannel::try_from(self.sub_ch) else {
+            self.serprompt(PromptCode::ParamErr);
+            return;
+        };
+
+        match resolved.operation {
+            EdlSubChannel::OutputEnable => {
                 self.param = if self.output_enable { 1.0 } else { 0.0 };
                 self.write_param_ser();
             }
-            1 => {
+            EdlSubChannel::CurrentSetpointAmperes => {
                 self.param = self.dc_amp;
                 self.nachkomma = 7_u8.saturating_sub(self.shunt_select);
                 self.write_param_ser();
             }
-            2 => {
+            EdlSubChannel::CurrentSetpointMilliamperes => {
                 self.param = self.dc_amp;
                 self.param_mul_1000();
                 self.nachkomma = 2;
                 self.write_param_ser();
             }
-            3 => {
+            EdlSubChannel::PowerSetpoint => {
                 // mcb extension: expose the computed power value directly in watts.
                 self.param = self.dc_watt;
                 self.nachkomma = 2;
                 self.write_param_ser();
             }
-            4 => {
+            EdlSubChannel::LowVoltageCutoff => {
                 // mcb extension: report the configured low-voltage cutoff threshold.
                 self.param = self.dc_volt;
                 self.nachkomma = 2;
                 self.write_param_ser();
             }
-            5 => {
+            EdlSubChannel::ResistanceSetpoint => {
                 self.param = self.dc_ohm;
                 self.nachkomma = 1_u8.saturating_add(self.shunt_select);
                 self.write_param_ser();
             }
-            7 => {
+            EdlSubChannel::CapacityAmpereHours => {
                 // mcb extension: accumulated discharge capacity in Ah.
                 self.param = self.ah;
                 self.write_param_ser();
             }
-            8 => {
+            EdlSubChannel::EnergyWattHours => {
                 // mcb extension: accumulated discharge energy in Wh.
                 self.param = self.wh;
                 self.write_param_ser();
             }
-            9 => {
+            EdlSubChannel::ShuntRange => {
                 self.param_int = i32::from(self.shunt_select);
                 self.write_param_int_ser();
             }
-            10 => {
+            EdlSubChannel::MeasuredVoltageOn => {
                 self.get_voltage(true);
                 self.write_param_ser();
             }
-            11 => {
+            EdlSubChannel::MeasuredCurrentOnAmperes => {
                 self.get_current(true);
                 self.nachkomma = 8_u8.saturating_sub(self.shunt_select);
                 self.write_param_ser();
             }
-            12 => {
+            EdlSubChannel::MeasuredCurrentOnMilliamperes => {
                 self.get_current(true);
                 self.param_mul_1000();
                 self.nachkomma = 2;
                 self.write_param_ser();
             }
-            15 => {
+            EdlSubChannel::MeasuredVoltageOff => {
                 self.get_voltage(false);
                 self.write_param_ser();
             }
-            16 => {
+            EdlSubChannel::MeasuredCurrentOffAmperes => {
                 self.get_current(false);
                 self.nachkomma = 8_u8.saturating_sub(self.shunt_select);
                 self.write_param_ser();
             }
-            17 => {
+            EdlSubChannel::MeasuredCurrentOffMilliamperes => {
                 self.get_current(false);
                 self.param_mul_1000();
                 self.nachkomma = 2;
                 self.write_param_ser();
             }
-            18 => {
+            EdlSubChannel::MeasuredPower => {
                 self.param = self.ptot;
                 self.write_param_ser();
             }
-            19 => {
+            EdlSubChannel::Mode => {
                 self.param_int = self.mode_to_i32();
                 self.write_param_int_ser();
             }
-            21 | 22 => {
+            EdlSubChannel::CurrentModulationPercent => {
                 self.param = self.dc_amp_mod * 100.0;
                 self.write_param_ser();
             }
-            27 => {
+            EdlSubChannel::RippleOnTime => {
                 self.param_int = self.pw_on_time;
                 self.write_param_int_ser();
             }
-            28 => {
+            EdlSubChannel::RippleOffTime => {
                 self.param_int = self.pw_off_time;
                 self.write_param_int_ser();
             }
-            29 => {
+            EdlSubChannel::RippleOffCurrentPercent => {
                 self.param_int = self.i_percent;
                 self.write_param_int_ser();
             }
-            50 => {
+            EdlSubChannel::RawVoltageAdc16 => {
                 self.disable_ints();
                 self.param_int = i32::from(self.ad16_temp_u_on);
                 self.enable_ints();
                 self.write_param_int_ser();
             }
-            51 => {
+            EdlSubChannel::RawCurrentAdc16 => {
                 self.disable_ints();
                 self.param_int = i32::from(self.ad16_temp_i_on);
                 self.enable_ints();
                 self.write_param_int_ser();
             }
-            52 => {
+            EdlSubChannel::RawVoltageAdc10 => {
                 self.param_int = i32::from(self.get_adc10(3));
                 self.write_param_int_ser();
             }
-            53 => {
+            EdlSubChannel::RawCurrentAdc10 => {
                 self.param_int = i32::from(self.get_adc10(4));
                 self.write_param_int_ser();
             }
-            70 => {
+            EdlSubChannel::RawDacOn => {
                 self.param_int = i32::from(self.dac_temp_on);
                 self.write_param_int_ser();
             }
-            71 => {
+            EdlSubChannel::RawDacOff => {
                 self.param_int = i32::from(self.dac_temp_off);
                 self.write_param_int_ser();
             }
-            72 => {
+            EdlSubChannel::RawDacActive => {
                 self.param_int = i32::from(self.dac_temp);
                 self.write_param_int_ser();
             }
-            80 => {
+            EdlSubChannel::DisplaySelection => {
                 self.param_int = self.modify_to_i32();
                 self.write_param_int_ser();
             }
-            89 => {
+            EdlSubChannel::EncoderRaster => {
                 self.param_int = self.inc_rast;
                 self.write_param_int_ser();
             }
-            99 => {
+            EdlSubChannel::AllMeasurements => {
                 // ALL request: return the four live measurement channels as a burst.
                 self.get_voltage(true);
-                self.sub_ch = 10;
+                self.sub_ch = i32::from(EdlSubChannel::MeasuredVoltageOn.canonical_wire_value());
                 self.write_param_ser();
                 self.get_current(true);
-                self.sub_ch = 11;
+                self.sub_ch =
+                    i32::from(EdlSubChannel::MeasuredCurrentOnAmperes.canonical_wire_value());
                 self.write_param_ser();
                 self.get_voltage(false);
-                self.sub_ch = 15;
+                self.sub_ch = i32::from(EdlSubChannel::MeasuredVoltageOff.canonical_wire_value());
                 self.write_param_ser();
                 self.get_current(false);
-                self.sub_ch = 16;
+                self.sub_ch =
+                    i32::from(EdlSubChannel::MeasuredCurrentOffAmperes.canonical_wire_value());
                 self.write_param_ser();
             }
-            100 | 101 => {
+            EdlSubChannel::ReservedVoltageDacOffset(_) => {
                 self.param_int = 0;
                 self.write_param_int_ser();
             }
-            102..=105 => {
-                self.param_int = self.daci_offsets[(self.sub_ch - 102) as usize];
+            EdlSubChannel::CurrentDacOffset(shunt) => {
+                self.param_int = self.daci_offsets[shunt.index()];
                 self.write_param_int_ser();
             }
-            110..=111 => {
-                self.param_int = self.adcu_offsets[(self.sub_ch - 110) as usize];
+            EdlSubChannel::VoltageAdcOffset(range) => {
+                self.param_int = self.adcu_offsets[range.index()];
                 self.write_param_int_ser();
             }
-            112..=115 => {
-                self.param_int = self.adci_offsets[(self.sub_ch - 112) as usize];
+            EdlSubChannel::CurrentAdcOffset(shunt) => {
+                self.param_int = self.adci_offsets[shunt.index()];
                 self.write_param_int_ser();
             }
-            150..=171 => {
-                self.param = self.option_array[(self.sub_ch - 150) as usize];
+            EdlSubChannel::Option(slot) => {
+                self.param = self.option_array[slot.index()];
                 self.write_param_ser();
             }
-            200 | 201 => {
+            EdlSubChannel::ReservedVoltageDacScale(_) => {
                 self.param = 0.0;
                 self.write_param_ser();
             }
-            202..=205 => {
-                self.param = self.daci_scales[(self.sub_ch - 202) as usize];
+            EdlSubChannel::CurrentDacScale(shunt) => {
+                self.param = self.daci_scales[shunt.index()];
                 self.nachkomma = 5;
                 self.write_param_ser();
             }
-            210 => {
-                self.param = self.adc16_u_scale_low;
+            EdlSubChannel::VoltageAdcScale(range) => {
+                self.param = match range {
+                    VoltageRange::Low => self.adc16_u_scale_low,
+                    VoltageRange::High => self.adc16_u_scale_high,
+                };
                 self.nachkomma = 5;
                 self.write_param_ser();
             }
-            211 => {
-                self.param = self.adc16_u_scale_high;
+            EdlSubChannel::CurrentAdcScale(shunt) => {
+                self.param = self.adci_scales[shunt.index()];
                 self.nachkomma = 5;
                 self.write_param_ser();
             }
-            212..=215 => {
-                self.param = self.adci_scales[(self.sub_ch - 212) as usize];
-                self.nachkomma = 5;
-                self.write_param_ser();
+            EdlSubChannel::ReservedCalibration(_) => {
+                self.serprompt(PromptCode::ParamErr);
             }
-            233 => {
-                self.param = self.temperature;
+            EdlSubChannel::Temperature(sensor) => {
+                self.param = match sensor {
+                    Lm75Sensor::Internal => self.temperature,
+                    Lm75Sensor::External => self.temperature_extern,
+                };
                 self.nachkomma = 1;
                 self.write_param_ser();
             }
-            234 => {
-                self.param = self.temperature_extern;
-                self.nachkomma = 1;
-                self.write_param_ser();
-            }
-            240 => {
+            EdlSubChannel::TriggerMask => {
                 self.param_int = i32::from(self.trig_mask);
                 self.write_param_int_ser();
             }
-            251 => {
+            EdlSubChannel::ErrorCount => {
                 self.param_int = self.err_count;
                 self.write_param_int_ser();
             }
-            252 => {
+            EdlSubChannel::SerialBaudDivisor => {
                 self.param_int = i32::from(self.ee_ser_baud_reg);
                 self.write_param_int_ser();
             }
-            253 => {
+            EdlSubChannel::Echo => {
                 // Serial test hook: echo the raw input line back unchanged.
                 self.output_lines.push(self.ser_inp_str.clone());
             }
-            254 => {
+            EdlSubChannel::Identification => {
                 // Version/value request uses the normal channel prefix before the banner string.
                 let prefix = self.write_ch_prefix();
                 self.output_lines
                     .push(format!("{prefix}{}", self.vers1_str));
             }
-            250 | 255 => {
+            EdlSubChannel::WriteEnable | EdlSubChannel::Status => {
                 self.serprompt(PromptCode::NoErr);
-            }
-            _ => {
-                self.serprompt(PromptCode::ParamErr);
             }
         }
     }
@@ -578,8 +581,13 @@ impl EdlParser {
 
         self.changed_flag = true;
 
-        match self.sub_ch {
-            0 => {
+        let Ok(resolved) = ResolvedSubChannel::try_from(self.sub_ch) else {
+            self.serprompt(PromptCode::ParamErr);
+            return;
+        };
+
+        match resolved.operation {
+            EdlSubChannel::OutputEnable => {
                 self.output_enable = self.param != 0.0;
                 if self.mode_select == Mode::OutputOff {
                     self.mpxena = false;
@@ -587,36 +595,36 @@ impl EdlParser {
                     self.mpxena = self.output_enable;
                 }
             }
-            1 => {
+            EdlSubChannel::CurrentSetpointAmperes => {
                 self.dc_amp = self.param;
             }
-            2 => {
+            EdlSubChannel::CurrentSetpointMilliamperes => {
                 self.param_div_1000();
                 self.dc_amp = self.param;
             }
-            3 => {
+            EdlSubChannel::PowerSetpoint => {
                 // mcb extension: set the constant-power target in watts.
                 self.dc_watt = self.param;
             }
-            4 => {
+            EdlSubChannel::LowVoltageCutoff => {
                 // mcb extension: arming a low-voltage threshold also forces the output on.
                 self.low_volt = false;
                 self.output_enable = true;
                 self.dc_volt = self.param;
             }
-            5 => {
+            EdlSubChannel::ResistanceSetpoint => {
                 self.dc_ohm = self.param;
             }
-            7 | 8 => {
+            EdlSubChannel::CapacityAmpereHours | EdlSubChannel::EnergyWattHours => {
                 // mcb extension: writing either counter clears both accumulated totals.
                 self.ah = 0.0;
                 self.wh = 0.0;
             }
-            9 => {
+            EdlSubChannel::ShuntRange => {
                 // 4..255 selects autoranging in the original firmware.
                 self.shunt_range = self.param_int as u8;
             }
-            19 => {
+            EdlSubChannel::Mode => {
                 // Changing mode can force an immediate shutdown; enabling happens later in SetDAC.
                 self.mode_select = Mode::from(self.param_byte);
                 if self.mode_select == Mode::OutputOff {
@@ -627,19 +635,19 @@ impl EdlParser {
                     self.output_enable = true;
                 }
             }
-            21 | 22 => {
+            EdlSubChannel::CurrentModulationPercent => {
                 self.dc_amp_mod = self.param / 100.0;
             }
-            27 => {
+            EdlSubChannel::RippleOnTime => {
                 self.pw_on_time = self.param_int;
             }
-            28 => {
+            EdlSubChannel::RippleOffTime => {
                 self.pw_off_time = self.param_int;
             }
-            29 => {
+            EdlSubChannel::RippleOffCurrentPercent => {
                 self.i_percent = self.param_int;
             }
-            70 => {
+            EdlSubChannel::RawDacOn => {
                 self.disable_ints();
                 self.dac_temp_on = self.param_int as u16;
                 self.enable_ints();
@@ -649,7 +657,7 @@ impl EdlParser {
                 // Raw DAC debug writes must not trigger any additional output switching.
                 return;
             }
-            71 => {
+            EdlSubChannel::RawDacOff => {
                 self.disable_ints();
                 self.dac_temp_off = self.param_int as u16;
                 self.enable_ints();
@@ -659,45 +667,55 @@ impl EdlParser {
                 // Raw DAC debug writes must not trigger any additional output switching.
                 return;
             }
-            80 => {
+            EdlSubChannel::DisplaySelection => {
                 self.modify = Modify::from(self.param_byte);
                 self.werte_on_lcd();
             }
-            89 | 100..=115 | 200..=223 => {
+            operation @ (EdlSubChannel::EncoderRaster
+            | EdlSubChannel::ReservedVoltageDacOffset(_)
+            | EdlSubChannel::CurrentDacOffset(_)
+            | EdlSubChannel::VoltageAdcOffset(_)
+            | EdlSubChannel::CurrentAdcOffset(_)
+            | EdlSubChannel::ReservedVoltageDacScale(_)
+            | EdlSubChannel::CurrentDacScale(_)
+            | EdlSubChannel::VoltageAdcScale(_)
+            | EdlSubChannel::CurrentAdcScale(_)
+            | EdlSubChannel::ReservedCalibration(_)) => {
                 if !self.ee_unlocked {
                     // Calibration and EEPROM-backed parameters stay locked until sub-channel 250.
                     self.serprompt(PromptCode::LockedErr);
                     return;
                 }
 
-                match self.sub_ch {
-                    89 => {
+                match operation {
+                    EdlSubChannel::EncoderRaster => {
                         self.init_inc_rast = self.param;
                         self.inc_rast = self.param_int;
                     }
-                    100 | 101 => {}
-                    102..=105 => {
-                        self.daci_offsets[(self.sub_ch - 102) as usize] = self.param_int;
+                    EdlSubChannel::ReservedVoltageDacOffset(_)
+                    | EdlSubChannel::ReservedVoltageDacScale(_) => {}
+                    EdlSubChannel::CurrentDacOffset(shunt) => {
+                        self.daci_offsets[shunt.index()] = self.param_int;
                     }
-                    110..=111 => {
-                        self.adcu_offsets[(self.sub_ch - 110) as usize] = self.param_int;
+                    EdlSubChannel::VoltageAdcOffset(range) => {
+                        self.adcu_offsets[range.index()] = self.param_int;
                     }
-                    112..=115 => {
-                        self.adci_offsets[(self.sub_ch - 112) as usize] = self.param_int;
+                    EdlSubChannel::CurrentAdcOffset(shunt) => {
+                        self.adci_offsets[shunt.index()] = self.param_int;
                     }
-                    200 | 201 => {}
-                    202..=205 => {
-                        self.daci_scales[(self.sub_ch - 202) as usize] = self.param;
+                    EdlSubChannel::CurrentDacScale(shunt) => {
+                        self.daci_scales[shunt.index()] = self.param;
                     }
-                    210 => {
-                        self.adc16_u_scale_low = self.param;
+                    EdlSubChannel::VoltageAdcScale(range) => {
+                        match range {
+                            VoltageRange::Low => self.adc16_u_scale_low = self.param,
+                            VoltageRange::High => self.adc16_u_scale_high = self.param,
+                        }
                     }
-                    211 => {
-                        self.adc16_u_scale_high = self.param;
+                    EdlSubChannel::CurrentAdcScale(shunt) => {
+                        self.adci_scales[shunt.index()] = self.param;
                     }
-                    212..=215 => {
-                        self.adci_scales[(self.sub_ch - 212) as usize] = self.param;
-                    }
+                    EdlSubChannel::ReservedCalibration(_) => {}
                     _ => {}
                 }
 
@@ -705,25 +723,25 @@ impl EdlParser {
                 self.init_scales();
                 self.mdelay(3);
             }
-            150..=171 => {
+            EdlSubChannel::Option(slot) => {
                 if !self.ee_unlocked {
                     self.serprompt(PromptCode::LockedErr);
                     return;
                 }
 
-                self.option_array[(self.sub_ch - 150) as usize] = self.param;
+                self.option_array[slot.index()] = self.param;
                 self.init_scales();
                 self.mdelay(3);
             }
-            240 => {
+            EdlSubChannel::TriggerMask => {
                 self.trig_mask = self.param_int as u8;
                 self.ee_trig_mask = self.trig_mask;
             }
-            250 => {}
-            251 => {
+            EdlSubChannel::WriteEnable => {}
+            EdlSubChannel::ErrorCount => {
                 self.err_count = self.param_int;
             }
-            252 => {
+            EdlSubChannel::SerialBaudDivisor => {
                 if !self.ee_unlocked {
                     self.serprompt(PromptCode::LockedErr);
                     return;
@@ -731,13 +749,29 @@ impl EdlParser {
                 // Baud-rate EEPROM changes only take effect after the next reset.
                 self.ee_ser_baud_reg = self.param_byte;
             }
-            _ => {
+            EdlSubChannel::MeasuredVoltageOn
+            | EdlSubChannel::MeasuredCurrentOnAmperes
+            | EdlSubChannel::MeasuredCurrentOnMilliamperes
+            | EdlSubChannel::MeasuredVoltageOff
+            | EdlSubChannel::MeasuredCurrentOffAmperes
+            | EdlSubChannel::MeasuredCurrentOffMilliamperes
+            | EdlSubChannel::MeasuredPower
+            | EdlSubChannel::RawVoltageAdc16
+            | EdlSubChannel::RawCurrentAdc16
+            | EdlSubChannel::RawVoltageAdc10
+            | EdlSubChannel::RawCurrentAdc10
+            | EdlSubChannel::RawDacActive
+            | EdlSubChannel::AllMeasurements
+            | EdlSubChannel::Temperature(_)
+            | EdlSubChannel::Echo
+            | EdlSubChannel::Identification
+            | EdlSubChannel::Status => {
                 self.serprompt(PromptCode::ParamErr);
                 return;
             }
         }
 
-        self.ee_unlocked = self.sub_ch == 250;
+        self.ee_unlocked = matches!(resolved.operation, EdlSubChannel::WriteEnable);
         self.check_limits();
 
         if self.verbose {

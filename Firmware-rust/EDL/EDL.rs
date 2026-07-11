@@ -82,6 +82,16 @@ pub use dac_kind::DacKind;
 mod option_slot;
 pub use option_slot::OptionSlot;
 
+/// Physical current-measurement and output shunts.
+#[path = "edl/shunt.rs"]
+mod shunt;
+pub use shunt::Shunt;
+
+/// Low/high voltage calibration ranges.
+#[path = "edl/voltage_range.rs"]
+mod voltage_range;
+pub use voltage_range::VoltageRange;
+
 /// Optional hardware flags encoded in the EDL option byte.
 #[path = "edl/hardware_option.rs"]
 mod hardware_option;

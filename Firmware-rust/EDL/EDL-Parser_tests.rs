@@ -2,6 +2,93 @@ use crate::test_failures::TestFailures;
 use super::*;
 
 #[test]
+fn resolved_subchannels_preserve_alias_wire_values()
+{
+    let mut assert = TestFailures::default();
+
+    let first_alias = ResolvedSubChannel::try_from(21);
+    let second_alias = ResolvedSubChannel::try_from(22);
+
+    assert.eq(
+        first_alias,
+        Ok(ResolvedSubChannel
+        {
+            wire_value: 21,
+            operation: EdlSubChannel::CurrentModulationPercent,
+        }),
+    );
+    assert.eq(
+        second_alias,
+        Ok(ResolvedSubChannel
+        {
+            wire_value: 22,
+            operation: EdlSubChannel::CurrentModulationPercent,
+        }),
+    );
+
+    let mut parser = EdlParser {
+        ser_inp_str: "PCA 1?".to_owned(),
+        dc_amp_mod: 0.25,
+        slave_ch: 0,
+        ..EdlParser::default()
+    };
+    assert.eq(parser.parse_sub_ch(), vec!["22=25.0000"]);
+    assert.finish();
+}
+
+#[test]
+fn indexed_subchannels_decode_to_domain_types()
+{
+    let mut assert = TestFailures::default();
+
+    assert.eq(
+        ResolvedSubChannel::try_from(105).map(|resolved| resolved.operation),
+        Ok(EdlSubChannel::CurrentDacOffset(Shunt::D)),
+    );
+    assert.eq(
+        ResolvedSubChannel::try_from(153).map(|resolved| resolved.operation),
+        Ok(EdlSubChannel::Option(OptionSlot::HighVoltageDivider)),
+    );
+    assert.eq(
+        ResolvedSubChannel::try_from(211).map(|resolved| resolved.operation),
+        Ok(EdlSubChannel::VoltageAdcScale(VoltageRange::High)),
+    );
+    assert.eq(
+        ResolvedSubChannel::try_from(234).map(|resolved| resolved.operation),
+        Ok(EdlSubChannel::Temperature(Lm75Sensor::External)),
+    );
+    assert.eq(
+        ResolvedSubChannel::try_from(-1),
+        Err(InvalidSubChannel { wire_value: -1 }),
+    );
+    assert.eq(
+        ResolvedSubChannel::try_from(6),
+        Err(InvalidSubChannel { wire_value: 6 }),
+    );
+    assert.finish();
+}
+
+#[test]
+fn reserved_pascal_calibration_channels_remain_unlocked_no_ops()
+{
+    let mut assert = TestFailures::default();
+
+    let mut parser = EdlParser {
+        sub_ch: 216,
+        param: 12.5,
+        param_int: 12,
+        ee_unlocked: true,
+        ..EdlParser::default()
+    };
+
+    parser.parse_set_param();
+
+    assert.is_true(parser.output_lines.is_empty());
+    assert.is_false(parser.ee_unlocked);
+    assert.finish();
+}
+
+#[test]
 fn default_command_table_accepts_pascal_text_setter_syntax() {
     let mut assert = TestFailures::default();
 
