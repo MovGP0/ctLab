@@ -20,217 +20,30 @@ const AVR_SREG_ADDRESS: *mut u8 = 0x5f as *mut u8;
 #[cfg(target_arch = "avr")]
 const AVR_SREG_INTERRUPT_ENABLE_MASK: u8 = 0x80;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DacKind {
-    Ltc1257,
-    Ltc1655,
-}
+#[path = "dcg_hw/dac_kind.rs"]
+mod dac_kind;
+pub use dac_kind::DacKind;
 
-pub trait DcgHardware {
-    fn set_sdata_out(&mut self, high: bool);
-    fn set_sclk(&mut self, high: bool);
-    fn set_str_dac(&mut self, high: bool);
-    fn set_str_ad16(&mut self, high: bool);
-    fn set_mpx_i(&mut self, high: bool);
-    fn set_mpx_u(&mut self, high: bool);
-    fn set_mpx_1864(&mut self, high: bool);
-    fn read_sdata_in1(&self) -> bool;
-    fn spin_delay_cycles(&mut self, cycles: u16);
-    fn set_admux(&mut self, value: u8);
-    fn write_adcsra(&mut self, value: u8);
-    fn read_adcsra(&self) -> u8;
-    fn read_adcl(&self) -> u8;
-    fn read_adch(&self) -> u8;
-    fn begin_interrupt_exclusion(&mut self) -> u8;
-    fn end_interrupt_exclusion(&mut self, saved_status: u8);
+#[path = "dcg_hw/dcg_hardware.rs"]
+mod dcg_hardware;
+pub use dcg_hardware::DcgHardware;
 
-    fn nop(&mut self) {
-        self.spin_delay_cycles(1);
-    }
+#[path = "dcg_hw/dcg_avrd.rs"]
+mod dcg_avrd;
+pub use dcg_avrd::DcgAvrd;
 
-    fn wait_post_dac_settle(&mut self) {
-        for _ in 0..DAC_POST_WRITE_SETTLE_LOOP_ITERATIONS {
-            self.nop();
-        }
-    }
-}
+#[path = "dcg_hw/dcg_hardware_state.rs"]
+mod dcg_hardware_state;
+pub use dcg_hardware_state::DcgHardwareState;
 
-pub struct DcgAvrd<M: Mcu> {
-    io: AvrdPortIo<M>,
-    _marker: PhantomData<M>,
-}
+
 
 pub type DcgAtmega32 = DcgAvrd<Atmega32>;
 
-impl<M: Mcu> Default for DcgAvrd<M> {
-    fn default() -> Self {
-        Self {
-            io: AvrdPortIo::default(),
-            _marker: PhantomData,
-        }
-    }
-}
 
-impl<M: Mcu> DcgAvrd<M> {
-    pub fn init_ports(&mut self) {
-        self.io.init_port(RegisterPort::B, 0b1011_1111, 0b1101_0011);
-        self.io.init_port(RegisterPort::C, 0b1111_1100, 0b0000_1111);
-        self.io.init_port(RegisterPort::D, 0b0000_1100, 0b1111_1100);
-    }
-}
 
-impl<M: Mcu> DcgHardware for DcgAvrd<M> {
-    fn set_sdata_out(&mut self, high: bool) {
-        self.io.write_bit(RegisterPort::B, 1, high);
-    }
 
-    fn set_sclk(&mut self, high: bool) {
-        self.io.write_bit(RegisterPort::B, 0, high);
-    }
 
-    fn set_str_dac(&mut self, high: bool) {
-        self.io.write_bit(RegisterPort::B, 4, high);
-    }
-
-    fn set_str_ad16(&mut self, high: bool) {
-        self.io.write_bit(RegisterPort::B, 7, high);
-    }
-
-    fn set_mpx_i(&mut self, high: bool) {
-        self.io.write_bit(RegisterPort::C, 5, high);
-    }
-
-    fn set_mpx_u(&mut self, high: bool) {
-        self.io.write_bit(RegisterPort::C, 4, high);
-    }
-
-    fn set_mpx_1864(&mut self, high: bool) {
-        self.io.write_bit(RegisterPort::C, 6, high);
-    }
-
-    fn read_sdata_in1(&self) -> bool {
-        self.io.read_bit(RegisterPort::B, 6)
-    }
-
-    fn spin_delay_cycles(&mut self, cycles: u16) {
-        self.io.spin_delay_cycles(cycles);
-    }
-
-    fn set_admux(&mut self, value: u8) {
-        unsafe {
-            crate::avrd_support::write_u8(M::ADMUX, value);
-        }
-    }
-
-    fn write_adcsra(&mut self, value: u8) {
-        unsafe {
-            crate::avrd_support::write_u8(M::ADCSRA, value);
-        }
-    }
-
-    fn read_adcsra(&self) -> u8 {
-        unsafe { crate::avrd_support::read_u8(M::ADCSRA) }
-    }
-
-    fn read_adcl(&self) -> u8 {
-        unsafe { crate::avrd_support::read_u8(M::ADCL) }
-    }
-
-    fn read_adch(&self) -> u8 {
-        unsafe { crate::avrd_support::read_u8(M::ADCH) }
-    }
-
-    fn begin_interrupt_exclusion(&mut self) -> u8 {
-        #[cfg(target_arch = "avr")]
-        {
-            let saved_status = unsafe { core::ptr::read_volatile(AVR_SREG_ADDRESS) };
-            unsafe {
-                core::ptr::write_volatile(
-                    AVR_SREG_ADDRESS,
-                    saved_status & !AVR_SREG_INTERRUPT_ENABLE_MASK,
-                );
-            }
-            saved_status
-        }
-
-        #[cfg(not(target_arch = "avr"))]
-        {
-            0
-        }
-    }
-
-    fn end_interrupt_exclusion(&mut self, saved_status: u8) {
-        #[cfg(target_arch = "avr")]
-        unsafe {
-            core::ptr::write_volatile(AVR_SREG_ADDRESS, saved_status);
-        }
-
-        #[cfg(not(target_arch = "avr"))]
-        {
-            let _ = saved_status;
-        }
-    }
-
-    fn wait_post_dac_settle(&mut self) {
-        #[cfg(target_arch = "avr")]
-        unsafe {
-            core::arch::asm!(
-                "ldi r24, 40",
-                "2:",
-                "dec r24",
-                "brne 2b",
-                lateout("r24") _,
-                options(nomem, nostack)
-            );
-        }
-
-        #[cfg(not(target_arch = "avr"))]
-        {
-            for _ in 0..DAC_POST_WRITE_SETTLE_LOOP_ITERATIONS {
-                self.nop();
-            }
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct DcgHardwareState {
-    pub dac_temp: u16,
-    pub adc_temp: u16,
-    pub adc_raw_u: u16,
-    pub adc_raw_i: u16,
-    pub dac_raw_u_on: u16,
-    pub dac_raw_u_off: u16,
-    pub dac_raw_i: u16,
-    pub pw_counter: u16,
-    pub pw_on_time: u16,
-    pub pw_off_time: u16,
-    pub pw_on_off: bool,
-    pub ui_toggle: bool,
-    pub adc16_present: bool,
-    pub dac16_present: bool,
-}
-
-impl Default for DcgHardwareState {
-    fn default() -> Self {
-        Self {
-            dac_temp: 0,
-            adc_temp: 0,
-            adc_raw_u: 0,
-            adc_raw_i: 0,
-            dac_raw_u_on: 0,
-            dac_raw_u_off: 0,
-            dac_raw_i: 0,
-            pw_counter: 0,
-            pw_on_time: 0,
-            pw_off_time: 0,
-            pw_on_off: false,
-            ui_toggle: false,
-            adc16_present: false,
-            dac16_present: false,
-        }
-    }
-}
 
 pub fn shift_out_1257<H: DcgHardware>(hw: &mut H, dac_temp: u16) {
     hw.set_sdata_out(false);

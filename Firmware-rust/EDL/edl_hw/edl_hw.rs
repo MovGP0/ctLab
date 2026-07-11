@@ -1,0 +1,287 @@
+﻿use super::*;
+
+pub struct EdlHw<H> {
+    pub io: H,
+    pub state: EdlState,
+}
+
+impl<H: EdlHardware> EdlHw<H> {
+    pub fn new(io: H) -> Self {
+        Self {
+            io,
+            state: EdlState::default(),
+        }
+    }
+
+    pub fn shift_out_8501(&mut self) {
+        self.set(ControlBit::Sclk, true);
+        self.set(ControlBit::SDataOut, false);
+        self.set(ControlBit::StrDac, false);
+
+        // The 8501/1655 family wants eight leading zero bits so its power-down
+        // control field stays disabled before the 16-bit payload is clocked out.
+        for _ in 0..8 {
+            self.set(ControlBit::Sclk, false);
+            self.io.nop();
+            self.set(ControlBit::Sclk, true);
+        }
+
+        self.shift_out_8501_byte((self.state.dac_temp >> 8) as u8);
+        self.shift_out_8501_byte(self.state.dac_temp as u8);
+
+        self.set(ControlBit::Sclk, false);
+        self.set(ControlBit::StrDac, true);
+    }
+
+    pub fn shift_out_5452(&mut self) {
+        self.set(ControlBit::SDataOut, false);
+        self.set(ControlBit::Sclk, false);
+        self.set(ControlBit::StrDac, false);
+
+        let msb = (self.state.dac_temp >> 8) as u8;
+        // AD5452 starts with two control bits that stay low; the Pascal code
+        // expresses that as two extra falling-edge clock pairs before the data.
+        self.set(ControlBit::Sclk, true);
+        self.set(ControlBit::Sclk, false);
+        self.set(ControlBit::Sclk, true);
+        self.set(ControlBit::Sclk, false);
+        self.shift_bits_msb(msb & 0x0f, 4);
+        self.shift_bits_msb(self.state.dac_temp as u8, 8);
+
+        // Trailing filler clocks are ignored by the DAC but preserve the exact
+        // wire sequence from the original firmware.
+        self.set(ControlBit::Sclk, true);
+        self.set(ControlBit::Sclk, false);
+        self.set(ControlBit::Sclk, true);
+        self.set(ControlBit::Sclk, false);
+        self.set(ControlBit::StrDac, true);
+    }
+
+    pub fn shift_out_8043(&mut self) {
+        self.set(ControlBit::SDataOut, false);
+        self.set(ControlBit::Sclk, false);
+
+        let msb = (self.state.dac_temp >> 8) as u8;
+        self.shift_bits_msb(msb & 0x0f, 4);
+        self.shift_bits_msb(self.state.dac_temp as u8, 7);
+
+        let last_bit = (self.state.dac_temp & 0x0001) != 0;
+        // Unlike the 5452, the 8043-style parts use the final data bit together
+        // with the latch pulse, mirroring the LTC1257-style "load on last clock".
+        self.set(ControlBit::SDataOut, last_bit);
+        self.set(ControlBit::Sclk, true);
+        self.set(ControlBit::StrDac, false);
+        self.set(ControlBit::Sclk, false);
+        self.set(ControlBit::StrDac, true);
+    }
+
+    pub fn shift_out_8811(&mut self) {
+        self.set(ControlBit::SDataOut, false);
+        self.set(ControlBit::Sclk, false);
+        self.set(ControlBit::StrDac, false); // Keep load active across the full 16-bit frame.
+
+        self.shift_bits_msb((self.state.dac_temp >> 8) as u8, 8);
+        self.shift_bits_msb(self.state.dac_temp as u8, 8);
+
+        self.set(ControlBit::Sclk, false);
+        self.set(ControlBit::StrDac, true);
+    }
+
+    pub fn shift_out_sr(&mut self) {
+        self.set(ControlBit::Sclk, false);
+        self.set(ControlBit::SDataOut, false);
+
+        // The original board can route DACtemp through a 4094 shift-register
+        // chain instead of a dedicated DAC; shift the full 16-bit word MSB first.
+        self.shift_sr_byte((self.state.dac_temp >> 8) as u8);
+        self.shift_sr_byte(self.state.dac_temp as u8);
+
+        // STRDAC copies the shift-register contents to the output latches.
+        self.set(ControlBit::StrDac, true);
+        self.io.nop();
+        self.io.nop();
+        self.set(ControlBit::StrDac, false);
+        // Restore the idle level expected by the original bit-banged interface.
+        self.set(ControlBit::Sclk, true);
+    }
+
+    pub fn shift_in_1864(&mut self) {
+        let saved_status = self.io.begin_interrupt_exclusion();
+
+        self.set(ControlBit::Sclk, false);
+        self.set(ControlBit::StrAd16, false);
+
+        // The LTC1864 needs a short quiet period after /CONV goes low before the
+        // 16-bit sample can be shifted out. The Pascal path runs this in the
+        // SysTick ISR with interrupts excluded, so keep the clock train
+        // contiguous even when the Rust routine is called directly.
+        self.io.nop();
+        self.io.nop();
+        self.io.nop();
+
+        let hi = self.shift_in_byte();
+        let lo = self.shift_in_byte();
+        self.state.ad16_temp = u16::from_be_bytes([hi, lo]);
+
+        // Raising STRAD16 releases the converter so the next conversion can run
+        // while the firmware processes the sample it just collected.
+        self.set(ControlBit::StrAd16, true);
+        self.set(ControlBit::Sclk, false);
+        self.io.end_interrupt_exclusion(saved_status);
+    }
+
+    pub fn on_sys_tick(&mut self) {
+        // Read the finished ADC16 conversion first; the Pascal code treats the
+        // converter as pipelined, so this belongs to an earlier PWM phase.
+        self.shift_in_1864();
+        self.state.pw_counter -= 1;
+
+        if self.state.pw_off_time == 0 {
+            self.state.pw_on_off = true;
+        }
+
+        if !self.io.read_trigger_in() && self.state.trig_in_enable {
+            self.state.pw_on_off = false;
+        }
+
+        if self.state.pw_on_off {
+            self.io.set_trigger_out(true);
+            self.state.dac_temp = if self.state.overload_flag {
+                0
+            } else {
+                self.state.dac_temp_on
+            };
+            self.shift_out_active_dac();
+
+            if self.state.pw_counter <= 0 {
+                // Toggle the ADC16 input mux now so the next conversion sees the
+                // opposite current/voltage path.
+                self.state.ad16_select = !self.state.ad16_select;
+                self.io.set_ad16_mpx(self.state.ad16_select);
+                self.state.pw_on_off = false;
+                self.state.pw_counter = self.state.pw_off_time;
+            }
+
+            self.state.next_meas = if self.state.ad16_select {
+                MeasurementPhase::Ion
+            } else {
+                MeasurementPhase::Uon
+            };
+        } else {
+            self.io.set_trigger_out(false);
+            self.state.dac_temp = if self.state.overload_flag {
+                0
+            } else {
+                self.state.dac_temp_off
+            };
+            self.shift_out_active_dac();
+
+            if self.state.pw_counter <= 0 {
+                // The off-phase uses the same mux preselection so the hardware
+                // is already pointed at the next requested measurement.
+                self.state.ad16_select = !self.state.ad16_select;
+                self.io.set_ad16_mpx(self.state.ad16_select);
+                self.state.pw_on_off = true;
+                self.state.pw_counter = self.state.pw_on_time;
+            }
+
+            self.state.next_meas = if self.state.ad16_select {
+                MeasurementPhase::Ioff
+            } else {
+                MeasurementPhase::Uoff
+            };
+        }
+
+        // Each accumulator keeps the original "halve old + halve new" smoothing.
+        let filtered_sample = self.state.ad16_temp >> 1;
+        match self.state.last_meas {
+            MeasurementPhase::Ioff => {
+                self.state.ad16_temp_ioff = (self.state.ad16_temp_ioff >> 1) + filtered_sample;
+            }
+            MeasurementPhase::Uoff => {
+                self.state.ad16_temp_uoff = (self.state.ad16_temp_uoff >> 1) + filtered_sample;
+            }
+            MeasurementPhase::Ion => {
+                self.state.ad16_temp_ion = (self.state.ad16_temp_ion >> 1) + filtered_sample;
+            }
+            MeasurementPhase::Uon => {
+                self.state.ad16_temp_uon = (self.state.ad16_temp_uon >> 1) + filtered_sample;
+            }
+        }
+
+        self.state.last_meas = self.state.this_meas;
+        self.state.this_meas = self.state.next_meas;
+    }
+
+    pub fn get_adc10(&mut self, my_channel: u8) -> u16 {
+        // Hand-coded equivalent of the old getadc() helper: select the mux input
+        // explicitly instead of depending on compiler-provided runtime support.
+        self.io
+            .set_admux(my_channel.wrapping_sub(1) & ADC10_CHANNEL_MASK);
+
+        // The Pascal loop burns roughly 3 us so the mux input can settle.
+        self.io.settle_adc10_mux();
+
+        // 0xC7 starts a conversion with the AVR ADC prescaler at 128.
+        self.io.write_adcsra(ADCSRA_START_DIV128);
+        // Poll ADSC until it drops; avrd hides the ATMega32 vs ATMega644 access
+        // difference that the original assembly handled with IN vs LDS.
+        while (self.io.read_adcsra() & ADCSRA_BUSY_BIT) != 0 {}
+
+        u16::from(self.io.read_adcl()) | (u16::from(self.io.read_adch()) << 8)
+    }
+
+    fn shift_out_active_dac(&mut self) {
+        match self.state.dac_type {
+            DacType::Ltc8043 => self.shift_out_8043(),
+            DacType::Ad5452 => self.shift_out_5452(),
+            DacType::Dac8501 => self.shift_out_8501(),
+            DacType::Dac8811 => self.shift_out_8811(),
+        }
+    }
+
+    fn shift_out_8501_byte(&mut self, mut value: u8) {
+        for _ in 0..8 {
+            let high = (value & 0x80) != 0;
+            self.set(ControlBit::SDataOut, high);
+            self.set(ControlBit::Sclk, false);
+            value <<= 1;
+            self.set(ControlBit::SDataOut, false);
+            self.set(ControlBit::Sclk, true);
+        }
+    }
+
+    fn shift_bits_msb(&mut self, value: u8, bit_count: usize) {
+        for bit_index in (0..bit_count).rev() {
+            let mask = 1u8 << bit_index;
+            self.set(ControlBit::SDataOut, (value & mask) != 0);
+            self.set(ControlBit::Sclk, true);
+            self.set(ControlBit::Sclk, false);
+        }
+    }
+
+    fn shift_sr_byte(&mut self, mut value: u8) {
+        for _ in 0..8 {
+            self.set(ControlBit::SDataOut, (value & 0x80) != 0);
+            self.set(ControlBit::Sclk, true);
+            value <<= 1;
+            self.set(ControlBit::SDataOut, false);
+            self.set(ControlBit::Sclk, false);
+        }
+    }
+
+    fn shift_in_byte(&mut self) -> u8 {
+        let mut value = 0u8;
+        for _ in 0..8 {
+            self.set(ControlBit::Sclk, true);
+            let incoming = self.io.read_control_bit(ControlBit::SDataIn1);
+            self.set(ControlBit::Sclk, false);
+            value = (value << 1) | u8::from(incoming);
+        }
+        value
+    }
+
+    fn set(&mut self, bit: ControlBit, high: bool) {
+        self.io.set_control_bit(bit, high);
+    }
+}

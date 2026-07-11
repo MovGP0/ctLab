@@ -4,109 +4,26 @@ use core::marker::PhantomData;
 
 use crate::avrd_support::{Atmega32, AvrdPortIo, Mcu, RegisterPort};
 
-pub trait DivHardware {
-    fn set_str_ad24(&mut self, high: bool);
-    fn set_sclk(&mut self, high: bool);
-    fn read_sdata_in1(&self) -> bool;
-    fn set_spi_control(&mut self, value: u8);
-    fn spi_transfer(&mut self, tx: u8) -> u8;
-    fn spin_delay_cycles(&mut self, cycles: u16);
-}
+#[path = "div_hw/div_hardware.rs"]
+mod div_hardware;
+pub use div_hardware::DivHardware;
+#[path = "div_hw/div_external_interrupt_mcu.rs"]
+mod div_external_interrupt_mcu;
+pub use div_external_interrupt_mcu::DivExternalInterruptMcu;
+#[path = "div_hw/div_avrd.rs"]
+mod div_avrd;
+pub use div_avrd::DivAvrd;
+#[path = "div_hw/div_hardware_state.rs"]
+mod div_hardware_state;
+pub use div_hardware_state::DivHardwareState;
+
 
 pub const LTC2400_SPI_CONTROL: u8 = 0b0101_0001;
 pub const LTC2400_SPI_DISABLED: u8 = 0;
 
-pub trait DivExternalInterruptMcu: Mcu {
-    const MCUCSR: *mut u8;
-    const GICR: *mut u8;
-    const INT2_MASK: u8;
-    const ISC2_MASK: u8;
-}
-
-impl DivExternalInterruptMcu for Atmega32 {
-    const MCUCSR: *mut u8 = avrd::atmega32::MCUCSR;
-    const GICR: *mut u8 = avrd::atmega32::GICR;
-    const INT2_MASK: u8 = 0b0010_0000;
-    const ISC2_MASK: u8 = 0b0100_0000;
-}
-
-pub struct DivAvrd<M: Mcu> {
-    io: AvrdPortIo<M>,
-    _marker: PhantomData<M>,
-}
 
 pub type DivAtmega32 = DivAvrd<Atmega32>;
 
-impl<M: Mcu> Default for DivAvrd<M> {
-    fn default() -> Self {
-        Self {
-            io: AvrdPortIo::default(),
-            _marker: PhantomData,
-        }
-    }
-}
-
-impl<M: DivExternalInterruptMcu> DivAvrd<M> {
-    pub fn init_ports(&mut self) {
-        self.io.init_port(RegisterPort::A, 0b1110_0000, 0b0000_0011);
-        self.io.init_port(RegisterPort::B, 0b1001_0000, 0b1001_0001);
-        self.io.init_port(RegisterPort::C, 0b1111_1100, 0b0000_0011);
-        self.io.init_port(RegisterPort::D, 0b0001_1100, 0b1111_1100);
-        self.configure_external_trigger_falling_edge();
-    }
-
-    fn configure_external_trigger_falling_edge(&mut self) {
-        unsafe {
-            crate::avrd_support::update_u8(M::GICR, |value| value | M::INT2_MASK);
-            crate::avrd_support::update_u8(M::MCUCSR, |value| value & !M::ISC2_MASK);
-        }
-    }
-}
-
-impl<M: Mcu> DivHardware for DivAvrd<M> {
-    fn set_str_ad24(&mut self, high: bool) {
-        self.io.write_bit(RegisterPort::B, 4, high);
-    }
-
-    fn set_sclk(&mut self, high: bool) {
-        self.io.write_bit(RegisterPort::B, 7, high);
-    }
-
-    fn read_sdata_in1(&self) -> bool {
-        self.io.read_bit(RegisterPort::B, 6)
-    }
-
-    fn set_spi_control(&mut self, value: u8) {
-        unsafe {
-            crate::avrd_support::write_u8(M::SPCR, value);
-        }
-    }
-
-    fn spi_transfer(&mut self, tx: u8) -> u8 {
-        self.io.spi_transfer(tx)
-    }
-
-    fn spin_delay_cycles(&mut self, cycles: u16) {
-        self.io.spin_delay_cycles(cycles);
-    }
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct DivHardwareState {
-    pub ad24_temp: u32,
-    pub ad24_temp_fast_integrated: u32,
-    pub ad24_temp_slow_integrated: u32,
-    pub ad24_integrate0: u32,
-    pub ad24_integrate1: u32,
-    pub ad24_integrate2: u32,
-    pub ad24_integrate3: u32,
-    pub negative_flag: bool,
-    pub over_voltage_flag: bool,
-    pub abort_flag: bool,
-    pub trigger: bool,
-    pub ad24_ready: bool,
-    pub ad10_ready: bool,
-}
 
 pub fn shift_in_2400<H: DivHardware>(state: &mut DivHardwareState, hw: &mut H) {
     hw.set_str_ad24(false);

@@ -12,20 +12,14 @@ const SER_AUX_DATA_BITS: u8 = 8;
 const SER_AUX_BIT_DELAY_TICKS: u8 = 5;
 const SER_AUX_STOP_DELAY_TICKS: u8 = 10;
 
-pub trait Mp3ControlHardware {
-    fn set_ser_aux(&mut self, high: bool);
-    fn micro_delay(&mut self, ticks: u8);
-    fn milli_delay(&mut self, ticks: u16);
-    fn send_shift_register(&mut self);
-}
+#[path = "mp3control/mp3_control_hardware.rs"]
+mod mp3_control_hardware;
+pub use mp3_control_hardware::Mp3ControlHardware;
 
-#[derive(Debug, Clone, Default)]
-pub struct Mp3ControlState {
-    pub track: u8,
-    pub current_track: u8,
-    pub db_correction: u8,
-    pub is_on: bool,
-}
+#[path = "mp3control/mp3_control_state.rs"]
+mod mp3_control_state;
+pub use mp3_control_state::Mp3ControlState;
+
 
 pub fn ser_aux<H: Mp3ControlHardware>(hw: &mut H, value: u8) {
     let mut current = value;

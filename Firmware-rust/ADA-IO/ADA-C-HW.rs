@@ -35,179 +35,22 @@ const fn avr_dec_brne_delay_cycles(iterations: u16) -> u16 {
     iterations * 3
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum Signal {
-    SDataOut,
-    SClk,
-    StrDac,
-    StrAd16,
-    StrSr,
-    StrDaMux,
-    SDataIn1,
-}
+#[path = "ada_c_hw/signal.rs"]
+mod signal;
+pub use signal::Signal;
+#[path = "ada_c_hw/adac_hardware.rs"]
+mod adac_hardware;
+pub use adac_hardware::AdacHardware;
+#[path = "ada_c_hw/adac_avrd.rs"]
+mod adac_avrd;
+pub use adac_avrd::AdacAvrd;
+#[path = "ada_c_hw/adac_state.rs"]
+mod adac_state;
+pub use adac_state::AdacState;
 
-pub trait AdacHardware {
-    fn set_signal(&mut self, signal: Signal, high: bool);
-    fn read_signal(&self, signal: Signal) -> bool;
-    fn set_port_c(&mut self, value: Byte);
-    fn set_admux(&mut self, value: Byte);
-    fn write_adcsra(&mut self, value: Byte);
-    fn read_adcsra(&self) -> Byte;
-    fn read_adcl(&self) -> Byte;
-    fn read_adch(&self) -> Byte;
-    fn begin_interrupt_exclusion(&mut self) -> Byte;
-    fn end_interrupt_exclusion(&mut self, saved_status: Byte);
-
-    fn nop(&mut self) {
-        self.wait_cycles(1);
-    }
-
-    fn wait_cycles(&mut self, cycles: u16) {
-        for _ in 0..cycles {
-            core::hint::spin_loop();
-        }
-    }
-
-    fn wait_for_adc10_complete(&mut self);
-}
-
-pub struct AdacAvrd<M: Mcu> {
-    io: AvrdPortIo<M>,
-    _marker: PhantomData<M>,
-}
 
 pub type AdacAtmega32 = AdacAvrd<Atmega32>;
 
-impl<M: Mcu> Default for AdacAvrd<M> {
-    fn default() -> Self {
-        Self {
-            io: AvrdPortIo::default(),
-            _marker: PhantomData,
-        }
-    }
-}
-
-impl<M: Mcu> AdacAvrd<M> {
-    pub fn init_ports(&mut self) {
-        self.io.init_port(RegisterPort::B, 0b0101_1011, 0b1011_1111);
-        self.io.init_port(RegisterPort::C, 0b1111_1100, 0b0000_0011);
-        self.io.init_port(RegisterPort::D, 0b0000_1100, 0b1111_1100);
-    }
-
-    fn map_signal(signal: Signal) -> (RegisterPort, u8) {
-        match signal {
-            Signal::SDataOut => (RegisterPort::B, 1),
-            Signal::SClk => (RegisterPort::B, 0),
-            Signal::StrDac => (RegisterPort::B, 3),
-            Signal::StrAd16 => (RegisterPort::B, 4),
-            Signal::StrSr => (RegisterPort::B, 6),
-            Signal::StrDaMux => (RegisterPort::C, 5),
-            Signal::SDataIn1 => (RegisterPort::B, 5),
-        }
-    }
-}
-
-impl<M: Mcu> AdacHardware for AdacAvrd<M> {
-    fn set_signal(&mut self, signal: Signal, high: bool) {
-        let (port, bit) = Self::map_signal(signal);
-        self.io.write_bit(port, bit, high);
-    }
-
-    fn read_signal(&self, signal: Signal) -> bool {
-        let (port, bit) = Self::map_signal(signal);
-        self.io.read_bit(port, bit)
-    }
-
-    fn set_port_c(&mut self, value: Byte) {
-        self.io.write_port(RegisterPort::C, value);
-    }
-
-    fn set_admux(&mut self, value: Byte) {
-        unsafe {
-            crate::avrd_support::write_u8(M::ADMUX, value);
-        }
-    }
-
-    fn write_adcsra(&mut self, value: Byte) {
-        unsafe {
-            crate::avrd_support::write_u8(M::ADCSRA, value);
-        }
-    }
-
-    fn read_adcsra(&self) -> Byte {
-        unsafe { crate::avrd_support::read_u8(M::ADCSRA) }
-    }
-
-    fn read_adcl(&self) -> Byte {
-        unsafe { crate::avrd_support::read_u8(M::ADCL) }
-    }
-
-    fn read_adch(&self) -> Byte {
-        unsafe { crate::avrd_support::read_u8(M::ADCH) }
-    }
-
-    fn begin_interrupt_exclusion(&mut self) -> Byte {
-        #[cfg(target_arch = "avr")]
-        {
-            let saved_status = unsafe { core::ptr::read_volatile(AVR_SREG_ADDRESS) };
-            unsafe {
-                core::ptr::write_volatile(
-                    AVR_SREG_ADDRESS,
-                    saved_status & !AVR_SREG_INTERRUPT_ENABLE_MASK,
-                );
-            }
-            saved_status
-        }
-
-        #[cfg(not(target_arch = "avr"))]
-        {
-            0
-        }
-    }
-
-    fn end_interrupt_exclusion(&mut self, saved_status: Byte) {
-        #[cfg(target_arch = "avr")]
-        unsafe {
-            core::ptr::write_volatile(AVR_SREG_ADDRESS, saved_status);
-        }
-
-        #[cfg(not(target_arch = "avr"))]
-        {
-            let _ = saved_status;
-        }
-    }
-
-    fn nop(&mut self) {
-        self.io.spin_delay_cycles(1);
-    }
-
-    fn wait_cycles(&mut self, cycles: u16) {
-        self.io.spin_delay_cycles(cycles);
-    }
-
-    fn wait_for_adc10_complete(&mut self) {
-        self.io.wait_for_adc();
-    }
-}
-
-#[derive(Clone, Debug, Default)]
-pub struct AdacState {
-    pub dac_temp: Word,
-    pub ad_raw: Word,
-    pub port_sr0: Byte,
-    pub port_sr1: Byte,
-    pub port_sr2: Byte,
-    pub port_sr3: Byte,
-    pub mux_ch: usize,
-    pub adc16_present: bool,
-    pub dac16_present: bool,
-    pub dac714_present: bool,
-    pub dac12_present: bool,
-    pub integrate_ad16: bool,
-    pub ad16_long: LongInt,
-    pub adc_raw_array: [Integer; MUX_CHANNEL_COUNT],
-    pub dac_raw_array: [Word; MUX_CHANNEL_COUNT],
-}
 
 fn set_low(hw: &mut impl AdacHardware, signal: Signal) {
     hw.set_signal(signal, false);

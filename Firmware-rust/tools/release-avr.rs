@@ -1,20 +1,12 @@
+#[path = "release_avr/options.rs"]
+mod options;
+use options::Options;
+
 use std::collections::BTreeMap;
 use std::env;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
-#[derive(Debug, PartialEq, Eq)]
-struct Options
-{
-    mcu: String,
-    elf: PathBuf,
-    hex: Option<PathBuf>,
-    manifest: PathBuf,
-    budget: Option<u64>,
-    baseline: Option<u64>,
-    allowed_regression: u64,
-    cargo_args: Vec<String>,
-}
 
 fn main() -> ExitCode
 {
