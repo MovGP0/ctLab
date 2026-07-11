@@ -31,8 +31,8 @@ pub(super) struct FirmwareState {
     /// Stores the requested offset mv; limit checking and calibrated output conversion consume this same value before hardware is updated.
     pub(super) offset_mv: i32,
 
-    /// Stores the requested SQG waveform selector from which AD9833 mode and relay bits are derived.
-    pub(super) wave: u8,
+    /// Selects the waveform from which AD9833 mode, relay routing, and protocol text are derived.
+    pub(super) wave: Waveform,
 
     /// Stores the requested burst interval; zero leaves the output continuous and nonzero values drive the periodic gate.
     pub(super) burst_mode: u8,
@@ -57,11 +57,8 @@ pub(super) struct FirmwareState {
 
     // Control state.
 
-    /// Caches the AD9833 control word so waveform changes can preserve unrelated frequency-register bits.
-    pub(super) dss_cmd: u16,
-
-    /// Caches the board relay/logic waveform selection paired with the AD9833 control word.
-    pub(super) wave_cmd: u16,
+    /// Retains the validated AD9833 control state used when the burst gate re-enables output.
+    pub(super) wave_cmd: Ad9833Control,
 
     /// Caches the 28-bit AD9833 tuning value derived from the current tenths-hertz setpoint.
     pub(super) dds_frequ: i32,
@@ -144,7 +141,7 @@ impl Default for FirmwareState {
             terz_num: 9,
             dac_level: defaults.init_level,
             offset_mv: 0,
-            wave: defaults.init_wave,
+            wave: Waveform::from_byte(defaults.init_wave),
             burst_mode: defaults.init_burst,
             inc_rast: defaults.init_inc_rast,
             attn_switch_point: 1001.0,
@@ -152,8 +149,7 @@ impl Default for FirmwareState {
             pwr_gain: 2.0,
             level_scale_low: 1.0,
             level_scale_hi: 1.0,
-            dss_cmd: 0,
-            wave_cmd: C_DDS_SQUARE_CMD,
+            wave_cmd: Ad9833Control::Square,
             dds_frequ: 0,
             switch_state: 0,
             level_range: false,
@@ -185,7 +181,7 @@ impl FirmwareState {
 
     /// Copies persisted defaults into live setpoints after reset or EEPROM writes without disturbing unrelated runtime latches.
     pub(super) fn patch_copy_from_ee(&mut self) {
-        self.wave = self.defaults.init_wave;
+        self.wave = Waveform::from_byte(self.defaults.init_wave);
         self.frequenz = self.defaults.init_frequenz;
         self.dac_level = self.defaults.init_level;
         self.terz_num = self.defaults.init_terz_num;
@@ -320,8 +316,8 @@ impl FirmwareState {
             self.frequenz = 100_000_000;
             out_of_range = true;
         }
-        if self.wave > C_SQUW {
-            self.wave = C_SQUW;
+        if !self.wave.is_supported_by_sqg() {
+            self.wave = Waveform::Square;
             out_of_range = true;
         }
         if self.terz_num > 30 {
@@ -353,7 +349,7 @@ impl FirmwareState {
                 self.write_param_str_ser(hw);
             }
             4 => {
-                self.param_byte = self.wave;
+                self.param_byte = self.wave.as_byte();
                 self.write_param_byte_ser(hw);
             }
             5 => {
@@ -366,13 +362,7 @@ impl FirmwareState {
                 self.write_param_ser(hw);
             }
             80 => {
-                self.param_byte = match self.modify {
-                    Modify::WaveSel => 0,
-                    Modify::FreqSel => 1,
-                    Modify::AmplSel => 2,
-                    Modify::BurstSel => 3,
-                    Modify::DcSel => 4,
-                };
+                self.param_byte = self.modify.as_byte();
                 self.write_param_byte_ser(hw);
             }
             89 => {
@@ -412,25 +402,22 @@ impl FirmwareState {
         }
 
         self.changed_flag = true;
+        let mut corrected_value = false;
 
         match self.sub_ch {
             0 => self.frequenz = (self.param * 10.0) as i32,
             1 => self.dac_level = self.param,
-            4 => self.wave = self.param_byte,
+            4 => {
+                (self.wave, corrected_value) = Waveform::from_sqg_byte(self.param_byte);
+            }
             5 => self.burst_mode = self.param_byte,
             80 => {
                 // DSP selects which value the front-panel encoder edits.
-                self.modify = match self.param_byte {
-                    0 => Modify::WaveSel,
-                    1 => Modify::FreqSel,
-                    2 => Modify::AmplSel,
-                    3 => Modify::BurstSel,
-                    4 => Modify::DcSel,
-                    _ => {
-                        self.ser_prompt(hw, ErrorCode::ParamErr, 0);
-                        return;
-                    }
+                let Some(modify) = Modify::from_byte(self.param_byte) else {
+                    self.ser_prompt(hw, ErrorCode::ParamErr, 0);
+                    return;
                 };
+                self.modify = modify;
             }
             89 => {
                 if self.status.ee_unlocked {
@@ -460,7 +447,8 @@ impl FirmwareState {
         // WEN acts as the write-enable latch for EEPROM-backed parameters.
         self.status.ee_unlocked = self.sub_ch == 250;
 
-        if self.check_limits() {
+        let limit_corrected = self.check_limits();
+        if corrected_value || limit_corrected {
             self.ser_prompt(hw, ErrorCode::ParamErr, self.status.to_status_byte());
         } else {
             self.ser_prompt(hw, ErrorCode::NoErr, self.status.to_status_byte());
@@ -622,12 +610,10 @@ impl FirmwareState {
         }
 
         if self.burst_count == 1 {
-            self.dss_cmd = self.wave_cmd;
-            hw.send_dds_word(self.dss_cmd);
+            hw.send_dds_word(self.wave_cmd.as_word());
         }
         if self.burst_count == 0 {
-            self.dss_cmd = C_DDS_RESET_CMD;
-            hw.send_dds_word(self.dss_cmd);
+            hw.send_dds_word(Ad9833Control::Reset.as_word());
             self.burst_count = self.burst_mode.saturating_add(1);
         }
         self.burst_count = self.burst_count.saturating_sub(1);
@@ -644,44 +630,43 @@ impl FirmwareState {
 
         // Zero offset disconnects the DC offset path; non-zero values keep the
         // DAC path enabled and are shifted after relay selection below.
-        self.set_switch_bit(OFFS_SW_BIT, offset_mv == 0);
+        self.set_switch_output(SwitchOutput::Offset, offset_mv == 0);
 
         let level = if self.dac_level < self.attn_switch_point {
             let scaled = (self.dac_level * self.attn_fac * self.level_scale_low).round() as i32;
-            self.set_switch_bit(ATTN_SW_BIT, true);
+            self.set_switch_output(SwitchOutput::Attenuator, true);
             if self.level_range {
-                self.dss_cmd = C_DDS_RESET_CMD;
-                hw.send_dds_word(self.dss_cmd);
+                hw.send_dds_word(Ad9833Control::Reset.as_word());
                 hw.shift_out_level_sr(0, self.switch_state);
                 hw.delay_ms(5);
                 self.level_range = false;
             }
             scaled
         } else {
-            self.set_switch_bit(ATTN_SW_BIT, false);
+            self.set_switch_output(SwitchOutput::Attenuator, false);
             self.level_range = true;
             (self.dac_level * self.level_scale_hi).round() as i32
         };
 
         // Logic mode reuses the DDS square-wave output stage.
         self.wave_cmd = match self.wave {
-            C_SINW => C_DDS_SINE_CMD,
-            C_TRIW => C_DDS_TRIANGLE_CMD,
-            C_SQUW => {
-                self.set_switch_bit(SQUARE_SW_BIT, true);
-                C_DDS_SQUARE_CMD
+            Waveform::Sine => Ad9833Control::Sine,
+            Waveform::Triangle => Ad9833Control::Triangle,
+            Waveform::Square => {
+                self.set_switch_output(SwitchOutput::Square, true);
+                Ad9833Control::Square
             }
-            C_LOGIC => {
-                self.set_switch_bit(SQUARE_SW_BIT, true);
+            Waveform::Logic => {
+                self.set_switch_output(SwitchOutput::Square, true);
                 offset_mv = (self.dac_level * self.pwr_gain * 1.41421).round() as i32;
-                self.set_switch_bit(OFFS_SW_BIT, false);
-                C_DDS_SQUARE_CMD
+                self.set_switch_output(SwitchOutput::Offset, false);
+                Ad9833Control::Square
             }
-            C_EXT => {
-                self.set_switch_bit(EXT_ON_BIT, true);
-                C_DDS_RESET_CMD
+            Waveform::External(_) => {
+                self.set_switch_output(SwitchOutput::External, true);
+                Ad9833Control::Reset
             }
-            _ => C_DDS_RESET_CMD,
+            Waveform::Off => Ad9833Control::Reset,
         };
 
         hw.shift_out_offset_dac((offset_mv / 5) as i16);
@@ -700,15 +685,14 @@ impl FirmwareState {
         self.dds_frequ = add_f as i32;
 
         // AD9833 frequency programming is split into two 14-bit register words.
-        self.dss_cmd = ((self.dds_frequ as u16) & 0x3fff) | DDS_FREQ_REG_CMD;
-        hw.send_dds_word(self.dss_cmd);
+        let low_frequency_word = ((self.dds_frequ as u16) & 0x3fff) | DDS_FREQ_REG_CMD;
+        hw.send_dds_word(low_frequency_word);
 
         let shifted = (self.dds_frequ as u32) << 2;
-        self.dss_cmd = (((shifted >> 16) as u16) & 0x3fff) | DDS_FREQ_REG_CMD;
-        hw.send_dds_word(self.dss_cmd);
+        let high_frequency_word = (((shifted >> 16) as u16) & 0x3fff) | DDS_FREQ_REG_CMD;
+        hw.send_dds_word(high_frequency_word);
 
-        self.dss_cmd = self.wave_cmd;
-        hw.send_dds_word(self.dss_cmd);
+        hw.send_dds_word(self.wave_cmd.as_word());
     }
 
     // Regelmaessig ausserhalb des Interrupts aus CheckSer heraus aufgerufen.
@@ -742,47 +726,40 @@ impl FirmwareState {
     }
 
     /// Updates one relay bit in the shadow byte; the complete byte is latched later to avoid partial output states.
-    pub(super) fn set_switch_bit(&mut self, bit: u8, high: bool) {
+    pub(super) fn set_switch_output(&mut self, output: SwitchOutput, high: bool) {
         if high {
-            self.switch_state |= 1 << bit;
+            self.switch_state |= output.mask();
         } else {
-            self.switch_state &= !(1 << bit);
+            self.switch_state &= !output.mask();
         }
     }
 
     /// Maps the active SQG panel edit target to the numeric serial subchannel used for display and user-service requests.
     pub(super) fn modify_to_sub_ch(&self) -> u8 {
-        match self.modify {
-            Modify::FreqSel => 0,
-            Modify::AmplSel => 1,
-            Modify::WaveSel => 4,
-            Modify::BurstSel => 5,
-            Modify::DcSel => 20,
-        }
+        self.modify.subchannel()
     }
 
     /// Moves the SQG edit target forward or backward through its finite menu ring.
     pub(super) fn cycle_modify(&mut self, forward: bool) {
-        self.modify = match (self.modify, forward) {
-            (Modify::WaveSel, true) => Modify::FreqSel,
-            (Modify::FreqSel, true) => Modify::AmplSel,
-            (Modify::AmplSel, true) => Modify::BurstSel,
-            (Modify::BurstSel, true) => Modify::DcSel,
-            (Modify::DcSel, true) => Modify::WaveSel,
-            (Modify::WaveSel, false) => Modify::DcSel,
-            (Modify::FreqSel, false) => Modify::WaveSel,
-            (Modify::AmplSel, false) => Modify::FreqSel,
-            (Modify::BurstSel, false) => Modify::AmplSel,
-            (Modify::DcSel, false) => Modify::BurstSel,
+        self.modify = if forward {
+            self.modify.next()
+        } else {
+            self.modify.previous()
         };
     }
 
     /// Marks the SQG busy interval and emits the panel action's user-service-request code.
-    pub(super) fn report_panel_activity<H: HardwareInterface>(&mut self, hw: &mut H, status: u8) {
+    pub(super) fn report_panel_activity<H: HardwareInterface>(
+        &mut self,
+        hw: &mut H,
+        request: PanelRequestCode,
+    ) {
         self.ser_prompt(
             hw,
             ErrorCode::NoErr,
-            self.status.to_status_byte().saturating_add(status),
+            self.status
+                .to_status_byte()
+                .saturating_add(request.as_byte()),
         );
     }
 
@@ -814,7 +791,7 @@ impl FirmwareState {
                 let incr_acc_int10 = incr_diff * 10;
 
                 if self.first_turn {
-                    self.report_panel_activity(hw, USER_SRQ_PANEL_ACTIVE);
+                    self.report_panel_activity(hw, PanelRequestCode::PanelActive);
                 }
 
                 match self.modify {
@@ -835,8 +812,8 @@ impl FirmwareState {
                         self.dac_level = if self.level_range { 5000.0 } else { 1000.0 };
                     }
                     Modify::WaveSel => {
-                        self.wave = self.wave.wrapping_add(incr_diff_byte);
-                        self.check_limits();
+                        let next_wave = self.wave.as_byte().wrapping_add(incr_diff_byte);
+                        self.wave = Waveform::from_sqg_byte(next_wave).0;
                     }
                     Modify::BurstSel => {
                         self.burst_mode = self.burst_mode.wrapping_add(incr_diff as u8);
@@ -859,15 +836,15 @@ impl FirmwareState {
                 self.status.busy = true;
                 match button {
                     PanelButton::Enter => {
-                        self.report_panel_activity(hw, USER_SRQ_PANEL_ACTIVE);
+                        self.report_panel_activity(hw, PanelRequestCode::PanelActive);
                         self.incr_fine = !self.incr_fine;
                     }
                     PanelButton::Left => {
-                        self.report_panel_activity(hw, USER_SRQ_LEFT);
+                        self.report_panel_activity(hw, PanelRequestCode::Left);
                         self.cycle_modify(true);
                     }
                     PanelButton::Right => {
-                        self.report_panel_activity(hw, USER_SRQ_RIGHT);
+                        self.report_panel_activity(hw, PanelRequestCode::Right);
                         self.cycle_modify(false);
                     }
                 }
@@ -878,7 +855,7 @@ impl FirmwareState {
             }
             PanelEvent::IncrTimerExpired => {
                 if !self.first_turn {
-                    self.report_panel_activity(hw, USER_SRQ_RELEASED);
+                    self.report_panel_activity(hw, PanelRequestCode::Released);
                 }
                 self.first_turn = true;
             }

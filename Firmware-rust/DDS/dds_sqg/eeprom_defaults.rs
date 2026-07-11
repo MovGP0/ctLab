@@ -50,7 +50,7 @@ impl Default for EepromDefaults {
             init_level: 5_000.0,
             init_burst: 0,
             // SQG powers up in square-wave mode unless EEPROM overrides it.
-            init_wave: C_SQUW,
+            init_wave: Waveform::Square.as_byte(),
             init_pwr_gain: 2.0,
             init_attn_fac: 40.0,
             init_inc_rast: 4,

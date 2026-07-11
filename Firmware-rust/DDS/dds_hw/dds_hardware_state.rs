@@ -11,8 +11,8 @@ pub struct DdsHardwareState {
     /// Caches `dss_cmd` across bit-level or interrupt phases, allowing the next phase to continue without recomputing or observing a half-written hardware transaction.
     pub dss_cmd: u16,
 
-    /// Caches `wave_cmd` across bit-level or interrupt phases, allowing the next phase to continue without recomputing or observing a half-written hardware transaction.
-    pub wave_cmd: u16,
+    /// Retains the validated AD9833 waveform control state between tuning-word and control-register writes.
+    pub wave_cmd: Ad9833Control,
 
     /// Caches `switch_state` across bit-level or interrupt phases, allowing the next phase to continue without recomputing or observing a half-written hardware transaction.
     pub switch_state: u8,
@@ -62,7 +62,7 @@ impl Default for DdsHardwareState {
         Self {
             board_has_two_shift_registers: true,
             dss_cmd: 0,
-            wave_cmd: DDS_RESET_CMD,
+            wave_cmd: Ad9833Control::Reset,
             switch_state: 0,
             dac_temp: 0,
             level_byte_hi: 0,
@@ -190,10 +190,10 @@ impl DdsHardwareState {
         }
 
         self.wave_cmd = match wave {
-            Waveform::Sine => DDS_SINE_CMD,
-            Waveform::Triangle => DDS_TRIANGLE_CMD,
-            Waveform::Square | Waveform::Logic => DDS_SQUARE_CMD,
-            Waveform::Off | Waveform::External(_) => DDS_RESET_CMD,
+            Waveform::Sine => Ad9833Control::Sine,
+            Waveform::Triangle => Ad9833Control::Triangle,
+            Waveform::Square | Waveform::Logic => Ad9833Control::Square,
+            Waveform::Off | Waveform::External(_) => Ad9833Control::Reset,
         };
 
         // The Pascal SQG variant does not recompute or clear the level payload before
@@ -208,7 +208,7 @@ impl DdsHardwareState {
 
         io.begin_critical_section();
         self.send_tuning_word(io, self.dds_frequency_word as u32);
-        self.dss_cmd = self.wave_cmd;
+        self.dss_cmd = self.wave_cmd.as_word();
         self.send_dds(io);
         io.end_critical_section();
     }
@@ -236,7 +236,7 @@ impl DdsHardwareState {
             self.set_attn_sw(true);
 
             if self.level_range {
-                self.dss_cmd = DDS_RESET_CMD;
+                self.dss_cmd = Ad9833Control::Reset.as_word();
                 io.begin_critical_section();
                 self.send_dds(io); // Briefly mute the DDS before the range relay flips.
                 io.end_critical_section();
@@ -253,11 +253,11 @@ impl DdsHardwareState {
         };
 
         self.wave_cmd = match wave {
-            Waveform::Sine => DDS_SINE_CMD,
-            Waveform::Triangle => DDS_TRIANGLE_CMD,
+            Waveform::Sine => Ad9833Control::Sine,
+            Waveform::Triangle => Ad9833Control::Triangle,
             Waveform::Square => {
                 self.set_square_sw(true);
-                DDS_SQUARE_CMD
+                Ad9833Control::Square
             }
             Waveform::Logic => {
                 self.set_square_sw(true);
@@ -268,14 +268,14 @@ impl DdsHardwareState {
                 } else {
                     self.set_logic_sw(true);
                 }
-                DDS_SQUARE_CMD
+                Ad9833Control::Square
             }
             Waveform::External(_) => {
                 // External/audio modes disable DDS generation and only gate the external path.
                 self.set_ext_on(true);
-                DDS_RESET_CMD
+                Ad9833Control::Reset
             }
-            Waveform::Off => DDS_RESET_CMD,
+            Waveform::Off => Ad9833Control::Reset,
         };
 
         self.shift_out_1257(io, (my_offset / 5) as i16); // FS = 10 V, so one DAC count is 5 mV.
@@ -286,7 +286,7 @@ impl DdsHardwareState {
 
         io.begin_critical_section();
         self.send_tuning_word(io, self.dds_frequency_word as u32);
-        self.dss_cmd = self.wave_cmd;
+        self.dss_cmd = self.wave_cmd.as_word();
         self.send_dds(io);
         io.end_critical_section();
     }

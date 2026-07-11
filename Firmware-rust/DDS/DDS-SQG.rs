@@ -40,69 +40,8 @@ represented here via a hardware abstraction trait and explicit stubs.
 /// Ten-millisecond SQG scheduler period used to advance burst, panel-busy, display, and encoder-release timers.
 const SYS_TICK_MS: u8 = 10;
 
-// Wave selector values from the original firmware: off, sine, triangle/saw,
-// square, logic-level square, or external source routing.
-
-/// Wire/panel waveform code that disables DDS output.
-const C_OFF: u8 = 0;
-
-/// Wire/panel waveform code selecting the AD9833 sine path.
-const C_SINW: u8 = 1;
-
-/// Wire/panel waveform code selecting the AD9833 triangle path.
-const C_TRIW: u8 = 2;
-
-/// Wire/panel waveform code selecting the board's square-wave path.
-const C_SQUW: u8 = 3;
-
-/// Wire/panel waveform code selecting logic-level square output.
-const C_LOGIC: u8 = 4;
-
-/// First wire/panel waveform code reserved for external routes.
-const C_EXT: u8 = 5;
-
-// AD9833-DDS command words.
-
-/// AD9833 control frame holding the DDS in reset while frequency and waveform registers are reprogrammed.
-const C_DDS_RESET_CMD: u16 = 0b0010_0001_0000_0000;
-
-/// AD9833 control frame releasing reset in sine-output mode.
-const C_DDS_SINE_CMD: u16 = 0b0010_0000_0000_0000;
-
-/// AD9833 control frame enabling triangle output with the selected frequency register.
-const C_DDS_TRIANGLE_CMD: u16 = 0b0010_0000_0000_0010;
-
-/// AD9833 control frame enabling sign-bit square output and the required divider mode.
-const C_DDS_SQUARE_CMD: u16 = 0b0010_0000_0010_1000;
-
 /// AD9833 frequency-register-zero prefix ORed into each fourteen-bit half of the SQG tuning word.
 const DDS_FREQ_REG_CMD: u16 = 0b0100_0000_0000_0000;
-
-// Relay bits for the Platine2SR SQG board.
-
-/// Relay-shadow bit routing the SQG square-wave output.
-const SQUARE_SW_BIT: u8 = 4;
-
-/// Relay-shadow bit selecting the SQG attenuator range.
-const ATTN_SW_BIT: u8 = 5;
-
-/// Relay-shadow bit enabling the SQG external output stage.
-const EXT_ON_BIT: u8 = 6;
-
-/// Relay-shadow bit connecting the SQG offset-DAC path.
-const OFFS_SW_BIT: u8 = 7;
-
-/// Panel event byte emitted in the user-service-request frame so a remote controller can identify the local action.
-const USER_SRQ_RELEASED: u8 = 64;
-
-/// Panel event byte emitted in the user-service-request frame so a remote controller can identify the local action.
-const USER_SRQ_LEFT: u8 = 65;
-
-/// Panel event byte emitted in the user-service-request frame so a remote controller can identify the local action.
-const USER_SRQ_RIGHT: u8 = 66;
-
-/// Panel event byte emitted in the user-service-request frame so a remote controller can identify the local action.
-const USER_SRQ_PANEL_ACTIVE: u8 = 67;
 
 /// Subchannel sentinel returned by mnemonic lookup when no valid command mapping exists.
 const ERR_SUB_CH: u8 = 255;
@@ -152,17 +91,6 @@ const FHZ: [f64; 9] = [
     134.217728,
     13.4217728,
     1.34217728,
-];
-
-/// Panel waveform names indexed by the validated waveform selector.
-#[rustfmt::skip]
-const WAVE_SEL_STR_ARR: [&str; 6] = [
-    "Off",
-    "Sin",
-    "Tri",
-    "Squ",
-    "Lgc",
-    "Ext",
 ];
 
 /// Preferred one-third-octave frequency setpoints in tenths of a hertz used by coarse panel tuning.
@@ -218,6 +146,14 @@ use panel_button::PanelButton;
 mod panel_event;
 use panel_event::PanelEvent;
 
+#[path = "dds_sqg/panel_request_code.rs"]
+mod panel_request_code;
+use panel_request_code::PanelRequestCode;
+
+#[path = "dds_sqg/switch_output.rs"]
+mod switch_output;
+use switch_output::SwitchOutput;
+
 #[path = "dds_sqg/error_code.rs"]
 mod error_code;
 use error_code::ErrorCode;
@@ -239,6 +175,8 @@ use firmware_state::FirmwareState;
 #[path = "dds_sqg/hardware_interface.rs"]
 mod hardware_interface;
 use hardware_interface::HardwareInterface;
+
+use crate::{Ad9833Control, Waveform};
 
 #[cfg(test)]
 mod tests {
@@ -349,11 +287,11 @@ mod tests {
         let mut hw = DummyHardware::default();
 
         state.frequenz = 10_000;
-        state.wave = C_SQUW;
+        state.wave = Waveform::Square;
         state.set_level_dds(&mut hw);
 
         assert_eq!(hw.dds_words.len(), 3);
-        assert_eq!(hw.dds_words[2], C_DDS_SQUARE_CMD);
+        assert_eq!(hw.dds_words[2], Ad9833Control::Square.as_word());
         assert_eq!(state.dds_frequ, 13_421);
     }
 
@@ -364,13 +302,16 @@ mod tests {
 
         state.dac_level = 1000.0;
         state.offset_mv = 250;
-        state.wave = C_SQUW;
+        state.wave = Waveform::Square;
         state.set_level_dds(&mut hw);
 
         assert_eq!(hw.offset_ops, vec![50]);
         assert_eq!(
             hw.shift_ops,
-            vec![(40_000, (1 << ATTN_SW_BIT) | (1 << SQUARE_SW_BIT))]
+            vec![(
+                40_000,
+                SwitchOutput::Attenuator.mask() | SwitchOutput::Square.mask(),
+            )]
         );
         assert_eq!(state.level_range, false);
     }
@@ -380,17 +321,20 @@ mod tests {
         let mut state = FirmwareState {
             dac_level: 1000.0,
             level_range: true,
-            wave: C_SQUW,
+            wave: Waveform::Square,
             ..Default::default()
         };
         let mut hw = DummyHardware::default();
 
         state.set_level_dds(&mut hw);
 
-        assert_eq!(hw.dds_words[0], C_DDS_RESET_CMD);
+        assert_eq!(hw.dds_words[0], Ad9833Control::Reset.as_word());
         assert_eq!(
             hw.shift_ops[0],
-            (0, (1 << OFFS_SW_BIT) | (1 << ATTN_SW_BIT))
+            (
+                0,
+                SwitchOutput::Offset.mask() | SwitchOutput::Attenuator.mask(),
+            )
         );
         assert_eq!(hw.delays, vec![5]);
         assert!(!state.level_range);
@@ -401,7 +345,7 @@ mod tests {
         let mut state = FirmwareState {
             burst_mode: 2,
             burst_count: 1,
-            wave_cmd: C_DDS_SQUARE_CMD,
+            wave_cmd: Ad9833Control::Square,
             ..Default::default()
         };
         let mut hw = DummyHardware {
@@ -411,7 +355,13 @@ mod tests {
 
         state.run_main_loop_iteration(&mut hw);
 
-        assert_eq!(hw.dds_words, vec![C_DDS_SQUARE_CMD, C_DDS_RESET_CMD]);
+        assert_eq!(
+            hw.dds_words,
+            vec![
+                Ad9833Control::Square.as_word(),
+                Ad9833Control::Reset.as_word(),
+            ]
+        );
         assert_eq!(state.burst_count, 2);
     }
 
@@ -469,7 +419,7 @@ mod tests {
     #[test]
     fn patch_copy_from_ee_restores_sqg_eeprom_backed_reset_values() {
         let mut state = FirmwareState {
-            wave: C_OFF,
+            wave: Waveform::Off,
             frequenz: 42,
             dac_level: 1000.0,
             terz_num: 1,
@@ -481,7 +431,7 @@ mod tests {
             level_scale_hi: 3.0,
             ..Default::default()
         };
-        state.defaults.init_wave = C_SQUW;
+        state.defaults.init_wave = Waveform::Square.as_byte();
         state.defaults.init_frequenz = 20_000;
         state.defaults.init_level = 5000.0;
         state.defaults.init_terz_num = 12;
@@ -494,7 +444,7 @@ mod tests {
 
         state.patch_copy_from_ee();
 
-        assert_eq!(state.wave, C_SQUW);
+        assert_eq!(state.wave, Waveform::Square);
         assert_eq!(state.frequenz, 20_000);
         assert_eq!(state.dac_level, 5000.0);
         assert_eq!(state.terz_num, 12);
@@ -583,6 +533,41 @@ mod tests {
         assert_eq!(CmdWhich::Ofs.as_str(), "DCO");
         assert_eq!(CmdWhich::from_str("dbu"), CmdWhich::Dbu);
         assert_eq!(CmdWhich::Dbu.default_subchannel(), 3);
+    }
+
+    #[test]
+    fn shared_waveform_owns_wire_codes_labels_and_sqg_limits() {
+        assert_eq!(Waveform::Off.as_byte(), 0);
+        assert_eq!(Waveform::Sine.as_str(), "Sin");
+        assert_eq!(Waveform::Triangle.as_str(), "Tri");
+        assert_eq!(Waveform::Square.as_str(), "Squ");
+        assert_eq!(Waveform::Logic.as_str(), "Lgc");
+        assert_eq!(Waveform::External(0).as_str(), "Ext");
+        assert_eq!(Waveform::External(2).as_byte(), 7);
+
+        assert_eq!(Waveform::from_sqg_byte(3), (Waveform::Square, false));
+        assert_eq!(Waveform::from_sqg_byte(4), (Waveform::Square, true));
+        assert_eq!(Waveform::from_sqg_byte(127), (Waveform::Square, true));
+        assert_eq!(Waveform::from_sqg_byte(128), (Waveform::Off, true));
+        assert_eq!(Waveform::from_sqg_byte(255), (Waveform::Off, true));
+    }
+
+    #[test]
+    fn typed_hardware_and_panel_values_preserve_pascal_encodings() {
+        assert_eq!(Ad9833Control::Reset.as_word(), 0b0010_0001_0000_0000);
+        assert_eq!(Ad9833Control::Sine.as_word(), 0b0010_0000_0000_0000);
+        assert_eq!(Ad9833Control::Triangle.as_word(), 0b0010_0000_0000_0010);
+        assert_eq!(Ad9833Control::Square.as_word(), 0b0010_0000_0010_1000);
+
+        assert_eq!(SwitchOutput::Square.mask(), 1 << 4);
+        assert_eq!(SwitchOutput::Attenuator.mask(), 1 << 5);
+        assert_eq!(SwitchOutput::External.mask(), 1 << 6);
+        assert_eq!(SwitchOutput::Offset.mask(), 1 << 7);
+
+        assert_eq!(PanelRequestCode::Released.as_byte(), 64);
+        assert_eq!(PanelRequestCode::Left.as_byte(), 65);
+        assert_eq!(PanelRequestCode::Right.as_byte(), 66);
+        assert_eq!(PanelRequestCode::PanelActive.as_byte(), 67);
     }
 
     #[test]

@@ -8,6 +8,7 @@
 use core::marker::PhantomData;
 
 use crate::avrd_support::{Atmega32, AvrdPortIo, Mcu, RegisterPort};
+pub use crate::{Ad9833Control, Waveform};
 
 /// AVR data-space address of SREG, used to save and restore the caller's interrupt-enable state around converter frames.
 #[cfg(target_arch = "avr")]
@@ -23,10 +24,6 @@ pub const SER_AUX_DELAY_CYCLES_PER_UNIT: u16 = 160;
 #[path = "dds_hw/port_kind.rs"]
 mod port_kind;
 pub use port_kind::PortKind;
-
-#[path = "dds_hw/waveform.rs"]
-mod waveform;
-pub use waveform::Waveform;
 
 #[path = "dds_hw/dds_hardware_io.rs"]
 mod dds_hardware_io;
@@ -60,18 +57,6 @@ pub const B_STRDAC: u8 = 4;
 
 /// Control-port bit used as the bit-banged auxiliary YAMPP transmit line.
 pub const B_SER_AUX: u8 = 5;
-
-/// AD9833 control frame holding the DDS in reset while frequency and waveform registers are reprogrammed.
-pub const DDS_RESET_CMD: u16 = 0b0010_0001_0000_0000;
-
-/// AD9833 control frame releasing reset in sine-output mode.
-pub const DDS_SINE_CMD: u16 = 0b0010_0000_0000_0000;
-
-/// AD9833 control frame enabling triangle output with the selected frequency register.
-pub const DDS_TRIANGLE_CMD: u16 = 0b0010_0000_0000_0010;
-
-/// AD9833 control frame enabling sign-bit square output and the required divider mode.
-pub const DDS_SQUARE_CMD: u16 = 0b0010_0000_0010_1000;
 
 /// AD9833 frame prefix selecting frequency register zero for each fourteen-bit tuning-word half.
 pub const DDS_FREQ_REGISTER_WRITE: u16 = 0b0100_0000_0000_0000;

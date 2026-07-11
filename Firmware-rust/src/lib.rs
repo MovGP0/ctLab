@@ -10,6 +10,14 @@
 /// Shared volatile-register primitives and AVR MCU descriptions.
 pub mod avrd_support;
 
+#[path = "../DDS/ad9833_control.rs"]
+pub mod ad9833_control;
+pub use ad9833_control::Ad9833Control;
+
+#[path = "../DDS/waveform.rs"]
+pub mod waveform;
+pub use waveform::Waveform;
+
 #[path = "../ACV/ACV.rs"]
 pub mod acv;
 

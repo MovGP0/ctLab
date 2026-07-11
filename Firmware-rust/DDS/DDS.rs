@@ -192,9 +192,7 @@ pub use modify::Modify;
 mod error_code;
 pub use error_code::ErrorCode;
 
-#[path = "dds/waveform.rs"]
-mod waveform;
-pub use waveform::Waveform;
+pub use crate::Waveform;
 
 #[path = "dds/input_range.rs"]
 mod input_range;
