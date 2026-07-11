@@ -23,7 +23,7 @@ fn main()
     if !violations.is_empty()
     {
         panic!(
-            "Rust source layout check failed; keep at most one empty line, separate a completed item from the next doc comment, and put function bodies on their own lines:\n{}",
+            "Rust source layout check failed; keep at most one empty line, separate a completed item from the next doc comment, put function bodies on their own lines, and keep test bodies in dedicated *_tests.rs files:\n{}",
             violations.join("\n")
         );
     }
@@ -95,6 +95,14 @@ fn check_file(path: &Path, violations: &mut Vec<String>)
                 index + 1
             ));
         }
+        if is_inline_test_module(line)
+        {
+            violations.push(format!(
+                "{}:{} (move the inline test module body to a sibling *_tests.rs file)",
+                path.display(),
+                index + 1
+            ));
+        }
         if line.trim().is_empty()
         {
             consecutive_empty_lines += 1;
@@ -109,6 +117,14 @@ fn check_file(path: &Path, violations: &mut Vec<String>)
         }
         previous_line = Some(line);
     }
+}
+
+/// Detects both Rust's same-line and Allman opening-brace forms for an inline
+/// `tests` module while allowing the required external `mod tests;` declaration.
+fn is_inline_test_module(line: &str) -> bool
+{
+    let trimmed = line.trim();
+    trimmed == "mod tests" || trimmed.starts_with("mod tests {")
 }
 
 /// Returns whether `line` contains a complete function definition and body.

@@ -5,7 +5,8 @@ This directory contains a best-effort Rust port of the original Pascal firmware 
 Rules for this port:
 
 - Preserve each Pascal source as a Rust module root so provenance remains traceable.
-- Put every production struct, enum, and trait in its own snake_case `.rs` file. Module roots retain constants, free functions, tests, wiring, and selective re-exports.
+- Put every production struct, enum, and trait in its own snake_case `.rs` file. Module roots retain constants, free functions, wiring, and selective re-exports.
+- Put unit-test bodies in dedicated sibling `*_tests.rs` files and load them through a small `#[cfg(test)]` module declaration so production files remain readable.
 - Keep positional protocol and calibration tables one entry per line so humans can compare them directly with the Pascal arrays.
 - Keep exactly one empty line between a completed Rust item and the next `///` comment, never use more than one empty line between Rust items, and place every function body on lines between its opening and closing braces. `build.rs` enforces these rules during every Cargo build and reports the offending file and line.
 - Document every exported Rust item and explain both its concrete mechanism and the hardware, protocol, safety, or maintainability reason it exists. Inspect call sites before changing rustdoc; crate lints reject missing documentation and broken intra-doc links.
