@@ -25,7 +25,7 @@ pub struct EepromData {
     pub dac_r_scales: [Float; 4],
 
     /// Indexed hardware and boot options in the original EEPROM order.
-    pub option_array: [Float; 22],
+    pub option_array: [Float; OptionSlot::COUNT],
 
     /// UART divisor restored before serial command processing.
     pub ee_ser_baud_reg: u8,
@@ -122,37 +122,37 @@ impl Default for EepromData {
 impl EepromData {
     /// Returns the startup low-voltage cutoff.
     pub fn init_volt(&self) -> Float {
-        self.option_array[OPT_INIT_VOLT]
+        self.option_array[OptionSlot::InitialVoltage.index()]
     }
 
     /// Returns the startup constant-current setpoint.
     pub fn init_amp(&self) -> Float {
-        self.option_array[OPT_INIT_AMP]
+        self.option_array[OptionSlot::InitialCurrent.index()]
     }
 
     /// Returns the divider ratio for low-voltage modes.
     pub fn init_low_divider_u(&self) -> Float {
-        self.option_array[OPT_INIT_LOW_DIVIDER_U]
+        self.option_array[OptionSlot::LowVoltageDivider.index()]
     }
 
     /// Returns the divider ratio for high-voltage modes.
     pub fn init_hi_divider_u(&self) -> Float {
-        self.option_array[OPT_INIT_HI_DIVIDER_U]
+        self.option_array[OptionSlot::HighVoltageDivider.index()]
     }
 
     /// Returns analog current-stage gain used in ADC and DAC conversion factors.
     pub fn init_gain_i(&self) -> Float {
-        self.option_array[OPT_INIT_GAIN_I]
+        self.option_array[OptionSlot::CurrentMeasurementGain.index()]
     }
 
     /// Returns the converter reference voltage shared by scale calculations.
     pub fn uref(&self) -> Float {
-        self.option_array[OPT_UREF]
+        self.option_array[OptionSlot::ReferenceVoltage.index()]
     }
 
     /// Returns the maximum permitted load power.
     pub fn pmax(&self) -> Float {
-        self.option_array[OPT_PMAX]
+        self.option_array[OptionSlot::MaximumPower.index()]
     }
 
     /// Returns the calibrated resistance of one shunt.
@@ -161,7 +161,7 @@ impl EepromData {
     ///
     /// Panics when `index` is outside the four physical shunt positions.
     pub fn rsense(&self, index: usize) -> Float {
-        self.option_array[OPT_RSENSE_BASE + index]
+        self.option_array[OptionSlot::SenseResistanceA.index() + index]
     }
 
     /// Returns the maximum safe current for one shunt.
@@ -170,41 +170,41 @@ impl EepromData {
     ///
     /// Panics when `index` is outside the four physical shunt positions.
     pub fn imax(&self, index: usize) -> Float {
-        self.option_array[OPT_IMAX_BASE + index]
+        self.option_array[OptionSlot::MaximumCurrentA.index() + index]
     }
 
     /// Returns the high-range over-voltage clamp.
     pub fn voltage_limit_hi(&self) -> Float {
-        self.option_array[OPT_UMAX_HI]
+        self.option_array[OptionSlot::HighVoltageLimit.index()]
     }
 
     /// Returns the low-range over-voltage clamp.
     pub fn voltage_limit_lo(&self) -> Float {
-        self.option_array[OPT_UMAX_LO]
+        self.option_array[OptionSlot::LowVoltageLimit.index()]
     }
 
     /// Converts packed hardware option storage to the live option byte.
     pub fn init_options(&self) -> u8 {
-        self.option_array[OPT_INIT_OPTIONS] as u8
+        self.option_array[OptionSlot::InstalledHardware.index()] as u8
     }
 
     /// Returns the startup ripple-current percentage.
     pub fn init_i_percent(&self) -> i32 {
-        self.option_array[OPT_INIT_IPERCENT] as i32
+        self.option_array[OptionSlot::InitialCurrentPercent.index()] as i32
     }
 
     /// Returns the startup active ripple duration.
     pub fn init_ton(&self) -> i32 {
-        self.option_array[OPT_INIT_TON] as i32
+        self.option_array[OptionSlot::InitialRippleOnTime.index()] as i32
     }
 
     /// Returns the startup inactive ripple duration.
     pub fn init_toff(&self) -> i32 {
-        self.option_array[OPT_INIT_TOFF] as i32
+        self.option_array[OptionSlot::InitialRippleOffTime.index()] as i32
     }
 
     /// Returns the LM75 fan/over-temperature threshold programmed at initialization.
     pub fn init_fan_on_temp(&self) -> Float {
-        self.option_array[OPT_INIT_FAN_TEMP]
+        self.option_array[OptionSlot::FanOnTemperature.index()]
     }
 }

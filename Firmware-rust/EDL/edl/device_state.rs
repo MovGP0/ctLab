@@ -241,30 +241,32 @@ impl<H: EdlHardware> DeviceState<H> {
     /// Programs each enabled LM75 with inverted output, trip threshold, three-degree hysteresis, and temperature pointer.
     pub fn set_lm75_temp(&mut self) {
         let threshold_c = self.eeprom.init_fan_on_temp();
-        if self.lm75_intern_enabled() {
-            self.set_one_lm75_temp(LM75_INTERNAL_ADDRESS, threshold_c);
+        if self.lm75_enabled(Lm75Sensor::Internal) {
+            self.set_one_lm75_temp(Lm75Sensor::Internal, threshold_c);
         }
-        if self.lm75_extern_enabled() {
-            self.set_one_lm75_temp(LM75_EXTERNAL_ADDRESS, threshold_c);
+        if self.lm75_enabled(Lm75Sensor::External) {
+            self.set_one_lm75_temp(Lm75Sensor::External, threshold_c);
         }
     }
 
     /// Writes one sensor in the datasheet-required configuration, trip, hysteresis, then pointer order.
-    fn set_one_lm75_temp(&mut self, address: u8, threshold_c: Float) {
+    fn set_one_lm75_temp(&mut self, sensor: Lm75Sensor, threshold_c: Float) {
+        let address = sensor.address();
         self.hw.lm75_write(
             address,
-            LM75_CONFIGURATION_REGISTER,
+            Lm75Register::Configuration.address(),
             &[LM75_INVERTED_OUTPUT_CONFIGURATION],
         );
 
         let overtemperature = Self::lm75_temperature_bytes(threshold_c);
         self.hw
-            .lm75_write(address, LM75_OVERTEMPERATURE_REGISTER, &overtemperature);
+            .lm75_write(address, Lm75Register::Overtemperature.address(), &overtemperature);
 
         let hysteresis = Self::lm75_temperature_bytes(threshold_c - LM75_HYSTERESIS_C);
         self.hw
-            .lm75_write(address, LM75_HYSTERESIS_REGISTER, &hysteresis);
-        self.hw.lm75_write(address, LM75_TEMPERATURE_REGISTER, &[]);
+            .lm75_write(address, Lm75Register::Hysteresis.address(), &hysteresis);
+        self.hw
+            .lm75_write(address, Lm75Register::Temperature.address(), &[]);
     }
 
     /// Encodes half-degree LM75 thresholds as a signed big-endian register value.
@@ -302,12 +304,7 @@ impl<H: EdlHardware> DeviceState<H> {
     pub fn init_scales(&mut self) {
         self.trigger_mask = self.eeprom.trig_mask;
         self.scale.options = self.eeprom.init_options();
-        self.scale.dac_kind = match self.scale.options & DAC_TYPE_MASK {
-            1 => DacKind::Ad5452,
-            2 => DacKind::Dac8501,
-            3 => DacKind::Dac8811,
-            _ => DacKind::Ltc8043,
-        };
+        self.scale.dac_kind = DacKind::from_options(self.scale.options);
         self.scale.dac_max = if matches!(self.scale.dac_kind, DacKind::Dac8811) {
             65_535
         } else {
@@ -1089,14 +1086,9 @@ impl<H: EdlHardware> DeviceState<H> {
         (self.trigger_mask & 0x02) != 0
     }
 
-    /// Decodes whether the internal LM75 should be programmed and polled.
-    fn lm75_intern_enabled(&self) -> bool {
-        (self.scale.options & LM75_INTERNAL_BIT) != 0
-    }
-
-    /// Decodes whether the external LM75 should be programmed and polled.
-    fn lm75_extern_enabled(&self) -> bool {
-        (self.scale.options & LM75_EXTERNAL_BIT) != 0
+    /// Checks the sensor's installation flag before touching its I2C address.
+    fn lm75_enabled(&self, sensor: Lm75Sensor) -> bool {
+        sensor.hardware_option().is_set_in(self.scale.options)
     }
 
     /// Selects the safety ceiling paired with the active low/high voltage divider.
@@ -1233,7 +1225,9 @@ impl<H: EdlHardware> DeviceState<H> {
 
     /// Refreshes enabled temperature sensing and latches over-temperature protection promptly.
     fn poll_temperature(&mut self) {
-        if !(self.lm75_intern_enabled() || self.lm75_extern_enabled()) {
+        if !(self.lm75_enabled(Lm75Sensor::Internal)
+            || self.lm75_enabled(Lm75Sensor::External))
+        {
             self.temperature_c = Some(0.0);
             return;
         }

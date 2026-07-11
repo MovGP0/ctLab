@@ -154,7 +154,7 @@ pub struct EdlParser {
     pub adci_offsets: [i32; ADCI_COUNT],
 
     /// Indexed hardware and boot options retained in Pascal EEPROM order.
-    pub option_array: [f64; OPTION_ARRAY_LEN],
+    pub option_array: [f64; OptionSlot::COUNT],
 
     /// Per-shunt current-DAC gain calibration factors.
     pub daci_scales: [f64; DACI_COUNT],
@@ -292,11 +292,11 @@ impl Default for EdlParser {
             dac_lsb_i: [1.0; DACI_COUNT],
             dac_lsb_r: [1.0; DACI_COUNT],
             dac_max: DEFAULT_DAC_MAX,
-            dc_ohm_min: DEFAULT_OPTION_ARRAY[OPT_RSENSE_BASE + 3]
-                * DEFAULT_OPTION_ARRAY[OPT_GAIN_I]
+            dc_ohm_min: DEFAULT_OPTION_ARRAY[OptionSlot::SenseResistanceD.index()]
+                * DEFAULT_OPTION_ARRAY[OptionSlot::CurrentMeasurementGain.index()]
                 * 1.1,
-            dc_ohm_max: DEFAULT_OPTION_ARRAY[OPT_RSENSE_BASE]
-                * DEFAULT_OPTION_ARRAY[OPT_GAIN_I]
+            dc_ohm_max: DEFAULT_OPTION_ARRAY[OptionSlot::SenseResistanceA.index()]
+                * DEFAULT_OPTION_ARRAY[OptionSlot::CurrentMeasurementGain.index()]
                 * 100.0,
             divider_u: 1.0,
             adc16_u_scale_low: 1.0,
@@ -1016,10 +1016,12 @@ impl EdlParser {
 
     /// Recomputes current, voltage, resistance, and DAC factors immediately after calibration or option changes.
     pub(super) fn init_scales(&mut self) {
-        let gain_i = self.option_array[OPT_GAIN_I];
-        let u_ref = self.option_array[OPT_U_REF];
-        let dac_type = (self.option_array[OPT_INIT_OPTIONS] as u8) & 0b0000_0011;
-        let dac_max = if dac_type == 3 {
+        let gain_i = self.option_array[OptionSlot::CurrentMeasurementGain.index()];
+        let u_ref = self.option_array[OptionSlot::ReferenceVoltage.index()];
+        let dac_kind = crate::edl::DacKind::from_options(
+            self.option_array[OptionSlot::InstalledHardware.index()] as u8,
+        );
+        let dac_max = if matches!(dac_kind, crate::edl::DacKind::Dac8811) {
             65_535
         } else {
             DEFAULT_DAC_MAX
@@ -1029,7 +1031,7 @@ impl EdlParser {
         self.dac_max = dac_max;
 
         for index in 0..DACI_COUNT {
-            let r_sense = self.option_array[OPT_RSENSE_BASE + index];
+            let r_sense = self.option_array[OptionSlot::SenseResistanceA.index() + index];
 
             self.dac_lsb_i[index] =
                 (u_ref / r_sense) / (dac_max_float * self.daci_scales[index] * gain_i);
@@ -1043,8 +1045,14 @@ impl EdlParser {
                 (self.adci_scales[index] * u_ref / r_sense) / ADC_MAX_10 / gain_i;
         }
 
-        self.dc_ohm_min = self.option_array[OPT_RSENSE_BASE + 3] * self.divider_u * gain_i * 1.1;
-        self.dc_ohm_max = self.option_array[OPT_RSENSE_BASE] * self.divider_u * gain_i * 100.0;
+        self.dc_ohm_min = self.option_array[OptionSlot::SenseResistanceD.index()]
+            * self.divider_u
+            * gain_i
+            * 1.1;
+        self.dc_ohm_max = self.option_array[OptionSlot::SenseResistanceA.index()]
+            * self.divider_u
+            * gain_i
+            * 100.0;
     }
 
     /// Represents the three-millisecond analog settling interval after calibration changes; this parser-only model has no clock to advance.
@@ -1190,7 +1198,7 @@ impl EdlParser {
     fn calc_range_i(&self) -> u8 {
         let mut shunt = 0_u8;
         for index in 0..DACI_COUNT {
-            if self.dc_amp > self.option_array[OPT_IMAX_BASE + index] {
+            if self.dc_amp > self.option_array[OptionSlot::MaximumCurrentA.index() + index] {
                 shunt = shunt.saturating_add(1).min(SHUNT_D);
             }
         }
@@ -1200,7 +1208,8 @@ impl EdlParser {
     /// Selects a shunt that keeps resistance-derived current in range.
     fn calc_range_r(&self) -> u8 {
         for index in 0..DACI_COUNT {
-            let threshold = self.option_array[OPT_RSENSE_BASE + index] * self.divider_u;
+            let threshold =
+                self.option_array[OptionSlot::SenseResistanceA.index() + index] * self.divider_u;
             if self.dc_ohm >= threshold {
                 return index as u8;
             }
@@ -1225,20 +1234,22 @@ impl EdlParser {
 
     /// Returns the calibrated maximum current for the selected shunt.
     fn imax(&self) -> f64 {
-        self.option_array[OPT_IMAX_BASE + 3]
+        self.option_array[OptionSlot::MaximumCurrentD.index()]
     }
 
     /// Returns the option-backed maximum safe power.
     fn pmax(&self) -> f64 {
-        self.option_array[OPT_PMAX]
+        self.option_array[OptionSlot::MaximumPower.index()]
     }
 
     /// Chooses the low/high voltage clamp paired with the selected mode.
     fn active_voltage_limit(&self) -> f64 {
         match self.mode_select {
-            Mode::IhiVolt | Mode::RhiVolt | Mode::PhiVolt => self.option_array[OPT_UMAX_HI],
+            Mode::IhiVolt | Mode::RhiVolt | Mode::PhiVolt => {
+                self.option_array[OptionSlot::HighVoltageLimit.index()]
+            }
             Mode::OutputOff | Mode::IloVolt | Mode::RloVolt | Mode::PloVolt | Mode::Unknown(_) => {
-                self.option_array[OPT_UMAX_LO]
+                self.option_array[OptionSlot::LowVoltageLimit.index()]
             }
         }
     }

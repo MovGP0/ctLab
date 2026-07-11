@@ -116,7 +116,7 @@ pub struct DcgParser {
     pub adc_i_offsets: [i32; 4],
 
     /// Runtime copy of the 25-slot DCG EEPROM option image used by calibration accessors and protected serial writes.
-    pub option_array: [f32; 25],
+    pub option_array: [f32; OptionSlot::COUNT],
 
     /// Per-voltage-range gain corrections applied when converting requested volts to DAC counts.
     pub dac_u_scales: [f32; 2],
@@ -247,8 +247,8 @@ impl Default for DcgParser {
             measured_voltage: 0.0,
             measured_current: 0.0,
             temperature: 0.0,
-            pw_on_time: DEFAULT_OPTION_ARRAY[23] as i32,
-            pw_off_time: DEFAULT_OPTION_ARRAY[24] as i32,
+            pw_on_time: DEFAULT_OPTION_ARRAY[OptionSlot::InitialRippleOnTime.index()] as i32,
+            pw_off_time: DEFAULT_OPTION_ARRAY[OptionSlot::InitialRippleOffTime.index()] as i32,
             ripple_percent: 0,
             ripple_voltage: 0.0,
             no_toggle: true,
@@ -907,13 +907,13 @@ impl DcgParser {
 
     /// Rebuilds calibration factors from EEPROM and active hardware options so later ADC/DAC conversions use one coherent scale set.
     pub(super) fn init_scales(&mut self) {
-        let init_gain_pre = self.option_array[2];
-        let init_gain_out = self.option_array[3];
-        let init_gain_i = self.option_array[4];
-        let u_ref = self.option_array[5];
-        let init_options = self.option_array[17] as u8;
-        let dac_16_present = (init_options & 0b0000_0001) != 0;
-        let adc_16_present = (init_options & 0b0000_0010) != 0;
+        let init_gain_pre = self.option_array[OptionSlot::PreamplifierGain.index()];
+        let init_gain_out = self.option_array[OptionSlot::OutputStageGain.index()];
+        let init_gain_i = self.option_array[OptionSlot::CurrentMeasurementGain.index()];
+        let u_ref = self.option_array[OptionSlot::ReferenceVoltage.index()];
+        let init_options = self.option_array[OptionSlot::InstalledHardware.index()] as u8;
+        let dac_16_present = crate::dcg::HardwareOption::Ltc1655Dac.is_set_in(init_options);
+        let adc_16_present = crate::dcg::HardwareOption::Ltc1864Adc.is_set_in(init_options);
         let dac_max_exclusive_u32 = if dac_16_present { 65536 } else { 4096 };
         let dac_max_exclusive = dac_max_exclusive_u32 as f32;
         let adc_max_exclusive = if adc_16_present { 65536.0 } else { 1024.0 };
@@ -923,14 +923,21 @@ impl DcgParser {
         self.dac_lsb_u[1] =
             u_fac * init_gain_pre * init_gain_out / (dac_max_exclusive * self.dac_u_scales[1]);
 
-        self.adc_lsb_u[0] = self.option_array[15] * self.adc_u_scales[0] * u_ref * init_gain_out
+        self.adc_lsb_u[0] = self.option_array[OptionSlot::LowVoltageAdcDivider.index()]
+            * self.adc_u_scales[0]
+            * u_ref
+            * init_gain_out
             / adc_max_exclusive;
-        self.adc_lsb_u[1] = self.option_array[16] * self.adc_u_scales[1] * u_ref * init_gain_out
+        self.adc_lsb_u[1] = self.option_array[OptionSlot::HighVoltageAdcDivider.index()]
+            * self.adc_u_scales[1]
+            * u_ref
+            * init_gain_out
             / adc_max_exclusive;
 
         let current_u_fac = u_fac * init_gain_i;
         for range in 0..4 {
-            let r_sense = self.option_array[7 + range];
+            let r_sense =
+                self.option_array[OptionSlot::SenseResistance2mA.index() + range];
             self.dac_lsb_i[range] =
                 (current_u_fac / r_sense) / (dac_max_exclusive * self.dac_i_scales[range]);
             self.adc_lsb_i[range] =
@@ -938,19 +945,19 @@ impl DcgParser {
         }
 
         self.dac_max = (dac_max_exclusive_u32 - 1) as u16;
-        self.u_max = self.option_array[6];
+        self.u_max = self.option_array[OptionSlot::MaximumVoltage.index()];
         self.i_max_array = [
-            self.option_array[11],
-            self.option_array[12],
-            self.option_array[13],
-            self.option_array[14],
+            self.option_array[OptionSlot::MaximumCurrent2mA.index()],
+            self.option_array[OptionSlot::MaximumCurrent20mA.index()],
+            self.option_array[OptionSlot::MaximumCurrent200mA.index()],
+            self.option_array[OptionSlot::MaximumCurrent2A.index()],
         ];
         self.i_max = self.i_max_array[3];
-        self.switchpoint = self.option_array[18];
+        self.switchpoint = self.option_array[OptionSlot::VoltageRangeSwitchpoint.index()];
         self.dc_volt_mod = 1.0;
-        self.ripple_percent = self.option_array[22] as i32;
-        self.pw_on_time = self.option_array[23] as i32;
-        self.pw_off_time = self.option_array[24] as i32;
+        self.ripple_percent = self.option_array[OptionSlot::InitialRipplePercent.index()] as i32;
+        self.pw_on_time = self.option_array[OptionSlot::InitialRippleOnTime.index()] as i32;
+        self.pw_off_time = self.option_array[OptionSlot::InitialRippleOffTime.index()] as i32;
     }
 
     /// Records the requested post-write settling interval through the hardware seam used by the parser model.

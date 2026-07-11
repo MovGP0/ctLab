@@ -30,7 +30,7 @@ pub struct EepromData {
     pub adc_i_scales: [Float; 4],
 
     /// Runtime copy of the 25-slot DCG EEPROM option image used by calibration accessors and protected serial writes.
-    pub option_array: [Float; OPTION_ARRAY_LEN],
+    pub option_array: [Float; OptionSlot::COUNT],
 
     /// Stores the AVR UART divisor selected by the protected `SBD` command for reuse after reset.
     pub ee_ser_baud_reg: u8,
@@ -118,91 +118,91 @@ impl Default for EepromData {
 impl EepromData {
     /// Initializes volt before dependent calculations or outputs are enabled.
     pub fn init_volt(&self) -> Float {
-        self.option_array[OPT_INIT_VOLT]
+        self.option_array[OptionSlot::InitialVoltage.index()]
     }
 
     /// Initializes amp before dependent calculations or outputs are enabled.
     pub fn init_amp(&self) -> Float {
-        self.option_array[OPT_INIT_AMP]
+        self.option_array[OptionSlot::InitialCurrent.index()]
     }
 
     /// Initializes gain pre before dependent calculations or outputs are enabled.
     pub fn init_gain_pre(&self) -> Float {
-        self.option_array[OPT_INIT_GAIN_PRE]
+        self.option_array[OptionSlot::PreamplifierGain.index()]
     }
 
     /// Initializes gain out before dependent calculations or outputs are enabled.
     pub fn init_gain_out(&self) -> Float {
-        self.option_array[OPT_INIT_GAIN_OUT]
+        self.option_array[OptionSlot::OutputStageGain.index()]
     }
 
     /// Initializes gain i before dependent calculations or outputs are enabled.
     pub fn init_gain_i(&self) -> Float {
-        self.option_array[OPT_INIT_GAIN_I]
+        self.option_array[OptionSlot::CurrentMeasurementGain.index()]
     }
 
     /// Returns the persisted ADC reference voltage option used to derive volts per converter count.
     pub fn uref(&self) -> Float {
-        self.option_array[OPT_UREF]
+        self.option_array[OptionSlot::ReferenceVoltage.index()]
     }
 
     /// Returns the persisted full-scale DCG voltage used to derive range limits and voltage DAC scaling.
     pub fn umax(&self) -> Float {
-        self.option_array[OPT_UMAX]
+        self.option_array[OptionSlot::MaximumVoltage.index()]
     }
 
     /// Returns the persisted sense resistance for the bounded current-shunt index.
     pub fn rsense(&self, index: usize) -> Float {
-        self.option_array[OPT_RSENSE_BASE + index.min(3)]
+        self.option_array[OptionSlot::SenseResistance2mA.index() + index.min(3)]
     }
 
     /// Returns the persisted full-scale current for the bounded shunt index.
     pub fn imax(&self, index: usize) -> Float {
-        self.option_array[OPT_IMAX_BASE + index.min(3)]
+        self.option_array[OptionSlot::MaximumCurrent2mA.index() + index.min(3)]
     }
 
     /// Returns the persisted voltage ADC divider factor for the bounded voltage-range index.
     pub fn adc_u_fac(&self, index: usize) -> Float {
-        self.option_array[OPT_ADCUFAC_BASE + index.min(1)]
+        self.option_array[OptionSlot::LowVoltageAdcDivider.index() + index.min(1)]
     }
 
     /// Initializes options before dependent calculations or outputs are enabled.
     pub fn init_options(&self) -> u8 {
-        self.option_array[OPT_INIT_OPTIONS] as u8
+        self.option_array[OptionSlot::InstalledHardware.index()] as u8
     }
 
     /// Initializes switch u before dependent calculations or outputs are enabled.
     pub fn init_switch_u(&self) -> Float {
-        self.option_array[OPT_INIT_SWITCH_U]
+        self.option_array[OptionSlot::VoltageRangeSwitchpoint.index()]
     }
 
     /// Initializes hyst low before dependent calculations or outputs are enabled.
     pub fn init_hyst_low(&self) -> Float {
-        self.option_array[OPT_INIT_HYST_LOW]
+        self.option_array[OptionSlot::RelayHysteresisLow.index()]
     }
 
     /// Initializes hyst high before dependent calculations or outputs are enabled.
     pub fn init_hyst_high(&self) -> Float {
-        self.option_array[OPT_INIT_HYST_HIGH]
+        self.option_array[OptionSlot::RelayHysteresisHigh.index()]
     }
 
     /// Initializes fan on temp before dependent calculations or outputs are enabled.
     pub fn init_fan_on_temp(&self) -> Float {
-        self.option_array[OPT_INIT_FAN_ON_TEMP]
+        self.option_array[OptionSlot::FanOnTemperature.index()]
     }
 
     /// Initializes ripple percent before dependent calculations or outputs are enabled.
     pub fn init_ripple_percent(&self) -> i32 {
-        self.option_array[OPT_INIT_RIPPLE_PERCENT] as i32
+        self.option_array[OptionSlot::InitialRipplePercent.index()] as i32
     }
 
     /// Initializes ton time before dependent calculations or outputs are enabled.
     pub fn init_ton_time(&self) -> u16 {
-        self.option_array[OPT_INIT_TON_TIME] as u16
+        self.option_array[OptionSlot::InitialRippleOnTime.index()] as u16
     }
 
     /// Initializes toff time before dependent calculations or outputs are enabled.
     pub fn init_toff_time(&self) -> u16 {
-        self.option_array[OPT_INIT_TOFF_TIME] as u16
+        self.option_array[OptionSlot::InitialRippleOffTime.index()] as u16
     }
 }

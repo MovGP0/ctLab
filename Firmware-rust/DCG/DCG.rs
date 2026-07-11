@@ -24,72 +24,6 @@ pub const ADR_STR: &str = "Adr ";
 /// Subchannel sentinel returned by mnemonic lookup when no valid command mapping exists.
 pub const ERR_SUB_CH: u8 = 255;
 
-/// Persisted DCG option-slot count; it fixes EEPROM layout and bounds every option index.
-const OPTION_ARRAY_LEN: usize = 25;
-
-/// EEPROM option slot containing the startup voltage setpoint.
-const OPT_INIT_VOLT: usize = 0;
-
-/// EEPROM option slot containing the startup current-limit setpoint.
-const OPT_INIT_AMP: usize = 1;
-
-/// EEPROM option slot containing the preamplifier gain calibration.
-const OPT_INIT_GAIN_PRE: usize = 2;
-
-/// EEPROM option slot containing the output-stage voltage gain calibration.
-const OPT_INIT_GAIN_OUT: usize = 3;
-
-/// EEPROM option slot containing the current measurement gain calibration.
-const OPT_INIT_GAIN_I: usize = 4;
-
-/// EEPROM option slot containing ADC reference voltage.
-const OPT_UREF: usize = 5;
-
-/// EEPROM option slot containing DCG full-scale voltage.
-const OPT_UMAX: usize = 6;
-
-/// First of four EEPROM slots containing current-shunt resistances.
-const OPT_RSENSE_BASE: usize = 7;
-
-/// First of four EEPROM slots containing full-scale current per shunt.
-const OPT_IMAX_BASE: usize = 11;
-
-/// First of two EEPROM slots containing voltage ADC divider factors.
-const OPT_ADCUFAC_BASE: usize = 15;
-
-/// EEPROM option slot containing the installed-hardware bit field.
-const OPT_INIT_OPTIONS: usize = 17;
-
-/// EEPROM option slot containing the voltage relay transition threshold.
-const OPT_INIT_SWITCH_U: usize = 18;
-
-/// EEPROM option slot containing the lower relay hysteresis threshold.
-const OPT_INIT_HYST_LOW: usize = 19;
-
-/// EEPROM option slot containing the upper relay hysteresis threshold.
-const OPT_INIT_HYST_HIGH: usize = 20;
-
-/// EEPROM option slot containing the LM75 fan-on temperature in degrees Celsius.
-const OPT_INIT_FAN_ON_TEMP: usize = 21;
-
-/// EEPROM option slot containing startup ripple depth in percent.
-const OPT_INIT_RIPPLE_PERCENT: usize = 22;
-
-/// EEPROM option slot containing startup ripple on-time in milliseconds.
-const OPT_INIT_TON_TIME: usize = 23;
-
-/// EEPROM option slot containing startup ripple off-time in milliseconds.
-const OPT_INIT_TOFF_TIME: usize = 24;
-
-/// EEPROM option bit selecting the installed 16-bit LTC1655 instead of the 12-bit DAC path.
-const DAC16_PRESENT_BIT: u8 = 1 << 0;
-
-/// EEPROM option bit selecting LTC1864 measurements instead of the AVR ADC10 path.
-const ADC16_PRESENT_BIT: u8 = 1 << 1;
-
-/// EEPROM option bit declaring the DC power daughterboard and its relay/sense circuitry present.
-const DCP_PRESENT_BIT: u8 = 1 << 2;
-
 /// Encoder acceleration multiplier indexed by bounded detent speed, beginning with zero movement and saturating at 500x.
 #[rustfmt::skip]
 const INCR_ACC_ARRAY: [i32; 16] = [
@@ -134,6 +68,14 @@ pub use current_range::CurrentRange;
 #[path = "dcg/voltage_range.rs"]
 mod voltage_range;
 pub use voltage_range::VoltageRange;
+
+#[path = "dcg/option_slot.rs"]
+mod option_slot;
+pub use option_slot::OptionSlot;
+
+#[path = "dcg/hardware_option.rs"]
+mod hardware_option;
+pub use hardware_option::HardwareOption;
 
 #[path = "dcg/eeprom_data.rs"]
 mod eeprom_data;
@@ -259,17 +201,19 @@ mod tests {
             dac_i_offsets: [1, 2, 3, 4],
             ..EepromData::default()
         };
-        eeprom.option_array[OPT_INIT_GAIN_PRE] = 1.0;
-        eeprom.option_array[OPT_INIT_GAIN_OUT] = 1.0;
-        eeprom.option_array[OPT_INIT_GAIN_I] = 1.0;
-        eeprom.option_array[OPT_UREF] = 1.0;
-        eeprom.option_array[OPT_INIT_SWITCH_U] = 2.0;
-        eeprom.option_array[OPT_INIT_RIPPLE_PERCENT] = 25.0;
-        eeprom.option_array[OPT_INIT_TON_TIME] = 4.0;
-        eeprom.option_array[OPT_INIT_TOFF_TIME] = 6.0;
-        eeprom.option_array[OPT_RSENSE_BASE..OPT_RSENSE_BASE + 4]
+        eeprom.option_array[OptionSlot::PreamplifierGain.index()] = 1.0;
+        eeprom.option_array[OptionSlot::OutputStageGain.index()] = 1.0;
+        eeprom.option_array[OptionSlot::CurrentMeasurementGain.index()] = 1.0;
+        eeprom.option_array[OptionSlot::ReferenceVoltage.index()] = 1.0;
+        eeprom.option_array[OptionSlot::VoltageRangeSwitchpoint.index()] = 2.0;
+        eeprom.option_array[OptionSlot::InitialRipplePercent.index()] = 25.0;
+        eeprom.option_array[OptionSlot::InitialRippleOnTime.index()] = 4.0;
+        eeprom.option_array[OptionSlot::InitialRippleOffTime.index()] = 6.0;
+        let sense_resistance = OptionSlot::SenseResistance2mA.index();
+        eeprom.option_array[sense_resistance..sense_resistance + 4]
             .copy_from_slice(&[1000.0, 100.0, 10.0, 1.0]);
-        eeprom.option_array[OPT_IMAX_BASE..OPT_IMAX_BASE + 4]
+        let maximum_current = OptionSlot::MaximumCurrent2mA.index();
+        eeprom.option_array[maximum_current..maximum_current + 4]
             .copy_from_slice(&[0.002, 0.020, 0.200, 2.000]);
         eeprom
     }
@@ -284,24 +228,24 @@ mod tests {
     #[test]
     fn default_eeprom_matches_pascal_ada16_option_layout() {
         let eeprom = EepromData::default();
-        assert_eq!(eeprom.option_array[OPT_INIT_VOLT], 5.0);
-        assert_eq!(eeprom.option_array[OPT_INIT_AMP], 0.02);
-        assert_eq!(eeprom.option_array[OPT_INIT_GAIN_I], 0.25);
-        assert_eq!(eeprom.option_array[OPT_UREF], 2.5);
-        assert_eq!(eeprom.option_array[OPT_UMAX], 30.0);
-        assert_eq!(eeprom.option_array[OPT_RSENSE_BASE], 470.0);
-        assert_eq!(eeprom.option_array[OPT_RSENSE_BASE + 3], 0.47);
-        assert_eq!(eeprom.option_array[OPT_IMAX_BASE], 0.002);
-        assert_eq!(eeprom.option_array[OPT_IMAX_BASE + 3], 2.0);
-        assert_eq!(eeprom.option_array[OPT_ADCUFAC_BASE], 2.0);
-        assert_eq!(eeprom.option_array[OPT_ADCUFAC_BASE + 1], 6.0);
-        assert_eq!(eeprom.option_array[OPT_INIT_OPTIONS], 7.0);
-        assert_eq!(eeprom.option_array[OPT_INIT_SWITCH_U], 12.1);
-        assert_eq!(eeprom.option_array[OPT_INIT_HYST_LOW], 8.6);
-        assert_eq!(eeprom.option_array[OPT_INIT_HYST_HIGH], 8.9);
-        assert_eq!(eeprom.option_array[OPT_INIT_FAN_ON_TEMP], 50.0);
-        assert_eq!(eeprom.option_array[OPT_INIT_TON_TIME], 4.0);
-        assert_eq!(eeprom.option_array[OPT_INIT_TOFF_TIME], 6.0);
+        assert_eq!(eeprom.option_array[OptionSlot::InitialVoltage.index()], 5.0);
+        assert_eq!(eeprom.option_array[OptionSlot::InitialCurrent.index()], 0.02);
+        assert_eq!(eeprom.option_array[OptionSlot::CurrentMeasurementGain.index()], 0.25);
+        assert_eq!(eeprom.option_array[OptionSlot::ReferenceVoltage.index()], 2.5);
+        assert_eq!(eeprom.option_array[OptionSlot::MaximumVoltage.index()], 30.0);
+        assert_eq!(eeprom.option_array[OptionSlot::SenseResistance2mA.index()], 470.0);
+        assert_eq!(eeprom.option_array[OptionSlot::SenseResistance2A.index()], 0.47);
+        assert_eq!(eeprom.option_array[OptionSlot::MaximumCurrent2mA.index()], 0.002);
+        assert_eq!(eeprom.option_array[OptionSlot::MaximumCurrent2A.index()], 2.0);
+        assert_eq!(eeprom.option_array[OptionSlot::LowVoltageAdcDivider.index()], 2.0);
+        assert_eq!(eeprom.option_array[OptionSlot::HighVoltageAdcDivider.index()], 6.0);
+        assert_eq!(eeprom.option_array[OptionSlot::InstalledHardware.index()], 7.0);
+        assert_eq!(eeprom.option_array[OptionSlot::VoltageRangeSwitchpoint.index()], 12.1);
+        assert_eq!(eeprom.option_array[OptionSlot::RelayHysteresisLow.index()], 8.6);
+        assert_eq!(eeprom.option_array[OptionSlot::RelayHysteresisHigh.index()], 8.9);
+        assert_eq!(eeprom.option_array[OptionSlot::FanOnTemperature.index()], 50.0);
+        assert_eq!(eeprom.option_array[OptionSlot::InitialRippleOnTime.index()], 4.0);
+        assert_eq!(eeprom.option_array[OptionSlot::InitialRippleOffTime.index()], 6.0);
     }
 
     #[test]
@@ -434,7 +378,7 @@ mod tests {
     #[test]
     fn measurement_conversion_uses_pascal_adc_paths_and_input_scaling() {
         let mut eeprom = test_eeprom();
-        eeprom.option_array[OPT_INIT_OPTIONS] = 0.0;
+        eeprom.option_array[OptionSlot::InstalledHardware.index()] = 0.0;
         eeprom.adc_u_offsets = [3, 30];
         eeprom.adc_i_offsets = [4, 40, 400, 4000];
         eeprom.adc_u_scales = [1.0, 1.0];

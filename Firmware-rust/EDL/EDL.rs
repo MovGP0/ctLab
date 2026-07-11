@@ -44,34 +44,8 @@ pub const TEMPERATURE_POLL_CYCLES: u8 = 20;
 /// Absolute software over-temperature trip independent of LM75 output polarity.
 pub const TEMPERATURE_MAX_C: Float = 70.0;
 
-const DAC_TYPE_MASK: u8 = 0x03;
-const LM75_INTERNAL_BIT: u8 = 1 << 2;
-const LM75_EXTERNAL_BIT: u8 = 1 << 3;
-const LM75_INTERNAL_ADDRESS: u8 = 0x49;
-const LM75_EXTERNAL_ADDRESS: u8 = 0x48;
-const LM75_TEMPERATURE_REGISTER: u8 = 0;
-const LM75_CONFIGURATION_REGISTER: u8 = 1;
-const LM75_HYSTERESIS_REGISTER: u8 = 2;
-const LM75_OVERTEMPERATURE_REGISTER: u8 = 3;
 const LM75_INVERTED_OUTPUT_CONFIGURATION: u8 = 4;
 const LM75_HYSTERESIS_C: Float = 3.0;
-
-const OPT_INIT_VOLT: usize = 0;
-const OPT_INIT_AMP: usize = 1;
-const OPT_INIT_LOW_DIVIDER_U: usize = 2;
-const OPT_INIT_HI_DIVIDER_U: usize = 3;
-const OPT_INIT_GAIN_I: usize = 4;
-const OPT_UREF: usize = 5;
-const OPT_PMAX: usize = 6;
-const OPT_RSENSE_BASE: usize = 7;
-const OPT_IMAX_BASE: usize = 11;
-const OPT_UMAX_HI: usize = 15;
-const OPT_UMAX_LO: usize = 16;
-const OPT_INIT_OPTIONS: usize = 17;
-const OPT_INIT_IPERCENT: usize = 18;
-const OPT_INIT_TON: usize = 19;
-const OPT_INIT_TOFF: usize = 20;
-const OPT_INIT_FAN_TEMP: usize = 21;
 
 /// Command identities kept aligned with the Pascal mnemonic table.
 #[path = "edl/cmd_which.rs"]
@@ -102,6 +76,26 @@ pub use measure_kind::MeasureKind;
 #[path = "edl/dac_kind.rs"]
 mod dac_kind;
 pub use dac_kind::DacKind;
+
+/// Fixed positions in the persisted EDL option image.
+#[path = "edl/option_slot.rs"]
+mod option_slot;
+pub use option_slot::OptionSlot;
+
+/// Optional hardware flags encoded in the EDL option byte.
+#[path = "edl/hardware_option.rs"]
+mod hardware_option;
+pub use hardware_option::HardwareOption;
+
+/// LM75 pointer-register selectors used by the initialization sequence.
+#[path = "edl/lm75_register.rs"]
+mod lm75_register;
+pub use lm75_register::Lm75Register;
+
+/// Internal and external LM75 board locations.
+#[path = "edl/lm75_sensor.rs"]
+mod lm75_sensor;
+pub use lm75_sensor::Lm75Sensor;
 
 /// Independently latched output protection causes.
 #[path = "edl/protection_flags.rs"]
@@ -239,21 +233,23 @@ mod tests {
             dac_i_scales: [1.0, 1.0, 1.0, 1.0],
             ..EepromData::default()
         };
-        eeprom.option_array[OPT_INIT_LOW_DIVIDER_U] = 1.0;
-        eeprom.option_array[OPT_INIT_HI_DIVIDER_U] = 1.0;
-        eeprom.option_array[OPT_INIT_GAIN_I] = 1.0;
-        eeprom.option_array[OPT_UREF] = 1.0;
-        eeprom.option_array[OPT_PMAX] = 2.0;
-        eeprom.option_array[OPT_RSENSE_BASE..OPT_RSENSE_BASE + 4]
+        eeprom.option_array[OptionSlot::LowVoltageDivider.index()] = 1.0;
+        eeprom.option_array[OptionSlot::HighVoltageDivider.index()] = 1.0;
+        eeprom.option_array[OptionSlot::CurrentMeasurementGain.index()] = 1.0;
+        eeprom.option_array[OptionSlot::ReferenceVoltage.index()] = 1.0;
+        eeprom.option_array[OptionSlot::MaximumPower.index()] = 2.0;
+        let sense_resistance = OptionSlot::SenseResistanceA.index();
+        eeprom.option_array[sense_resistance..sense_resistance + 4]
             .copy_from_slice(&[10.0, 1.0, 0.5, 0.1]);
-        eeprom.option_array[OPT_IMAX_BASE..OPT_IMAX_BASE + 4]
+        let maximum_current = OptionSlot::MaximumCurrentA.index();
+        eeprom.option_array[maximum_current..maximum_current + 4]
             .copy_from_slice(&[0.01, 0.1, 0.5, 2.0]);
-        eeprom.option_array[OPT_UMAX_HI] = 2.0;
-        eeprom.option_array[OPT_UMAX_LO] = 1.0;
-        eeprom.option_array[OPT_INIT_IPERCENT] = 100.0;
-        eeprom.option_array[OPT_INIT_TON] = 10.0;
-        eeprom.option_array[OPT_INIT_TOFF] = 0.0;
-        eeprom.option_array[OPT_INIT_OPTIONS] = 4.0;
+        eeprom.option_array[OptionSlot::HighVoltageLimit.index()] = 2.0;
+        eeprom.option_array[OptionSlot::LowVoltageLimit.index()] = 1.0;
+        eeprom.option_array[OptionSlot::InitialCurrentPercent.index()] = 100.0;
+        eeprom.option_array[OptionSlot::InitialRippleOnTime.index()] = 10.0;
+        eeprom.option_array[OptionSlot::InitialRippleOffTime.index()] = 0.0;
+        eeprom.option_array[OptionSlot::InstalledHardware.index()] = 4.0;
         eeprom
     }
 
@@ -262,25 +258,27 @@ mod tests {
         let eeprom = EepromData::default();
         assert_eq!(eeprom.dac_i_offsets, [0, 0, 0, 0]);
         assert_eq!(eeprom.adc_u_offsets, [-260, -260]);
-        assert_eq!(eeprom.option_array[OPT_INIT_AMP], 0.02);
-        assert_eq!(eeprom.option_array[OPT_RSENSE_BASE], 100.0);
-        assert_eq!(eeprom.option_array[OPT_RSENSE_BASE + 3], 0.1);
-        assert_eq!(eeprom.option_array[OPT_IMAX_BASE], 0.002);
-        assert_eq!(eeprom.option_array[OPT_IMAX_BASE + 3], 2.0);
-        assert_eq!(eeprom.option_array[OPT_UMAX_HI], 25.0);
-        assert_eq!(eeprom.option_array[OPT_UMAX_LO], 6.1);
-        assert_eq!(eeprom.option_array[OPT_INIT_OPTIONS], 4.0);
-        assert_eq!(eeprom.option_array[OPT_INIT_TON], 10.0);
-        assert_eq!(eeprom.option_array[OPT_INIT_TOFF], 0.0);
-        assert_eq!(eeprom.option_array[OPT_INIT_FAN_TEMP], 50.0);
+        assert_eq!(eeprom.option_array[OptionSlot::InitialCurrent.index()], 0.02);
+        assert_eq!(eeprom.option_array[OptionSlot::SenseResistanceA.index()], 100.0);
+        assert_eq!(eeprom.option_array[OptionSlot::SenseResistanceD.index()], 0.1);
+        assert_eq!(eeprom.option_array[OptionSlot::MaximumCurrentA.index()], 0.002);
+        assert_eq!(eeprom.option_array[OptionSlot::MaximumCurrentD.index()], 2.0);
+        assert_eq!(eeprom.option_array[OptionSlot::HighVoltageLimit.index()], 25.0);
+        assert_eq!(eeprom.option_array[OptionSlot::LowVoltageLimit.index()], 6.1);
+        assert_eq!(eeprom.option_array[OptionSlot::InstalledHardware.index()], 4.0);
+        assert_eq!(eeprom.option_array[OptionSlot::InitialRippleOnTime.index()], 10.0);
+        assert_eq!(eeprom.option_array[OptionSlot::InitialRippleOffTime.index()], 0.0);
+        assert_eq!(eeprom.option_array[OptionSlot::FanOnTemperature.index()], 50.0);
     }
 
     #[test]
     fn set_lm75_temp_programs_pascal_threshold_hysteresis_and_pointer_sequence() {
         let hw = MockHardware::default();
         let mut eeprom = test_eeprom();
-        eeprom.option_array[OPT_INIT_OPTIONS] = Float::from(LM75_INTERNAL_BIT | LM75_EXTERNAL_BIT);
-        eeprom.option_array[OPT_INIT_FAN_TEMP] = 50.0;
+        eeprom.option_array[OptionSlot::InstalledHardware.index()] = Float::from(
+            HardwareOption::InternalLm75.mask() | HardwareOption::ExternalLm75.mask(),
+        );
+        eeprom.option_array[OptionSlot::FanOnTemperature.index()] = 50.0;
         let mut state = DeviceState::with_eeprom(hw, eeprom);
         state.hw.lm75_writes.clear();
 
@@ -290,16 +288,24 @@ mod tests {
             vec![
                 (
                     address,
-                    LM75_CONFIGURATION_REGISTER,
+                    Lm75Register::Configuration.address(),
                     vec![LM75_INVERTED_OUTPUT_CONFIGURATION],
                 ),
-                (address, LM75_OVERTEMPERATURE_REGISTER, vec![0x32, 0x00]),
-                (address, LM75_HYSTERESIS_REGISTER, vec![0x2f, 0x00]),
-                (address, LM75_TEMPERATURE_REGISTER, vec![]),
+                (
+                    address,
+                    Lm75Register::Overtemperature.address(),
+                    vec![0x32, 0x00],
+                ),
+                (
+                    address,
+                    Lm75Register::Hysteresis.address(),
+                    vec![0x2f, 0x00],
+                ),
+                (address, Lm75Register::Temperature.address(), vec![]),
             ]
         };
-        let mut expected = one_sensor(LM75_INTERNAL_ADDRESS);
-        expected.extend(one_sensor(LM75_EXTERNAL_ADDRESS));
+        let mut expected = one_sensor(Lm75Sensor::Internal.address());
+        expected.extend(one_sensor(Lm75Sensor::External.address()));
         assert_eq!(state.hw.lm75_writes, expected);
     }
 

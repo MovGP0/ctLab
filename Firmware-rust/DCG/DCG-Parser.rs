@@ -21,6 +21,9 @@ pub use error::Error;
 mod parser_impl;
 pub use parser_impl::DcgParser;
 
+/// Fixed EEPROM option positions shared with the foreground DCG state machine.
+pub use crate::dcg::OptionSlot;
+
 /// Firmware banner returned by identification requests and shown during startup for service traceability.
 pub const VERS1_STR: &str = "2.92 [DCG by CM/c't 05/2010]";
 
@@ -47,7 +50,7 @@ pub const DEFAULT_I_MAX_ARRAY: [f32; 4] = [
 
 /// Complete factory DCG option image used by the parser model when real EEPROM is unavailable.
 #[rustfmt::skip]
-pub const DEFAULT_OPTION_ARRAY: [f32; 25] = [
+pub const DEFAULT_OPTION_ARRAY: [f32; OptionSlot::COUNT] = [
     5.0,
     0.02,
     3.0,
@@ -77,7 +80,7 @@ pub const DEFAULT_OPTION_ARRAY: [f32; 25] = [
 
 #[cfg(test)]
 mod tests {
-    use super::{CmdWhich, DcgParser};
+    use super::{CmdWhich, DcgParser, OptionSlot};
 
     #[test]
     fn command_lookup_preserves_original_table() {
@@ -163,7 +166,10 @@ mod tests {
         parser.parse_sub_ch();
 
         assert_eq!(parser.u_max, 24.0);
-        assert_eq!(parser.option_array[6], 24.0);
+        assert_eq!(
+            parser.option_array[OptionSlot::MaximumVoltage.index()],
+            24.0
+        );
         assert_eq!(parser.delay_log, vec![3]);
     }
 

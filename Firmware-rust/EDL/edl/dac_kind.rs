@@ -14,3 +14,15 @@ pub enum DacKind {
     /// Sixteen-bit DAC8811 interface.
     Dac8811,
 }
+
+impl DacKind {
+    /// Decodes the two low EEPROM option bits written by the Pascal `tDAC` value.
+    pub const fn from_options(options: u8) -> Self {
+        match options & 0b0000_0011 {
+            1 => Self::Ad5452,
+            2 => Self::Dac8501,
+            3 => Self::Dac8811,
+            _ => Self::Ltc8043,
+        }
+    }
+}

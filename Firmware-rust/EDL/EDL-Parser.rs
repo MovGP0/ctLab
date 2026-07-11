@@ -23,14 +23,16 @@ pub use modify::Modify;
 /// Compiler-checked EDL mnemonic and base-subchannel mapping shared with the foreground state machine.
 pub use crate::edl::CmdWhich;
 
-const OPTION_ARRAY_LEN: usize = 22;
+/// Fixed EEPROM option positions shared with the foreground EDL state machine.
+pub use crate::edl::OptionSlot;
+
 const DACI_COUNT: usize = 4;
 const ADCU_COUNT: usize = 2;
 const ADCI_COUNT: usize = 4;
 const SHUNT_D: u8 = 3;
 const DEFAULT_DAC_MAX: u16 = 4095;
 #[rustfmt::skip]
-const DEFAULT_OPTION_ARRAY: [f64; OPTION_ARRAY_LEN] = [
+const DEFAULT_OPTION_ARRAY: [f64; OptionSlot::COUNT] = [
     0.0,
     0.02,
     2.5,
@@ -54,14 +56,6 @@ const DEFAULT_OPTION_ARRAY: [f64; OPTION_ARRAY_LEN] = [
     0.0,
     50.0,
 ];
-const OPT_GAIN_I: usize = 4;
-const OPT_U_REF: usize = 5;
-const OPT_PMAX: usize = 6;
-const OPT_RSENSE_BASE: usize = 7;
-const OPT_IMAX_BASE: usize = 11;
-const OPT_UMAX_HI: usize = 15;
-const OPT_UMAX_LO: usize = 16;
-const OPT_INIT_OPTIONS: usize = 17;
 const ADC10_COUNT: usize = 6;
 const ADC_MAX_10: f64 = 1023.0;
 const ADC_MAX_16: f64 = 65535.0;
@@ -226,7 +220,10 @@ mod tests {
 
         parser.parse_sub_ch();
 
-        assert_eq!(parser.option_array[OPT_GAIN_I], 20.0);
+        assert_eq!(
+            parser.option_array[OptionSlot::CurrentMeasurementGain.index()],
+            20.0
+        );
         assert_eq!(parser.dac_lsb_i[0], initial_lsb / 2.0);
         assert_eq!(parser.dc_ohm_max, initial_ohm_max * 2.0);
         assert!(!parser.ee_unlocked);

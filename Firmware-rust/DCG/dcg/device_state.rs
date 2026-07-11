@@ -253,9 +253,9 @@ impl<H: DcgHardware> DeviceState<H> {
     /// Rebuilds calibration factors from EEPROM and active hardware options so later ADC/DAC conversions use one coherent scale set.
     pub fn init_scales(&mut self) {
         let options = self.eeprom.init_options();
-        let dac16_present = (options & DAC16_PRESENT_BIT) != 0;
-        let adc16_present = (options & ADC16_PRESENT_BIT) != 0;
-        let dcp_present = (options & DCP_PRESENT_BIT) != 0;
+        let dac16_present = HardwareOption::Ltc1655Dac.is_set_in(options);
+        let adc16_present = HardwareOption::Ltc1864Adc.is_set_in(options);
+        let dcp_present = HardwareOption::DcPowerBoard.is_set_in(options);
 
         let uref = self.eeprom.uref();
         let gain_out = self.eeprom.init_gain_out();
