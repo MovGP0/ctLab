@@ -98,7 +98,7 @@ const ERR_STR_ARR: [&str; 8] = [
 
 const WAVE_SEL_STR_ARR: [&str; 6] = ["Off", "Sin", "Tri", "Squ", "Lgc", "Ext"];
 
-const CMD_TABLE: [(&str, u8, CmdWhich); 19] = [
+const CMD_TABLE: [(&str, u8, CmdWhich); 20] = [
     ("STR", 255, CmdWhich::Str),
     ("IDN", 254, CmdWhich::Idn),
     ("TRG", 249, CmdWhich::Trg),
@@ -118,6 +118,7 @@ const CMD_TABLE: [(&str, u8, CmdWhich); 19] = [
     ("WEN", 250, CmdWhich::Wen),
     ("ERC", 251, CmdWhich::Erc),
     ("SBD", 252, CmdWhich::Sbd),
+    ("NOP", 0, CmdWhich::Nop),
 ];
 
 const TERZ_ARRAY: [i32; 32] = [
@@ -379,44 +380,19 @@ trait HardwareInterface {
     fn write_serial(&mut self, text: &str);
     fn send_dds_word(&mut self, word: u16);
     fn shift_out_level_sr(&mut self, level: i32, switch_state: u8);
-
-    fn shift_out_offset_dac(&mut self, _dac_counts: i16) {}
-
-    fn serial_timeout_char(&mut self, _timeout_ticks: u8) -> Option<char> {
-        None
-    }
-
-    fn serial_pending(&self) -> bool {
-        false
-    }
-
-    fn take_systick(&mut self) -> bool {
-        false
-    }
-
-    fn next_panel_event(&mut self) -> PanelEvent {
-        PanelEvent::None
-    }
-
-    fn set_serial_baud_register(&mut self, _register: u8, _double_speed: bool) {}
-
-    fn read_slave_channel(&mut self) -> u8 {
-        0
-    }
-
-    fn serial_read_immediate(&mut self) -> Option<char> {
-        None
-    }
-
-    fn lcd_setup(&mut self) -> bool {
-        false
-    }
-
-    fn lcd_define_custom_char(&mut self, _slot: u8, _bitmap: [u8; 8]) {}
-    fn lcd_write_line(&mut self, _row: u8, _text: &str) {}
-
-    fn set_activity_led(&mut self, _active_low: bool) {}
-    fn delay_ms(&mut self, _ms: u16) {}
+    fn shift_out_offset_dac(&mut self, dac_counts: i16);
+    fn serial_timeout_char(&mut self, timeout_ticks: u8) -> Option<char>;
+    fn serial_pending(&self) -> bool;
+    fn take_systick(&mut self) -> bool;
+    fn next_panel_event(&mut self) -> PanelEvent;
+    fn set_serial_baud_register(&mut self, register: u8, double_speed: bool);
+    fn read_slave_channel(&mut self) -> u8;
+    fn serial_read_immediate(&mut self) -> Option<char>;
+    fn lcd_setup(&mut self) -> bool;
+    fn lcd_define_custom_char(&mut self, slot: u8, bitmap: [u8; 8]);
+    fn lcd_write_line(&mut self, row: u8, text: &str);
+    fn set_activity_led(&mut self, active_low: bool);
+    fn delay_ms(&mut self, ms: u16);
 }
 
 impl FirmwareState {
@@ -696,11 +672,7 @@ impl FirmwareState {
                 return which;
             }
         }
-        if cmd.eq_ignore_ascii_case("NOP") {
-            CmdWhich::Nop
-        } else {
-            CmdWhich::Err
-        }
+        CmdWhich::Err
     }
 
     // Extract either a command token or a numeric parameter token from the
@@ -1231,6 +1203,10 @@ mod tests {
             self.offset_ops.push(dac_counts);
         }
 
+        fn serial_timeout_char(&mut self, _timeout_ticks: u8) -> Option<char> {
+            self.serial_in.pop_front()
+        }
+
         fn set_serial_baud_register(&mut self, register: u8, double_speed: bool) {
             self.baud_calls.push((register, double_speed));
         }
@@ -1513,6 +1489,19 @@ mod tests {
         assert!(is_param);
         assert_eq!(token, "-1,5/2");
         assert_eq!(end, 8);
+    }
+
+    #[test]
+    fn command_table_includes_pascal_nop_mapping() {
+        assert_eq!(FirmwareState::cmd_to_index("NOP"), CmdWhich::Nop);
+        assert_eq!(FirmwareState::cmd_to_index("nop"), CmdWhich::Nop);
+        assert_eq!(
+            CMD_TABLE
+                .iter()
+                .find(|(command, _, _)| *command == "NOP")
+                .map(|(_, sub_channel, which)| (*sub_channel, *which)),
+            Some((0, CmdWhich::Nop))
+        );
     }
 
     #[test]

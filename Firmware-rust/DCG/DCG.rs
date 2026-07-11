@@ -336,21 +336,15 @@ pub trait DcgHardware {
     fn read_adc10(&mut self, channel_1_based: u8) -> i16;
     fn read_adc16_voltage(&mut self) -> u16;
     fn read_adc16_current(&mut self) -> u16;
-    fn serial_read_timeout(&mut self, _timeout_ms: u16) -> Option<char> {
-        None
-    }
+    fn serial_read_timeout(&mut self, timeout_ms: u16) -> Option<char>;
     fn set_voltage_dac_raw(&mut self, raw: u16);
     fn set_current_dac_raw(&mut self, raw: u16);
-    fn set_voltage_dac_off_raw(&mut self, raw: u16) {
-        self.set_voltage_dac_raw(raw);
-    }
-    fn delay_ms(&mut self, _milliseconds: u16) {}
+    fn set_voltage_dac_off_raw(&mut self, raw: u16);
+    fn delay_ms(&mut self, milliseconds: u16);
     fn set_current_range(&mut self, range: CurrentRange);
     fn set_voltage_range(&mut self, range: VoltageRange);
-    fn set_input_relay_high(&mut self, _high: bool) {}
-    fn current_limit_sense(&mut self) -> bool {
-        true
-    }
+    fn set_input_relay_high(&mut self, high: bool);
+    fn current_limit_sense(&mut self) -> bool;
     fn set_output_enabled(&mut self, enabled: bool);
     fn read_temp_c(&mut self) -> Option<Float>;
     fn serial_write(&mut self, text: &str);
@@ -648,12 +642,20 @@ impl<H: DcgHardware> DeviceState<H> {
 
     pub fn inc_fac_i(&mut self) {
         self.inc_coarse_div = 100.0;
-        self.inc_fine_div = if self.current_set >= 1.0 { 1_000.0 } else { 10_000.0 };
+        self.inc_fine_div = if self.current_set >= 1.0 {
+            1_000.0
+        } else {
+            10_000.0
+        };
     }
 
     pub fn inc_fac_u(&mut self) {
         self.inc_coarse_div = 10.0;
-        self.inc_fine_div = if self.voltage_set >= 1.0 { 100.0 } else { 1_000.0 };
+        self.inc_fine_div = if self.voltage_set >= 1.0 {
+            100.0
+        } else {
+            1_000.0
+        };
     }
 
     pub fn round_inc_param(&mut self) {
@@ -663,10 +665,12 @@ impl<H: DcgHardware> DeviceState<H> {
 
         match self.panel_modify {
             Modify::Volt => {
-                self.voltage_set = Self::round_to_increment_divisor(self.voltage_set, self.inc_coarse_div);
+                self.voltage_set =
+                    Self::round_to_increment_divisor(self.voltage_set, self.inc_coarse_div);
             }
             Modify::Ampere => {
-                self.current_set = Self::round_to_increment_divisor(self.current_set, self.inc_coarse_div);
+                self.current_set =
+                    Self::round_to_increment_divisor(self.current_set, self.inc_coarse_div);
             }
             _ => {}
         }
@@ -733,14 +737,16 @@ impl<H: DcgHardware> DeviceState<H> {
             }
             Modify::TOn => {
                 self.mark_first_encoder_turn();
-                self.pw_on_time_ms = Self::add_signed_u16(self.pw_on_time_ms, accelerated_delta * 2);
+                self.pw_on_time_ms =
+                    Self::add_signed_u16(self.pw_on_time_ms, accelerated_delta * 2);
                 self.check_limits();
                 self.sub_channel = 27;
                 self.write_param_int_ser(i32::from(self.pw_on_time_ms));
             }
             Modify::TOff => {
                 self.mark_first_encoder_turn();
-                self.pw_off_time_ms = Self::add_signed_u16(self.pw_off_time_ms, accelerated_delta * 2);
+                self.pw_off_time_ms =
+                    Self::add_signed_u16(self.pw_off_time_ms, accelerated_delta * 2);
                 self.check_limits();
                 self.sub_channel = 28;
                 self.write_param_int_ser(i32::from(self.pw_off_time_ms));

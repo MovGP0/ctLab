@@ -25,6 +25,14 @@ pub const TEMPERATURE_MAX_C: Float = 70.0;
 const DAC_TYPE_MASK: u8 = 0x03;
 const LM75_INTERNAL_BIT: u8 = 1 << 2;
 const LM75_EXTERNAL_BIT: u8 = 1 << 3;
+const LM75_INTERNAL_ADDRESS: u8 = 0x49;
+const LM75_EXTERNAL_ADDRESS: u8 = 0x48;
+const LM75_TEMPERATURE_REGISTER: u8 = 0;
+const LM75_CONFIGURATION_REGISTER: u8 = 1;
+const LM75_HYSTERESIS_REGISTER: u8 = 2;
+const LM75_OVERTEMPERATURE_REGISTER: u8 = 3;
+const LM75_INVERTED_OUTPUT_CONFIGURATION: u8 = 4;
+const LM75_HYSTERESIS_C: Float = 3.0;
 
 const OPT_INIT_VOLT: usize = 0;
 const OPT_INIT_AMP: usize = 1;
@@ -371,12 +379,10 @@ pub trait EdlHardware {
     fn set_output_enabled(&mut self, enabled: bool);
     fn set_dac_raw(&mut self, raw: u16);
     fn read_temp_c(&mut self) -> Option<Float>;
+    fn lm75_write(&mut self, address: u8, register: u8, data: &[u8]);
     fn serial_write(&mut self, text: &str);
     fn lcd_write_line(&mut self, row: u8, text: &str);
-
-    fn read_trigger_in(&mut self) -> bool {
-        false
-    }
+    fn read_trigger_in(&mut self) -> bool;
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
@@ -442,6 +448,11 @@ pub struct DeviceState<H> {
     pub serial_input: String,
     pub completed_command: Option<String>,
     pub last_measurement: MeasurementSnapshot,
+    pub incr_fine: bool,
+    pub first_turn: bool,
+    pub incr_acc_float: Float,
+    pub inc_fine_div: Float,
+    pub inc_coarse_div: Float,
 }
 
 impl<H: EdlHardware> DeviceState<H> {
@@ -501,12 +512,47 @@ impl<H: EdlHardware> DeviceState<H> {
             serial_input: String::new(),
             completed_command: None,
             last_measurement: MeasurementSnapshot::default(),
+            incr_fine: false,
+            first_turn: true,
+            incr_acc_float: 0.0,
+            inc_fine_div: 1_000.0,
+            inc_coarse_div: 10.0,
         };
         state.init_scales();
         state
     }
 
-    pub fn set_lm75_temp(&mut self) {}
+    pub fn set_lm75_temp(&mut self) {
+        let threshold_c = self.eeprom.init_fan_on_temp();
+        if self.lm75_intern_enabled() {
+            self.set_one_lm75_temp(LM75_INTERNAL_ADDRESS, threshold_c);
+        }
+        if self.lm75_extern_enabled() {
+            self.set_one_lm75_temp(LM75_EXTERNAL_ADDRESS, threshold_c);
+        }
+    }
+
+    fn set_one_lm75_temp(&mut self, address: u8, threshold_c: Float) {
+        self.hw.lm75_write(
+            address,
+            LM75_CONFIGURATION_REGISTER,
+            &[LM75_INVERTED_OUTPUT_CONFIGURATION],
+        );
+
+        let overtemperature = Self::lm75_temperature_bytes(threshold_c);
+        self.hw
+            .lm75_write(address, LM75_OVERTEMPERATURE_REGISTER, &overtemperature);
+
+        let hysteresis = Self::lm75_temperature_bytes(threshold_c - LM75_HYSTERESIS_C);
+        self.hw
+            .lm75_write(address, LM75_HYSTERESIS_REGISTER, &hysteresis);
+        self.hw.lm75_write(address, LM75_TEMPERATURE_REGISTER, &[]);
+    }
+
+    fn lm75_temperature_bytes(temperature_c: Float) -> [u8; 2] {
+        let half_degrees = (temperature_c * 2.0) as i16;
+        (half_degrees << 7).to_be_bytes()
+    }
 
     pub fn get_one_lm75_temp(&mut self) -> Option<Float> {
         self.hw.read_temp_c()
@@ -566,6 +612,7 @@ impl<H: EdlHardware> DeviceState<H> {
         self.i_percent = self.eeprom.init_i_percent();
         self.scale.dc_ohm_min = self.eeprom.rsense(3) * self.scale.divider_u * gain_i * 1.1;
         self.scale.dc_ohm_max = self.eeprom.rsense(0) * self.scale.divider_u * gain_i * 100.0;
+        self.set_lm75_temp();
     }
 
     pub fn ser_crlf(&mut self) {
@@ -747,25 +794,101 @@ impl<H: EdlHardware> DeviceState<H> {
         frame
     }
 
-    pub fn inc_fac_i(&mut self, delta: Float) {
-        self.current_set = (self.current_set + delta).max(0.0);
+    pub fn inc_fac_i(&mut self) {
+        self.inc_coarse_div = 100.0;
+        self.inc_fine_div = if self.current_set >= 1.0 {
+            1_000.0
+        } else {
+            10_000.0
+        };
     }
 
-    pub fn inc_fac_r(&mut self, delta: Float) {
-        self.resistance_set = (self.resistance_set + delta).max(0.001);
+    pub fn inc_fac_r(&mut self) {
+        self.inc_coarse_div = if self.resistance_set >= 1_000.0 {
+            0.01
+        } else if self.resistance_set >= 100.0 {
+            0.1
+        } else if self.resistance_set >= 10.0 {
+            1.0
+        } else {
+            10.0
+        };
+        self.inc_fine_div = self.inc_coarse_div * 100.0;
     }
 
-    pub fn inc_fac_p(&mut self, delta: Float) {
-        self.power_set = (self.power_set + delta).max(0.0);
+    pub fn inc_fac_p(&mut self) {
+        self.inc_coarse_div = 10.0;
+        self.inc_fine_div = if self.power_set >= 10.0 {
+            100.0
+        } else {
+            1_000.0
+        };
     }
 
-    pub fn inc_fac_v(&mut self, delta: Float) {
-        self.voltage_cutoff = (self.voltage_cutoff + delta).max(0.0);
+    pub fn inc_fac_v(&mut self) {
+        self.inc_coarse_div = 10.0;
+        self.inc_fine_div = if self.voltage_cutoff >= 10.0 {
+            100.0
+        } else {
+            1_000.0
+        };
     }
 
-    pub fn round_inc_param(&mut self) {}
+    pub fn round_inc_param(&mut self) {
+        if self.incr_fine {
+            return;
+        }
 
-    pub fn set_acc_param(&mut self) {}
+        match self.modify {
+            Modify::LowerMainMenu if self.mode.is_current() => {
+                self.current_set =
+                    Self::round_to_increment_divisor(self.current_set, self.inc_coarse_div);
+            }
+            Modify::LowerMainMenu if self.mode.is_resistance() => {
+                self.resistance_set =
+                    Self::round_to_increment_divisor(self.resistance_set, self.inc_coarse_div);
+            }
+            Modify::LowerMainMenu if self.mode.is_power() => {
+                self.power_set =
+                    Self::round_to_increment_divisor(self.power_set, self.inc_coarse_div);
+            }
+            Modify::UpperMainMenu => {
+                self.voltage_cutoff =
+                    Self::round_to_increment_divisor(self.voltage_cutoff, self.inc_coarse_div);
+            }
+            _ => {}
+        }
+        self.first_turn = false;
+    }
+
+    pub fn set_acc_param(&mut self) {
+        let divisor = if self.incr_fine {
+            self.inc_fine_div
+        } else {
+            self.inc_coarse_div
+        };
+        self.incr_acc_float /= divisor;
+
+        match self.modify {
+            Modify::LowerMainMenu if self.mode.is_current() => {
+                self.current_set += self.incr_acc_float;
+            }
+            Modify::LowerMainMenu if self.mode.is_resistance() => {
+                self.resistance_set += self.incr_acc_float;
+            }
+            Modify::LowerMainMenu if self.mode.is_power() => {
+                self.power_set += self.incr_acc_float;
+            }
+            Modify::UpperMainMenu => {
+                self.voltage_cutoff += self.incr_acc_float;
+            }
+            _ => {}
+        }
+    }
+
+    fn round_to_increment_divisor(value: Float, divisor: Float) -> Float {
+        (value * divisor).round() / divisor
+    }
 
     pub fn param_to_str(&self, value: Float) -> String {
         format!("{value:.6}")
@@ -1038,6 +1161,9 @@ impl<H: EdlHardware> DeviceState<H> {
         self.trig_off_sema = false;
         self.serial_input.clear();
         self.completed_command = None;
+        self.incr_fine = false;
+        self.first_turn = true;
+        self.incr_acc_float = 0.0;
 
         self.init_scales();
         self.set_level_dac_i();
@@ -1326,6 +1452,7 @@ mod tests {
         shunts: Vec<u8>,
         outputs: Vec<bool>,
         dacs: Vec<u16>,
+        lm75_writes: Vec<(u8, u8, Vec<u8>)>,
         serial: Vec<String>,
         lcd: Vec<(u8, String)>,
     }
@@ -1375,6 +1502,10 @@ mod tests {
 
         fn read_temp_c(&mut self) -> Option<Float> {
             self.temp_c
+        }
+
+        fn lm75_write(&mut self, address: u8, register: u8, data: &[u8]) {
+            self.lm75_writes.push((address, register, data.to_vec()));
         }
 
         fn serial_write(&mut self, text: &str) {
@@ -1432,6 +1563,79 @@ mod tests {
         assert_eq!(eeprom.option_array[OPT_INIT_TON], 10.0);
         assert_eq!(eeprom.option_array[OPT_INIT_TOFF], 0.0);
         assert_eq!(eeprom.option_array[OPT_INIT_FAN_TEMP], 50.0);
+    }
+
+    #[test]
+    fn set_lm75_temp_programs_pascal_threshold_hysteresis_and_pointer_sequence() {
+        let hw = MockHardware::default();
+        let mut eeprom = test_eeprom();
+        eeprom.option_array[OPT_INIT_OPTIONS] = Float::from(LM75_INTERNAL_BIT | LM75_EXTERNAL_BIT);
+        eeprom.option_array[OPT_INIT_FAN_TEMP] = 50.0;
+        let mut state = DeviceState::with_eeprom(hw, eeprom);
+        state.hw.lm75_writes.clear();
+
+        state.set_lm75_temp();
+
+        let one_sensor = |address| {
+            vec![
+                (
+                    address,
+                    LM75_CONFIGURATION_REGISTER,
+                    vec![LM75_INVERTED_OUTPUT_CONFIGURATION],
+                ),
+                (address, LM75_OVERTEMPERATURE_REGISTER, vec![0x32, 0x00]),
+                (address, LM75_HYSTERESIS_REGISTER, vec![0x2f, 0x00]),
+                (address, LM75_TEMPERATURE_REGISTER, vec![]),
+            ]
+        };
+        let mut expected = one_sensor(LM75_INTERNAL_ADDRESS);
+        expected.extend(one_sensor(LM75_EXTERNAL_ADDRESS));
+        assert_eq!(state.hw.lm75_writes, expected);
+    }
+
+    #[test]
+    fn encoder_rounding_and_acceleration_match_pascal_current_adjustment() {
+        let hw = MockHardware::default();
+        let mut state = DeviceState::with_eeprom(hw, test_eeprom());
+        state.mode = Mode::IHiVolt;
+        state.modify = Modify::LowerMainMenu;
+        state.current_set = 0.12346;
+        state.first_turn = true;
+
+        state.inc_fac_i();
+        state.round_inc_param();
+
+        assert_eq!(state.inc_coarse_div, 100.0);
+        assert_eq!(state.inc_fine_div, 10_000.0);
+        assert!((state.current_set - 0.12).abs() < 0.000_001);
+        assert!(!state.first_turn);
+
+        state.incr_acc_float = 5.0;
+        state.set_acc_param();
+        assert!((state.incr_acc_float - 0.05).abs() < 0.000_001);
+        assert!((state.current_set - 0.17).abs() < 0.000_001);
+    }
+
+    #[test]
+    fn encoder_fine_adjustment_skips_coarse_rounding_and_uses_fine_divisor() {
+        let hw = MockHardware::default();
+        let mut state = DeviceState::with_eeprom(hw, test_eeprom());
+        state.mode = Mode::PHiVolt;
+        state.modify = Modify::LowerMainMenu;
+        state.power_set = 12.345;
+        state.incr_fine = true;
+        state.first_turn = true;
+
+        state.inc_fac_p();
+        state.round_inc_param();
+        state.incr_acc_float = -2.0;
+        state.set_acc_param();
+
+        assert_eq!(state.inc_coarse_div, 10.0);
+        assert_eq!(state.inc_fine_div, 100.0);
+        assert!(state.first_turn);
+        assert!((state.incr_acc_float + 0.02).abs() < 0.000_001);
+        assert!((state.power_set - 12.325).abs() < 0.000_001);
     }
 
     #[test]

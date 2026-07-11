@@ -259,21 +259,15 @@ pub trait DdsHardware {
     fn set_input_range(&mut self, range: InputRange);
     fn send_aux_config(&mut self, value: u8);
     fn read_input_level(&mut self) -> Float;
-    fn read_input_overload(&mut self) -> bool {
-        false
-    }
+    fn read_input_overload(&mut self) -> bool;
     fn serial_write(&mut self, text: &str);
     fn serial_read(&mut self) -> Option<char>;
-    fn set_serial_baud_register(&mut self, _register: u8, _double_speed: bool) {}
-    fn read_slave_channel(&mut self) -> u8 {
-        0
-    }
-    fn set_activity_led(&mut self, _enabled: bool) {}
-    fn delay_ms(&mut self, _milliseconds: u16) {}
-    fn lcd_setup(&mut self) -> bool {
-        true
-    }
-    fn lcd_define_custom_char(&mut self, _slot: u8, _bitmap: [u8; 8]) {}
+    fn set_serial_baud_register(&mut self, register: u8, double_speed: bool);
+    fn read_slave_channel(&mut self) -> u8;
+    fn set_activity_led(&mut self, enabled: bool);
+    fn delay_ms(&mut self, milliseconds: u16);
+    fn lcd_setup(&mut self) -> bool;
+    fn lcd_define_custom_char(&mut self, slot: u8, bitmap: [u8; 8]);
     fn lcd_write_line(&mut self, row: u8, text: &str);
 }
 

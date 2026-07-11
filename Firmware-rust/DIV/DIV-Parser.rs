@@ -290,9 +290,13 @@ impl<H: DivRuntimeHardware> DivParserHooks for DivRuntimeAdapter<'_, H> {
         };
     }
 
-    fn wait_ad24(&mut self, _state: &mut ParserState) {}
+    fn wait_ad24(&mut self, _state: &mut ParserState) {
+        self.device.wait_ad24();
+    }
 
-    fn wait_ad10(&mut self, _state: &mut ParserState) {}
+    fn wait_ad10(&mut self, _state: &mut ParserState) {
+        self.device.wait_ad10();
+    }
 
     fn get_ad10(&mut self, channel: u8, state: &mut ParserState) {
         let raw = i32::from(self.device.hw.read_adc10(channel))
@@ -952,6 +956,8 @@ mod tests {
         last_range: Option<DivRange>,
         ad24: i32,
         ad10: [i16; 8],
+        ad10_ready_clears: usize,
+        ad24_ready_clears: usize,
     }
 
     impl DivRuntimeHardware for MockHardware {
@@ -963,8 +969,46 @@ mod tests {
             self.ad24
         }
 
-        fn set_range(&mut self, range: DivRange) {
-            self.last_range = Some(range);
+        fn read_adc24_fast_integrated(&mut self) -> i32 {
+            self.ad24
+        }
+
+        fn read_adc24_slow_integrated(&mut self) -> i32 {
+            self.ad24
+        }
+
+        fn adc24_overload_negative(&self) -> bool {
+            false
+        }
+
+        fn adc24_overload_positive(&self) -> bool {
+            false
+        }
+
+        fn clear_adc10_ready(&mut self) {
+            self.ad10_ready_clears += 1;
+        }
+
+        fn adc10_ready(&mut self) -> bool {
+            true
+        }
+
+        fn clear_adc24_ready(&mut self) {
+            self.ad24_ready_clears += 1;
+        }
+
+        fn adc24_ready(&mut self) -> bool {
+            true
+        }
+
+        fn set_range_config(&mut self, config: crate::div::RangeRelayConfig) {
+            self.last_range = Some(config.range);
+        }
+
+        fn set_trigger_edge(&mut self, _positive_edge: bool) {}
+
+        fn poll_serial_byte(&mut self) -> Option<u8> {
+            None
         }
 
         fn serial_write(&mut self, text: &str) {
@@ -1000,6 +1044,17 @@ mod tests {
 
         assert_eq!(parser.hooks.device.hw.serial, "#1:255=130 [BUSY]\r\n");
         assert_eq!(parser.hooks.activity_timer_ticks, None);
+    }
+
+    #[test]
+    fn runtime_adapter_waits_use_device_irq_handshakes() {
+        let mut parser = new_parser();
+
+        parser.hooks.wait_ad10(&mut parser.state);
+        parser.hooks.wait_ad24(&mut parser.state);
+
+        assert_eq!(parser.hooks.device.hw.ad10_ready_clears, 1);
+        assert_eq!(parser.hooks.device.hw.ad24_ready_clears, 1);
     }
 
     #[test]

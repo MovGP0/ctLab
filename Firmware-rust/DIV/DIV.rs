@@ -20,8 +20,22 @@ pub const OFFSET_INITIALISED_MAGIC: u16 = 0xAA55;
 pub const ERR_SUB_CH: u8 = 255;
 
 pub const RANGE_STR_ARR: [&str; 16] = [
-    "DC 250mV", "DC  2.5V", "DC   25V", "DC  250V", "AC 250mV", "AC  2.5V", "AC   25V", "AC  250V",
-    "DC 250uA", "DC  25mA", "DC  2.5A", "DC   10A", "AC 250uA", "AC  25mA", "AC  2.5A", "AC   10A",
+    "DC 250mV",
+    "DC  2.5V",
+    "DC   25V",
+    "DC  250V",
+    "AC 250mV",
+    "AC  2.5V",
+    "AC   25V",
+    "AC  250V",
+    "DC 250uA",
+    "DC  25mA",
+    "DC  2.5A",
+    "DC   10A",
+    "AC 250uA",
+    "AC  25mA",
+    "AC  2.5A",
+    "AC   10A",
 ];
 
 pub const DIGITS_ARR: [u8; 16] = [3, 1, 2, 3, 3, 1, 2, 3, 3, 2, 1, 1, 3, 2, 1, 1];
@@ -104,15 +118,41 @@ pub const RANGE_ARRAY_10: [Float; 16] = [
 ];
 
 pub const CMD_STR_ARR: [&str; 16] = [
-    "STR", "IDN", "TRG", "VAL", "RNG", "DSP", "OFS", "SCL", "ALL", "TRM", "TRT", "TRL", "ERC",
-    "SBD", "WEN", "NOP",
+    "STR",
+    "IDN",
+    "TRG",
+    "VAL",
+    "RNG",
+    "DSP",
+    "OFS",
+    "SCL",
+    "ALL",
+    "TRM",
+    "TRT",
+    "TRL",
+    "ERC",
+    "SBD",
+    "WEN",
+    "NOP",
 ];
 
 pub const ERR_STR_ARR: [&str; 8] = [
-    "[OK]", "[SRQUSR]", "[BUSY]", "[OVRLD]", "[CMDERR]", "[PARERR]", "[LOCKED]", "[CHKSUM]",
+    "[OK]",
+    "[SRQUSR]",
+    "[BUSY]",
+    "[OVRLD]",
+    "[CMDERR]",
+    "[PARERR]",
+    "[LOCKED]",
+    "[CHKSUM]",
 ];
 
-pub const FAULT_STR_ARR: [&str; 4] = ["[OVRNEG]", "[OVRPOS]", "[]", "[]"];
+pub const FAULT_STR_ARR: [&str; 4] = [
+    "[OVRNEG]",
+    "[OVRPOS]",
+    "[]",
+    "[]"
+];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CmdWhich {
@@ -243,26 +283,17 @@ impl Default for EepromData {
 pub trait DivHardware {
     fn read_adc10(&mut self, channel_1_based: u8) -> i16;
     fn read_adc24(&mut self) -> i32;
-    fn read_adc24_fast_integrated(&mut self) -> i32 {
-        self.read_adc24()
-    }
-    fn read_adc24_slow_integrated(&mut self) -> i32 {
-        self.read_adc24()
-    }
-    fn adc24_overload_negative(&self) -> bool {
-        false
-    }
-    fn adc24_overload_positive(&self) -> bool {
-        false
-    }
-    fn set_range(&mut self, range: DivRange);
-    fn set_range_config(&mut self, config: RangeRelayConfig) {
-        self.set_range(config.range);
-    }
-    fn set_trigger_edge(&mut self, _positive_edge: bool) {}
-    fn poll_serial_byte(&mut self) -> Option<u8> {
-        None
-    }
+    fn read_adc24_fast_integrated(&mut self) -> i32;
+    fn read_adc24_slow_integrated(&mut self) -> i32;
+    fn adc24_overload_negative(&self) -> bool;
+    fn adc24_overload_positive(&self) -> bool;
+    fn clear_adc10_ready(&mut self);
+    fn adc10_ready(&mut self) -> bool;
+    fn clear_adc24_ready(&mut self);
+    fn adc24_ready(&mut self) -> bool;
+    fn set_range_config(&mut self, config: RangeRelayConfig);
+    fn set_trigger_edge(&mut self, positive_edge: bool);
+    fn poll_serial_byte(&mut self) -> Option<u8>;
     fn serial_write(&mut self, text: &str);
     fn lcd_write_line(&mut self, row: u8, text: &str);
 }
@@ -415,9 +446,24 @@ impl<H: DivHardware> DeviceState<H> {
         u8::from(self.overload_negative) | (u8::from(self.overload_positive) << 1)
     }
 
-    pub fn wait_ad10(&mut self) {}
+    pub fn wait_ad10(&mut self) {
+        // Pascal clears the IRQ-owned flag before waiting for the next systick
+        // update. The hardware implementation must use volatile/atomic access
+        // for a flag which is shared with an interrupt handler.
+        self.hw.clear_adc10_ready();
+        while !self.hw.adc10_ready() {
+            core::hint::spin_loop();
+        }
+    }
 
-    pub fn wait_ad24(&mut self) {}
+    pub fn wait_ad24(&mut self) {
+        // As above, clearing first is significant: an already completed sample
+        // must not satisfy a request for the next LTC2400 conversion.
+        self.hw.clear_adc24_ready();
+        while !self.hw.adc24_ready() {
+            core::hint::spin_loop();
+        }
+    }
 
     pub fn integrate_reset(&mut self) {
         // Clear the integration history whenever the range relays move so the next
@@ -940,6 +986,11 @@ mod tests {
         rx: VecDeque<u8>,
         range_configs: Vec<RangeRelayConfig>,
         trigger_edges: Vec<bool>,
+        ad10_ready_polls_before_ready: usize,
+        ad24_ready_polls_before_ready: usize,
+        ad10_ready_polls: usize,
+        ad24_ready_polls: usize,
+        readiness_events: Vec<&'static str>,
         serial: String,
         lcd_lines: Vec<(u8, String)>,
     }
@@ -969,8 +1020,26 @@ mod tests {
             self.adc24_overload_positive
         }
 
-        fn set_range(&mut self, range: DivRange) {
-            self.range_configs.push(RangeRelayConfig::for_range(range));
+        fn clear_adc10_ready(&mut self) {
+            self.ad10_ready_polls = 0;
+            self.readiness_events.push("clear-ad10");
+        }
+
+        fn adc10_ready(&mut self) -> bool {
+            self.ad10_ready_polls += 1;
+            self.readiness_events.push("poll-ad10");
+            self.ad10_ready_polls > self.ad10_ready_polls_before_ready
+        }
+
+        fn clear_adc24_ready(&mut self) {
+            self.ad24_ready_polls = 0;
+            self.readiness_events.push("clear-ad24");
+        }
+
+        fn adc24_ready(&mut self) -> bool {
+            self.ad24_ready_polls += 1;
+            self.readiness_events.push("poll-ad24");
+            self.ad24_ready_polls > self.ad24_ready_polls_before_ready
         }
 
         fn set_range_config(&mut self, config: RangeRelayConfig) {
@@ -1025,6 +1094,38 @@ mod tests {
         assert_eq!(config.port_a, 0b1000_0011);
         assert_eq!(config.port_c, 0b1000_0011);
         assert!(config.dc_gain_10);
+    }
+
+    #[test]
+    fn wait_ad10_clears_stale_flag_and_waits_for_next_irq_update() {
+        let mut state = DeviceState::new(MockHardware {
+            ad10_ready_polls_before_ready: 2,
+            ..MockHardware::default()
+        });
+
+        state.wait_ad10();
+
+        assert_eq!(state.hw.ad10_ready_polls, 3);
+        assert_eq!(
+            state.hw.readiness_events,
+            vec!["clear-ad10", "poll-ad10", "poll-ad10", "poll-ad10"]
+        );
+    }
+
+    #[test]
+    fn wait_ad24_clears_stale_flag_and_waits_for_next_irq_update() {
+        let mut state = DeviceState::new(MockHardware {
+            ad24_ready_polls_before_ready: 1,
+            ..MockHardware::default()
+        });
+
+        state.wait_ad24();
+
+        assert_eq!(state.hw.ad24_ready_polls, 2);
+        assert_eq!(
+            state.hw.readiness_events,
+            vec!["clear-ad24", "poll-ad24", "poll-ad24"]
+        );
     }
 
     #[test]

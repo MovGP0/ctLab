@@ -63,14 +63,12 @@ pub trait EdlHardware {
     fn read_adcl(&self) -> u8;
     fn read_adch(&self) -> u8;
 
-    fn begin_interrupt_exclusion(&mut self) -> u8 {
-        0
-    }
+    fn begin_interrupt_exclusion(&mut self) -> u8;
+    fn end_interrupt_exclusion(&mut self, saved_status: u8);
+    fn nop(&mut self);
 
-    fn end_interrupt_exclusion(&mut self, _saved_status: u8) {}
-
-    fn nop(&mut self) {}
-
+    /// Performs the required ADC mux-settling delay. Implementations may
+    /// override this provided behavior when the target has a cycle-exact form.
     fn settle_adc10_mux(&mut self) {
         for _ in 0..ADC10_SETTLE_CYCLES {
             self.nop();
@@ -130,7 +128,9 @@ impl<M: Mcu> EdlHardware for EdlAvrd<M> {
         }
     }
 
-    fn set_trigger_out(&mut self, _high: bool) {}
+    fn set_trigger_out(&mut self, high: bool) {
+        self.io.write_bit(RegisterPort::C, 7, high);
+    }
 
     fn read_trigger_in(&self) -> bool {
         self.io.read_bit(RegisterPort::B, 2)

@@ -55,11 +55,8 @@ pub trait AdacHardware {
     fn read_adcsra(&self) -> Byte;
     fn read_adcl(&self) -> Byte;
     fn read_adch(&self) -> Byte;
-    fn begin_interrupt_exclusion(&mut self) -> Byte {
-        0
-    }
-
-    fn end_interrupt_exclusion(&mut self, _saved_status: Byte) {}
+    fn begin_interrupt_exclusion(&mut self) -> Byte;
+    fn end_interrupt_exclusion(&mut self, saved_status: Byte);
 
     fn nop(&mut self) {
         self.wait_cycles(1);

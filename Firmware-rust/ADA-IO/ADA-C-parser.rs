@@ -198,6 +198,7 @@ pub struct ParseContext {
     pub i2c_slave_adr: u8,
     pub trigger: bool,
     pub led_activity_low: bool,
+    pub activity_timer_ticks: u8,
     pub vers1_str: String,
     pub egg_str: String,
     pub param_text_array: Vec<String>,
@@ -264,6 +265,7 @@ impl Default for ParseContext {
             i2c_slave_adr: 0,
             trigger: false,
             led_activity_low: false,
+            activity_timer_ticks: 0,
             vers1_str: String::new(),
             egg_str: String::new(),
             param_text_array: vec![String::new(); 38],
@@ -1013,7 +1015,9 @@ impl AdaIoParser {
         self.ctx.trigger_positive_edge = positive_edge;
     }
 
-    fn set_sys_timer_activity(&mut self) {}
+    fn set_sys_timer_activity(&mut self) {
+        self.ctx.activity_timer_ticks = 125;
+    }
 
     fn twi_inp_byte(&mut self, _slave: u8) -> u8 {
         self.ctx.i2c_byte_reads.pop_front().unwrap_or_default()
@@ -1072,6 +1076,7 @@ mod tests {
         );
         assert!(parser.ctx.trigger);
         assert!(parser.ctx.led_activity_low);
+        assert_eq!(parser.ctx.activity_timer_ticks, 125);
     }
 
     #[test]
@@ -1100,6 +1105,7 @@ mod tests {
         assert_eq!(result, Err(ParseError::ChecksumErr));
         assert!(!parser.ctx.trigger);
         assert!(!parser.ctx.led_activity_low);
+        assert_eq!(parser.ctx.activity_timer_ticks, 0);
     }
 
     #[test]
@@ -1112,6 +1118,7 @@ mod tests {
         assert!(matches!(replies.first(), Some(Reply::Echo(_))));
         assert!(parser.ctx.trigger);
         assert!(parser.ctx.led_activity_low);
+        assert_eq!(parser.ctx.activity_timer_ticks, 125);
     }
 
     #[test]

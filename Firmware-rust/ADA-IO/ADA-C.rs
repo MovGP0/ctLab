@@ -256,32 +256,16 @@ pub trait AdaHardware {
     fn read_slave_channel(&mut self) -> u8;
     fn set_external_trigger_edge(&mut self, positive: bool);
     fn enable_interrupts(&mut self);
-
-    fn twi_inp_byte(&mut self, _slave_addr: u8) -> u8 {
-        0
-    }
-
-    fn twi_inp_word(&mut self, _slave_addr: u8) -> u16 {
-        0
-    }
-
-    fn serial_read_byte_timeout(&mut self, _timeout_ms: u16) -> Option<u8> {
-        None
-    }
-
-    fn serial_write(&mut self, _text: &str) {}
-
-    fn set_serial_baud(&mut self, _ubrr: u8, _double_speed: bool) {}
-
-    fn set_internal_reference(&mut self, _internal: bool) {}
-
-    fn set_sdataout(&mut self, _high: bool) {}
-
-    fn set_str_dac(&mut self, _high: bool) {}
-
-    fn set_str_ad16(&mut self, _high: bool) {}
-
-    fn set_trigger_led(&mut self, _active: bool) {}
+    fn twi_inp_byte(&mut self, slave_addr: u8) -> u8;
+    fn twi_inp_word(&mut self, slave_addr: u8) -> u16;
+    fn serial_read_byte_timeout(&mut self, timeout_ms: u16) -> Option<u8>;
+    fn serial_write(&mut self, text: &str);
+    fn set_serial_baud(&mut self, ubrr: u8, double_speed: bool);
+    fn set_internal_reference(&mut self, internal: bool);
+    fn set_sdataout(&mut self, high: bool);
+    fn set_str_dac(&mut self, high: bool);
+    fn set_str_ad16(&mut self, high: bool);
+    fn set_trigger_led(&mut self, active: bool);
 }
 
 #[derive(Debug, Clone)]

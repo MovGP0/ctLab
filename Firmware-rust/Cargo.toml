@@ -8,3 +8,10 @@ avrd = { version = "1.0.0", features = ["all-mcus"] }
 
 [lib]
 path = "src/lib.rs"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = "symbols"

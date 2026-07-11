@@ -41,11 +41,8 @@ pub trait DcgHardware {
     fn read_adcsra(&self) -> u8;
     fn read_adcl(&self) -> u8;
     fn read_adch(&self) -> u8;
-    fn begin_interrupt_exclusion(&mut self) -> u8 {
-        0
-    }
-
-    fn end_interrupt_exclusion(&mut self, _saved_status: u8) {}
+    fn begin_interrupt_exclusion(&mut self) -> u8;
+    fn end_interrupt_exclusion(&mut self, saved_status: u8);
 
     fn nop(&mut self) {
         self.spin_delay_cycles(1);
