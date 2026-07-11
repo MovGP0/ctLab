@@ -176,7 +176,6 @@ pub use div_hardware::DivHardware;
 mod device_state;
 pub use device_state::DeviceState;
 
-
 fn div_range_from_u8(value: u8) -> DivRange {
     limit_raw_range(value).0
 }

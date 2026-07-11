@@ -19,7 +19,6 @@ pub use eeprom_settings::EepromSettings;
 mod fpga_controller;
 pub use fpga_controller::FpgaController;
 
-
 use super::fpga_hw::{FpgaBus, FpgaHardware};
 use super::fpga_parser::{parse_frame, Parameter, ParseError, ParsedFrame};
 
@@ -29,13 +28,6 @@ pub const DEFAULT_INIT_FILE: &str = "BASIC.INI";
 pub const DEFAULT_DATA_FILE: &str = "DATAFILE.XLS";
 pub const REGISTER_COUNT: usize = 10;
 pub const FPGA_REGISTER_COUNT: usize = 64;
-
-
-
-
-
-
-
 
 fn parameter_number<E>(parameter: &Parameter) -> Result<f64, ControllerError<E>>
 {

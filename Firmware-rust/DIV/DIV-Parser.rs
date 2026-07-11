@@ -24,7 +24,6 @@ pub use div_runtime_adapter::DivRuntimeAdapter;
 mod div_parser;
 pub use div_parser::DivParser;
 
-
 pub const VERS1_STR: &str = "3.10 [DIV by CM/c't 03/2007] ";
 
 pub const CMD_STR_ARR: [&str; 16] = [
@@ -54,7 +53,6 @@ const COMMANDS: [CmdWhich; 16] = [
     CmdWhich::Wen,
     CmdWhich::Nop,
 ];
-
 
 fn parse_u8_default(value: &str, default: u8) -> u8 {
     value

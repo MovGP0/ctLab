@@ -148,7 +148,6 @@ use mock_hardware::MockHardware;
 mod acv_state;
 pub use acv_state::AcvState;
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

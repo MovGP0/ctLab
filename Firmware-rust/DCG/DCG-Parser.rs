@@ -21,7 +21,6 @@ pub use error::Error;
 mod dcg_parser;
 pub use dcg_parser::DcgParser;
 
-
 pub const VERS1_STR: &str = "2.92 [DCG by CM/c't 05/2010]";
 
 pub const CMD_STR_ARR: [&str; 27] = [
@@ -124,7 +123,6 @@ pub const DEFAULT_OPTION_ARRAY: [f32; 25] = [
     4.0,
     6.0,
 ];
-
 
 #[cfg(test)]
 mod tests {

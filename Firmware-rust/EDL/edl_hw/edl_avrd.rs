@@ -6,7 +6,6 @@ pub struct EdlAvrd<M: Mcu> {
     _marker: PhantomData<M>,
 }
 
-
 impl<M: Mcu> Default for EdlAvrd<M> {
     fn default() -> Self {
         Self {

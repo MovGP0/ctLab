@@ -36,9 +36,7 @@ pub use dds_avrd::DdsAvrd;
 mod dds_hardware_state;
 pub use dds_hardware_state::DdsHardwareState;
 
-
 pub type DdsAtmega32 = DdsAvrd<Atmega32>;
-
 
 pub const B_SCLK: u8 = 0;
 pub const B_SDATAOUT: u8 = 1;
@@ -87,7 +85,6 @@ const THREE_SR_OFFS_SW_BIT: u8 = 3;
 const THREE_SR_LOGIC_SW_BIT: u8 = 4;
 
 const LED_SWITCH_BIT: u8 = 3;
-
 
 #[cfg(test)]
 mod tests {

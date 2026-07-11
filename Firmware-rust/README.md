@@ -7,6 +7,7 @@ Rules for this port:
 - Preserve each Pascal source as a Rust module root so provenance remains traceable.
 - Put every production struct, enum, and trait in its own snake_case `.rs` file. Module roots retain constants, free functions, tests, wiring, and selective re-exports.
 - Keep positional protocol and calibration tables one entry per line so humans can compare them directly with the Pascal arrays.
+- Keep at most one empty line between Rust items. `build.rs` enforces this during every Cargo build and reports the offending file and line.
 - Prefer explicit Rust types, enums, structs, and constants over macro-heavy transliteration.
 - Preserve hardware-specific assumptions in comments when no direct Rust equivalent is implemented.
 - Use `todo!()` sparingly; prefer placeholder functions and data structures that keep the code readable.

@@ -10,7 +10,6 @@ pub use fpga_hardware::FpgaHardware;
 mod fpga_bus;
 pub use fpga_bus::FpgaBus;
 
-
 pub const CORE_ACK: u8 = 0x06;
 pub const CORE_BUFFER_CAPACITY: usize = 256;
 

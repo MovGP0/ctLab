@@ -36,14 +36,7 @@ pub use dcg_avrd::DcgAvrd;
 mod dcg_hardware_state;
 pub use dcg_hardware_state::DcgHardwareState;
 
-
-
 pub type DcgAtmega32 = DcgAvrd<Atmega32>;
-
-
-
-
-
 
 pub fn shift_out_1257<H: DcgHardware>(hw: &mut H, dac_temp: u16) {
     hw.set_sdata_out(false);

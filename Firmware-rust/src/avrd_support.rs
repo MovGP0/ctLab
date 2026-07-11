@@ -13,15 +13,6 @@ use core::marker::PhantomData;
 use core::ptr;
 use core::sync::atomic::{compiler_fence, Ordering};
 
-
-
-
-
-
-
-
-
-
 pub unsafe fn read_u8(register: *mut u8) -> u8 {
     ptr::read_volatile(register)
 }

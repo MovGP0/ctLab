@@ -178,7 +178,6 @@ pub use dcg_hardware::DcgHardware;
 mod device_state;
 pub use device_state::DeviceState;
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

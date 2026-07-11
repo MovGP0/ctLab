@@ -207,18 +207,6 @@ use firmware_state::FirmwareState;
 mod hardware_interface;
 use hardware_interface::HardwareInterface;
 
-
-
-
-
-
-
-
-
-
-
-
-
 #[cfg(test)]
 mod tests {
     use super::*;

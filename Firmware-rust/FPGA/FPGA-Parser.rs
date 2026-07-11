@@ -13,7 +13,6 @@ pub use parameter::Parameter;
 mod parsed_frame;
 pub use parsed_frame::ParsedFrame;
 
-
 pub const COMMANDS: [&str; 66] = [
     "STR",
     "IDN",
@@ -151,9 +150,6 @@ pub const COMMAND_OFFSETS: [u16; 66] = [
     253,
     253,
 ];
-
-
-
 
 pub fn command_index(command: &str) -> Option<usize>
 {

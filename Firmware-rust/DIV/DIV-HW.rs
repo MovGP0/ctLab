@@ -17,13 +17,10 @@ pub use div_avrd::DivAvrd;
 mod div_hardware_state;
 pub use div_hardware_state::DivHardwareState;
 
-
 pub const LTC2400_SPI_CONTROL: u8 = 0b0101_0001;
 pub const LTC2400_SPI_DISABLED: u8 = 0;
 
-
 pub type DivAtmega32 = DivAvrd<Atmega32>;
-
 
 pub fn shift_in_2400<H: DivHardware>(state: &mut DivHardwareState, hw: &mut H) {
     hw.set_str_ad24(false);

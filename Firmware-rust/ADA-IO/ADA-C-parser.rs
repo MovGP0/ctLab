@@ -26,7 +26,6 @@ pub use parse_context::ParseContext;
 mod ada_io_parser;
 pub use ada_io_parser::AdaIoParser;
 
-
 #[cfg(test)]
 mod tests {
     use super::{AdaIoParser, ParseError, Reply};

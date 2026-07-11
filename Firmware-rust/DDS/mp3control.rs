@@ -20,7 +20,6 @@ pub use mp3_control_hardware::Mp3ControlHardware;
 mod mp3_control_state;
 pub use mp3_control_state::Mp3ControlState;
 
-
 pub fn ser_aux<H: Mp3ControlHardware>(hw: &mut H, value: u8) {
     let mut current = value;
     let mut bits_remaining = SER_AUX_DATA_BITS;

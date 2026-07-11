@@ -48,9 +48,7 @@ pub use adac_avrd::AdacAvrd;
 mod adac_state;
 pub use adac_state::AdacState;
 
-
 pub type AdacAtmega32 = AdacAvrd<Atmega32>;
-
 
 fn set_low(hw: &mut impl AdacHardware, signal: Signal) {
     hw.set_signal(signal, false);
