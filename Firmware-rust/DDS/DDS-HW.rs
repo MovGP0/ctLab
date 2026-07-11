@@ -419,7 +419,7 @@ impl DdsHardwareState {
 
     pub fn dds_tuning_word_integer(frequency_tenths_hz: i32) -> i32 {
         let mut acc = 0_i32;
-        for (digit, factor) in Self::decimal_digits(frequency_tenths_hz, FHZ_INT.len())
+        for (digit, factor) in Self::decimal_digits::<8>(frequency_tenths_hz)
             .into_iter()
             .zip(FHZ_INT)
         {
@@ -430,7 +430,7 @@ impl DdsHardwareState {
 
     pub fn dds_tuning_word_sqg(frequency_tenths_hz: i32) -> i32 {
         let mut acc = 0.0_f32;
-        for (digit, factor) in Self::decimal_digits(frequency_tenths_hz, FHZ_SQG.len())
+        for (digit, factor) in Self::decimal_digits::<9>(frequency_tenths_hz)
             .into_iter()
             .zip(FHZ_SQG)
         {
@@ -473,12 +473,16 @@ impl DdsHardwareState {
         }
     }
 
-    fn decimal_digits(value: i32, width: usize) -> Vec<u8> {
-        let normalized = value.max(0);
-        format!("{normalized:0width$}")
-            .bytes()
-            .map(|byte| byte.saturating_sub(b'0'))
-            .collect()
+    fn decimal_digits<const WIDTH: usize>(value: i32) -> [u8; WIDTH] {
+        let mut digits = [0; WIDTH];
+        let mut remaining = value.max(0) as u32;
+        let mut index = WIDTH;
+        while index != 0 {
+            index -= 1;
+            digits[index] = (remaining % 10) as u8;
+            remaining /= 10;
+        }
+        digits
     }
 
     fn set_led_switch<IO: DdsHardwareIo>(&self, io: &mut IO, high: bool) {

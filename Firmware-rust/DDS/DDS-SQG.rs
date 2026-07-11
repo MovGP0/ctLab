@@ -1,6 +1,6 @@
 ﻿#![allow(dead_code)]
 
-use std::fmt::Write as _;
+use core::fmt::Write as _;
 
 /*
 DDS-Funktionsgenerator mit AD98833
@@ -886,13 +886,15 @@ impl FirmwareState {
         hw.shift_out_offset_dac((offset_mv / 5) as i16);
         hw.shift_out_level_sr(level, self.switch_state);
 
-        // Frequency is stored in 0.1 Hz and rendered as a fixed 9-digit
-        // decimal string before weighting each decade.
-        let freq_str = format!("{:09}", self.frequenz);
+        // Frequency is stored in 0.1 Hz and split into the same nine decimal
+        // decades as Pascal without allocating a temporary string.
+        let normalized_frequency = self.frequenz.max(0);
+        let mut divisor = 100_000_000;
         let mut add_f = 0.0f64;
-        for (idx, ch) in freq_str.chars().enumerate().take(FHZ.len()) {
-            let digit = ch.to_digit(10).unwrap_or(0) as f64;
-            add_f += FHZ[idx] * digit;
+        for factor in FHZ {
+            let digit = (normalized_frequency / divisor) % 10;
+            add_f += factor * f64::from(digit);
+            divisor /= 10;
         }
         self.dds_frequ = add_f as i32;
 
@@ -1272,6 +1274,7 @@ mod tests {
 
         assert_eq!(hw.dds_words.len(), 3);
         assert_eq!(hw.dds_words[2], C_DDS_SQUARE_CMD);
+        assert_eq!(state.dds_frequ, 13_421);
     }
 
     #[test]

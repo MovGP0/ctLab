@@ -4,8 +4,6 @@
 //! SPI for a register-select transaction followed by an 8/16/32-bit data
 //! transaction. Multi-byte values are transferred most-significant byte first.
 
-use std::collections::VecDeque;
-
 pub const CORE_ACK: u8 = 0x06;
 pub const CORE_BUFFER_CAPACITY: usize = 256;
 
@@ -33,7 +31,10 @@ pub struct FpgaBus<H>
     pub core_rx_subchannel: u8,
     pub core_tx_subchannel: u8,
     pub internal_serial: bool,
-    receive_buffer: VecDeque<u8>,
+    receive_buffer: [u8; CORE_BUFFER_CAPACITY],
+    receive_read_index: u8,
+    receive_write_index: u8,
+    receive_len: u16,
     dropped_receive_bytes: u32,
 }
 
@@ -47,7 +48,10 @@ impl<H: FpgaHardware> FpgaBus<H>
             core_rx_subchannel,
             core_tx_subchannel,
             internal_serial: false,
-            receive_buffer: VecDeque::with_capacity(CORE_BUFFER_CAPACITY),
+            receive_buffer: [0; CORE_BUFFER_CAPACITY],
+            receive_read_index: 0,
+            receive_write_index: 0,
+            receive_len: 0,
             dropped_receive_bytes: 0,
         }
     }
@@ -155,23 +159,32 @@ impl<H: FpgaHardware> FpgaBus<H>
             return;
         }
 
-        if self.receive_buffer.len() == CORE_BUFFER_CAPACITY
+        if usize::from(self.receive_len) == CORE_BUFFER_CAPACITY
         {
             self.dropped_receive_bytes = self.dropped_receive_bytes.saturating_add(1);
             return;
         }
 
-        self.receive_buffer.push_back(received);
+        self.receive_buffer[usize::from(self.receive_write_index)] = received;
+        self.receive_write_index = self.receive_write_index.wrapping_add(1);
+        self.receive_len += 1;
     }
 
     pub fn core_serial_pending(&self) -> bool
     {
-        !self.receive_buffer.is_empty()
+        self.receive_len != 0
     }
 
     pub fn read_core_serial(&mut self) -> Option<u8>
     {
-        self.receive_buffer.pop_front()
+        if self.receive_len == 0
+        {
+            return None;
+        }
+        let received = self.receive_buffer[usize::from(self.receive_read_index)];
+        self.receive_read_index = self.receive_read_index.wrapping_add(1);
+        self.receive_len -= 1;
+        Some(received)
     }
 
     pub fn dropped_receive_bytes(&self) -> u32
@@ -191,6 +204,8 @@ impl<H: FpgaHardware> FpgaBus<H>
 #[cfg(test)]
 mod tests
 {
+    use std::collections::VecDeque;
+
     use super::*;
 
     #[derive(Default, Debug)]

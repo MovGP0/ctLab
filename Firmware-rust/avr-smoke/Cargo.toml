@@ -1,0 +1,20 @@
+[package]
+name = "ctlab-avr-smoke"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "ctlab-avr-smoke"
+path = "src/main.rs"
+test = false
+bench = false
+
+[workspace]
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = "symbols"

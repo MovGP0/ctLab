@@ -311,7 +311,7 @@ pub struct DeviceState<H> {
     pub input_level_mv: Float,
     pub range: InputRange,
     pub old_range: InputRange,
-    pub range_str: String,
+    pub range_str: &'static str,
     pub input_gain_fac: Float,
     pub panel_modify: Modify,
     pub inc_rast: i32,
@@ -357,7 +357,7 @@ impl<H: DdsHardware> DeviceState<H> {
             input_level_mv: 0.0,
             range: InputRange::Ac1V,
             old_range: InputRange::NoRange,
-            range_str: String::from("In    1V"),
+            range_str: "In    1V",
             input_gain_fac: 1.0,
             panel_modify: Modify::FreqSel,
             inc_rast: 4,
@@ -569,8 +569,7 @@ impl<H: DdsHardware> DeviceState<H> {
             InputRange::Ac10V => "In   10V",
             InputRange::Ac100V => "In  100V",
             InputRange::NoRange => "In    1V",
-        }
-        .to_string();
+        };
         self.hw.set_input_range(self.range);
     }
 
@@ -584,13 +583,12 @@ impl<H: DdsHardware> DeviceState<H> {
 
     fn dds_tuning_word(&self) -> u32 {
         let normalized = self.frequency_tenths_hz.max(0);
-        let digits = format!("{normalized:08}");
-        digits
-            .bytes()
-            .zip(DDS_FACTORS)
-            .fold(0_u32, |acc, (digit, factor)| {
-                acc.saturating_add(u32::from(digit.saturating_sub(b'0')) * factor)
-            })
+        let mut divisor = 10_000_000;
+        DDS_FACTORS.into_iter().fold(0_u32, |acc, factor| {
+            let digit = (normalized / divisor) % 10;
+            divisor /= 10;
+            acc.saturating_add(digit as u32 * factor)
+        })
     }
 
     fn effective_input_level_mv(&self) -> Float {
@@ -1473,6 +1471,17 @@ mod tests {
 
         state.process_serial_command("FRQ");
         assert_eq!(state.hw.take_serial_output(), "#0:0=1234.5\r\n");
+    }
+
+    #[test]
+    fn tuning_word_uses_fixed_decimal_decades_without_formatting_storage() {
+        let mut state = DeviceState::new(MockHardware::default());
+
+        state.frequency_tenths_hz = 10_000;
+        assert_eq!(state.dds_tuning_word(), 64_000);
+
+        state.frequency_tenths_hz = 12_345_670;
+        assert_eq!(state.dds_tuning_word(), 79_012_288);
     }
 
     #[test]

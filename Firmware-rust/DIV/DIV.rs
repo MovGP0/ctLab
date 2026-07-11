@@ -313,7 +313,8 @@ pub struct DeviceState<H> {
     // Raised by either the external INT2 edge or the periodic auto-trigger timer.
     pub trigger_pending: bool,
     pub auto_trigger_elapsed_ms: u16,
-    pub trigger_outputs: Vec<u8>,
+    pub trigger_outputs: [u8; 3],
+    pub trigger_output_count: u8,
     pub current_range_config: RangeRelayConfig,
     // Pascal kept separate fast/slow integrated AD24 accumulators for quieter display reads.
     pub integrate_24_fast: i64,
@@ -328,7 +329,6 @@ pub struct DeviceState<H> {
     pub err_count: i16,
     pub fault_timer_ticks: u8,
     pub ser_input: String,
-    pub param_str: String,
 }
 
 impl<H: DivHardware> DeviceState<H> {
@@ -346,7 +346,8 @@ impl<H: DivHardware> DeviceState<H> {
             measured_aux: 0.0,
             trigger_pending: false,
             auto_trigger_elapsed_ms: 0,
-            trigger_outputs: Vec::new(),
+            trigger_outputs: [0; 3],
+            trigger_output_count: 0,
             current_range_config: RangeRelayConfig::for_range(DivRange::Dc2V5),
             integrate_24_fast: 0,
             integrate_24_slow: 0,
@@ -360,7 +361,6 @@ impl<H: DivHardware> DeviceState<H> {
             err_count: 0,
             fault_timer_ticks: 20,
             ser_input: String::new(),
-            param_str: String::new(),
         }
     }
 
@@ -446,19 +446,18 @@ impl<H: DivHardware> DeviceState<H> {
         u8::from(self.overload_negative) | (u8::from(self.overload_positive) << 1)
     }
 
+    /// The hardware implementation must use volatile/atomic access for a flag
+    /// which is shared with an interrupt handler.
     pub fn wait_ad10(&mut self) {
-        // Pascal clears the IRQ-owned flag before waiting for the next systick
-        // update. The hardware implementation must use volatile/atomic access
-        // for a flag which is shared with an interrupt handler.
         self.hw.clear_adc10_ready();
         while !self.hw.adc10_ready() {
             core::hint::spin_loop();
         }
     }
 
+    /// The hardware implementation must use volatile/atomic access for a flag
+    /// which is shared with an interrupt handler.
     pub fn wait_ad24(&mut self) {
-        // As above, clearing first is significant: an already completed sample
-        // must not satisfy a request for the next LTC2400 conversion.
         self.hw.clear_adc24_ready();
         while !self.hw.adc24_ready() {
             core::hint::spin_loop();
@@ -507,23 +506,29 @@ impl<H: DivHardware> DeviceState<H> {
     }
 
     pub fn service_trigger(&mut self) -> &[u8] {
-        self.trigger_outputs.clear();
+        self.trigger_output_count = 0;
         if !self.trigger_pending {
-            return &self.trigger_outputs;
+            return &self.trigger_outputs[..0];
         }
 
         let mask = self.eeprom.trigger_mode;
         if (mask & 0x01) != 0 {
-            self.trigger_outputs.push(0);
+            self.push_trigger_output(0);
         }
         if (mask & 0x02) != 0 {
-            self.trigger_outputs.push(10);
+            self.push_trigger_output(10);
         }
         if (mask & 0x04) != 0 {
-            self.trigger_outputs.push(11);
+            self.push_trigger_output(11);
         }
         self.trigger_pending = false;
-        &self.trigger_outputs
+        &self.trigger_outputs[..usize::from(self.trigger_output_count)]
+    }
+
+    fn push_trigger_output(&mut self, sub_channel: u8) {
+        let index = usize::from(self.trigger_output_count);
+        self.trigger_outputs[index] = sub_channel;
+        self.trigger_output_count += 1;
     }
 
     pub fn ser_crlf(&mut self) {

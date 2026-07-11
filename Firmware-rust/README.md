@@ -21,30 +21,31 @@ Project status:
 
 ## AVR flash budgets
 
-Program flash is the ELF `.text` plus initialized `.data` copied from flash at startup. Use the Rust release wrapper so a successful AVR release always includes the footprint check:
+The AVR build uses Rust's built-in Tier 3 `avr-none` target. It requires the pinned nightly toolchain with `rust-src` because Cargo must build `core`, plus `avr-gcc`, `avr-objcopy`, and `avr-size`. On Windows, install the tested AVR GCC package with:
+
+```powershell
+winget install --exact --id ZakKemble.avr-gcc
+```
+
+`rust-toolchain.toml` installs the required nightly and `rust-src` automatically. Stable Rust alone cannot use Cargo's `build-std` feature required by this target.
+
+The independent `avr-smoke` package proves that Windows can compile `core`, link a genuine `no_std` AVR executable through `avr-gcc`, convert it to Intel HEX, and enforce flash limits without compiling the host-only behavioral library. Build a device-specific smoke artifact from this directory with:
 
 ```text
 rust-script ./tools/release-avr.rs \
   --mcu atmega32 \
-  --elf ./target/avr-atmega32/release/div.elf \
-  -- --target ./targets/avr-atmega32.json --bin div
+  --manifest-path ./avr-smoke/Cargo.toml \
+  --elf ./avr-smoke/target/atmega32/avr-none/release/ctlab-avr-smoke.elf \
+  --hex ./avr-smoke/target/atmega32/avr-none/release/ctlab-avr-smoke.hex \
+  --baseline 114 \
+  -- --target-dir target/atmega32
 ```
 
-The wrapper first runs `cargo build --release` with the arguments after `--`, then invokes `avr-size`. It rejects a missing ELF, a failed build, an image larger than the selected MCU's physical flash, or an optional tighter budget/baseline regression:
+Replace both `atmega32` occurrences and the baseline with `atmega168`/`134` or `atmega644`/`142` for the other supported devices. These smoke baselines were produced by `nightly-2026-07-11` and AVR GCC 14.1.0. Program flash is `.text + .data`; the wrapper rejects physical-limit and baseline regressions and only writes HEX after a successful build and size check.
 
-```text
-rust-script ./tools/release-avr.rs \
-  --mcu atmega644 \
-  --elf ./target/avr-atmega644/release/fpga.elf \
-  --budget 60000 \
-  --baseline 54000 \
-  --allowed-regression 256 \
-  -- --target ./targets/avr-atmega644.json --bin fpga
-```
-
-Supported physical limits are ATmega168 (16 KiB), ATmega32 (32 KiB), and ATmega644 (64 KiB). CI should retain the checker's output with each deployable target and pass explicit baseline values from version-controlled target-specific policy once those budgets are agreed.
+The target CPU and matching AVR GCC `-mmcu` linker argument are selected from `--mcu`. Do not replace the built-in `avr-none` target with an ad-hoc target JSON.
 
 Current limitation:
 
 - The higher-level firmware program ports are host-side behavioral translations and still use heap-backed standard-library types such as `String` and `Vec`. They compile and test as a library, but are not yet deployable `no_std` AVR binaries.
-- No AVR linker configuration, startup/runtime, interrupt vector table, or per-device binary entry points exist yet. Consequently, a host release artifact is not a meaningful AVR flash measurement; the wrapper requires the linked AVR ELF produced by the target-specific build.
+- The smoke binary uses AVR GCC's device CRT and a minimal Rust `main`/panic loop, but the translated firmware still lacks per-device entry points and interrupt-vector integration. Consequently, the smoke sizes prove the toolchain only; they are not firmware flash measurements.

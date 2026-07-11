@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
 #[derive(Debug, PartialEq, Eq)]
@@ -8,6 +8,7 @@ struct Options
 {
     mcu: String,
     elf: PathBuf,
+    hex: Option<PathBuf>,
     manifest: PathBuf,
     budget: Option<u64>,
     baseline: Option<u64>,
@@ -37,13 +38,15 @@ fn run() -> Result<(), String>
     }
     let options = parse_arguments(&arguments)?;
     build_release(&options)?;
-    check_size(&options)
+    check_size(&options)?;
+    write_hex(&options)
 }
 
 fn parse_arguments(arguments: &[String]) -> Result<Options, String>
 {
     let mut mcu = None;
     let mut elf = None;
+    let mut hex = None;
     let mut manifest = PathBuf::from("Cargo.toml");
     let mut budget = None;
     let mut baseline = None;
@@ -62,6 +65,7 @@ fn parse_arguments(arguments: &[String]) -> Result<Options, String>
         {
             "--mcu" => mcu = Some(value.clone()),
             "--elf" => elf = Some(PathBuf::from(value)),
+            "--hex" => hex = Some(PathBuf::from(value)),
             "--manifest-path" => manifest = PathBuf::from(value),
             "--budget" => budget = Some(parse_number("budget", value)?),
             "--baseline" => baseline = Some(parse_number("baseline", value)?),
@@ -76,6 +80,7 @@ fn parse_arguments(arguments: &[String]) -> Result<Options, String>
     {
         mcu,
         elf: elf.ok_or("--elf is required")?,
+        hex,
         manifest,
         budget,
         baseline,
@@ -102,12 +107,33 @@ fn flash_limit(mcu: &str) -> Result<u64, String>
 
 fn build_release(options: &Options) -> Result<(), String>
 {
+    let manifest = options.manifest.canonicalize().map_err(|error|
+    {
+        format!("failed to resolve manifest {}: {error}", options.manifest.display())
+    })?;
+    let working_directory = manifest.parent().ok_or_else(||
+    {
+        format!("manifest {} has no parent directory", manifest.display())
+    })?;
+    let required_rustflags = format!(
+        "-Ctarget-cpu={} -Clink-arg=-mmcu={}",
+        options.mcu.to_ascii_lowercase(),
+        options.mcu.to_ascii_lowercase(),
+    );
+    let rustflags = match env::var("CARGO_TARGET_AVR_NONE_RUSTFLAGS")
+    {
+        Ok(existing) if !existing.trim().is_empty() => format!("{existing} {required_rustflags}"),
+        _ => required_rustflags,
+    };
     let status = Command::new("cargo")
         .arg("build")
         .arg("--release")
-        .arg("--manifest-path")
-        .arg(&options.manifest)
+        .arg("--target")
+        .arg("avr-none")
+        .arg("-Zbuild-std=core")
         .args(&options.cargo_args)
+        .env("CARGO_TARGET_AVR_NONE_RUSTFLAGS", rustflags)
+        .current_dir(working_directory)
         .status()
         .map_err(|error| format!("failed to start cargo: {error}"))?;
     if !status.success()
@@ -115,6 +141,47 @@ fn build_release(options: &Options) -> Result<(), String>
         return Err(format!("release build failed with {status}"));
     }
     Ok(())
+}
+
+fn write_hex(options: &Options) -> Result<(), String>
+{
+    let Some(hex) = &options.hex else
+    {
+        return Ok(());
+    };
+    ensure_parent_directory(hex)?;
+    let output = Command::new("avr-objcopy")
+        .args(["-O", "ihex", "-R", ".eeprom"])
+        .arg(&options.elf)
+        .arg(hex)
+        .output()
+        .map_err(|error| format!("failed to start avr-objcopy: {error}"))?;
+    if !output.status.success()
+    {
+        return Err(format!(
+            "avr-objcopy failed with {}: {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr),
+        ));
+    }
+    println!("wrote {}", hex.display());
+    Ok(())
+}
+
+fn ensure_parent_directory(path: &Path) -> Result<(), String>
+{
+    let Some(parent) = path.parent() else
+    {
+        return Ok(());
+    };
+    if parent.as_os_str().is_empty()
+    {
+        return Ok(());
+    }
+    std::fs::create_dir_all(parent).map_err(|error|
+    {
+        format!("failed to create output directory {}: {error}", parent.display())
+    })
 }
 
 fn check_size(options: &Options) -> Result<(), String>
@@ -180,11 +247,15 @@ fn self_test() -> Result<(), String>
         return Err("section parser self-test failed".to_string());
     }
     let arguments = [
-        "--mcu", "atmega32", "--elf", "firmware.elf", "--budget", "30000", "--baseline", "29000",
+        "--mcu", "atmega32", "--elf", "firmware.elf", "--hex", "firmware.hex",
+        "--budget", "30000", "--baseline", "29000",
         "--allowed-regression", "256", "--", "--target", "avr-atmega32.json", "--bin", "div",
     ].map(String::from);
     let options = parse_arguments(&arguments)?;
-    if options.mcu != "atmega32" || options.budget != Some(30000) || options.cargo_args.len() != 4
+    if options.mcu != "atmega32"
+        || options.hex != Some(PathBuf::from("firmware.hex"))
+        || options.budget != Some(30000)
+        || options.cargo_args.len() != 4
     {
         return Err("argument parser self-test failed".to_string());
     }
