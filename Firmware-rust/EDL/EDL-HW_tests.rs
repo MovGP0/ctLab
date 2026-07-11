@@ -1,3 +1,4 @@
+use crate::test_failures::TestFailures;
 use super::*;
 use std::cell::{Cell, RefCell};
 
@@ -148,28 +149,30 @@ impl EdlHardware for MockHardware {
 
 #[test]
 fn shift_in_1864_excludes_interrupts_for_the_full_adc16_clock_train() {
+    let mut assert = TestFailures::default();
+
     let mut hw = EdlHw::new(MockHardware::with_adc16_word(0xb65a));
 
     hw.shift_in_1864();
 
-    assert_eq!(hw.state.ad16_temp, 0xb65a);
-    assert_eq!(hw.io.first_event(), Some(Event::BeginInterruptExclusion));
-    assert_eq!(hw.io.last_event(), Some(Event::EndInterruptExclusion(0xa5)));
-    assert_eq!(hw.io.count_events(Event::Read(ControlBit::SDataIn1)), 16);
-    assert_eq!(hw.io.count_events(Event::Nop), 3);
+    assert.eq(hw.state.ad16_temp, 0xb65a);
+    assert.eq(hw.io.first_event(), Some(Event::BeginInterruptExclusion));
+    assert.eq(hw.io.last_event(), Some(Event::EndInterruptExclusion(0xa5)));
+    assert.eq(hw.io.count_events(Event::Read(ControlBit::SDataIn1)), 16);
+    assert.eq(hw.io.count_events(Event::Nop), 3);
     let events = hw.io.events_snapshot();
-    assert_eq!(
-        &events[events.len() - 3..],
-        &[
-            Event::Control(ControlBit::StrAd16, true),
-            Event::Control(ControlBit::Sclk, false),
-            Event::EndInterruptExclusion(0xa5),
-        ]
-    );
+    assert.is_true(events.ends_with(&[
+        Event::Control(ControlBit::StrAd16, true),
+        Event::Control(ControlBit::Sclk, false),
+        Event::EndInterruptExclusion(0xa5),
+    ]));
+    assert.finish();
 }
 
 #[test]
 fn on_sys_tick_starts_with_interrupt_safe_adc16_read_before_pwm_work() {
+    let mut assert = TestFailures::default();
+
     let mut hw = EdlHw::new(MockHardware::with_adc16_word(0x2468));
     hw.state.pw_on_off = true;
     hw.state.pw_counter = 2;
@@ -182,30 +185,31 @@ fn on_sys_tick_starts_with_interrupt_safe_adc16_read_before_pwm_work() {
     let end = hw.io.event_index(Event::EndInterruptExclusion(0xa5));
     let trigger = hw.io.event_index(Event::TriggerInRead);
 
-    assert_eq!(begin, 0);
-    assert!(begin < end);
-    assert!(end < trigger);
-    assert_eq!(hw.state.ad16_temp, 0x2468);
+    assert.eq(begin, 0);
+    assert.is_true(begin < end);
+    assert.is_true(end < trigger);
+    assert.eq(hw.state.ad16_temp, 0x2468);
+    assert.finish();
 }
 
 #[test]
 fn get_adc10_keeps_mux_settle_before_starting_conversion() {
+    let mut assert = TestFailures::default();
+
     let mut hw = EdlHw::new(MockHardware::default());
 
     let value = hw.get_adc10(4);
 
-    assert_eq!(value, 0);
+    assert.eq(value, 0);
     let events = hw.io.events_snapshot();
-    assert_eq!(events[0], Event::Admux(3));
-    assert_eq!(
-        events[1..=ADC10_SETTLE_CYCLES],
-        [Event::Nop; ADC10_SETTLE_CYCLES]
+    assert.eq(events.first(), Some(&Event::Admux(3)));
+    assert.eq(
+        events.get(1..=ADC10_SETTLE_CYCLES),
+        Some([Event::Nop; ADC10_SETTLE_CYCLES].as_slice()),
     );
-    assert_eq!(
-        events[ADC10_SETTLE_CYCLES + 1],
-        Event::AdcsraWrite(ADCSRA_START_DIV128)
-    );
-    assert_eq!(events[ADC10_SETTLE_CYCLES + 2], Event::AdcsraRead(0));
-    assert_eq!(events[ADC10_SETTLE_CYCLES + 3], Event::AdclRead(0));
-    assert_eq!(events[ADC10_SETTLE_CYCLES + 4], Event::AdchRead(0));
+    assert.eq(events.get(ADC10_SETTLE_CYCLES + 1), Some(&Event::AdcsraWrite(ADCSRA_START_DIV128)));
+    assert.eq(events.get(ADC10_SETTLE_CYCLES + 2), Some(&Event::AdcsraRead(0)));
+    assert.eq(events.get(ADC10_SETTLE_CYCLES + 3), Some(&Event::AdclRead(0)));
+    assert.eq(events.get(ADC10_SETTLE_CYCLES + 4), Some(&Event::AdchRead(0)));
+    assert.finish();
 }

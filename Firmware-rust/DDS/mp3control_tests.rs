@@ -1,3 +1,4 @@
+use crate::test_failures::TestFailures;
 use super::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -33,11 +34,13 @@ impl Mp3ControlHardware for MockHardware {
 
 #[test]
 fn ser_aux_preserves_pascal_uart_edges_and_delays() {
+    let mut assert = TestFailures::default();
+
     let mut hardware = MockHardware::default();
 
     ser_aux(&mut hardware, 0b1010_0101);
 
-    assert_eq!(
+    assert.eq(
         hardware.events,
         vec![
             Event::SerAux(false),
@@ -60,12 +63,15 @@ fn ser_aux_preserves_pascal_uart_edges_and_delays() {
             Event::MicroDelay(5),
             Event::SerAux(true),
             Event::MicroDelay(10),
-        ]
+        ],
     );
+    assert.finish();
 }
 
 #[test]
 fn mp3_goto_track_sends_track_then_pascal_volume_refresh() {
+    let mut assert = TestFailures::default();
+
     let mut state = Mp3ControlState {
         track: 7,
         db_correction: 3,
@@ -75,25 +81,28 @@ fn mp3_goto_track_sends_track_then_pascal_volume_refresh() {
 
     mp3_goto_track(&mut state, &mut hardware);
 
-    assert_eq!(state.current_track, 7);
-    assert_eq!(
+    assert.eq(state.current_track, 7);
+    assert.eq(
         hardware
-            .events
-            .iter()
-            .filter(|event| matches!(event, Event::MilliDelay(20)))
-            .count(),
-        1
+        .events
+        .iter()
+        .filter(|event| matches!(event, Event::MilliDelay(20)))
+        .count(),
+        1,
     );
-    assert!(hardware.events.starts_with(&[
-        Event::SerAux(false),
-        Event::MicroDelay(5),
-        Event::SerAux(true),
-        Event::MicroDelay(5),
-        Event::SerAux(true),
-        Event::MicroDelay(5),
-        Event::SerAux(true),
-        Event::MicroDelay(5),
-        Event::SerAux(false),
-        Event::MicroDelay(5),
-    ]));
+    assert.is_true(
+        hardware.events.starts_with(&[
+            Event::SerAux(false),
+            Event::MicroDelay(5),
+            Event::SerAux(true),
+            Event::MicroDelay(5),
+            Event::SerAux(true),
+            Event::MicroDelay(5),
+            Event::SerAux(true),
+            Event::MicroDelay(5),
+            Event::SerAux(false),
+            Event::MicroDelay(5),
+        ]),
+    );
+    assert.finish();
 }

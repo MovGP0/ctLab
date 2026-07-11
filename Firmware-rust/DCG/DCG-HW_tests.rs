@@ -1,3 +1,4 @@
+use crate::test_failures::TestFailures;
 use super::*;
 use std::cell::{Cell, RefCell};
 
@@ -162,14 +163,16 @@ impl DcgHardware for MockHardware {
 
 #[test]
 fn get_adc10_matches_pascal_register_sequence() {
+    let mut assert = TestFailures::default();
+
     let mut hw = MockHardware::new(vec![ADCSRA_BUSY_BIT, ADCSRA_BUSY_BIT, 0], 0x34, 0x12);
 
     let result = get_adc10(&mut hw, 5);
 
-    assert_eq!(result, 0x1234);
-    assert_eq!(
-        *hw.events.borrow(),
-        vec![
+    assert.eq(result, 0x1234);
+    assert.eq(
+        hw.events.borrow().as_slice(),
+        [
             Event::Admux(4),
             Event::Delay(ADC10_SETTLE_CYCLES),
             Event::AdcsraWrite(ADCSRA_START_DIV128),
@@ -178,55 +181,55 @@ fn get_adc10_matches_pascal_register_sequence() {
             Event::AdcsraRead(0),
             Event::AdclRead(0x34),
             Event::AdchRead(0x12),
-        ]
+        ],
     );
+    assert.finish();
 }
 
 #[test]
 fn get_adc10_wraps_and_masks_pascal_byte_channel() {
+    let mut assert = TestFailures::default();
+
     let mut hw = MockHardware::new(vec![0], 0, 0);
 
     let result = get_adc10(&mut hw, 0);
 
-    assert_eq!(result, 0);
-    assert_eq!(
-        hw.events.borrow().first(),
-        Some(&Event::Admux(ADC10_CHANNEL_MASK))
-    );
+    assert.eq(result, 0);
+    assert.eq(hw.events.borrow().first(), Some(&Event::Admux(ADC10_CHANNEL_MASK)));
+    assert.finish();
 }
 
 #[test]
 fn shift_in_1864_masks_interrupts_and_waits_before_clocking_sample() {
+    let mut assert = TestFailures::default();
+
     let mut hw = MockHardware::with_input_word(0xb65a);
 
     let result = shift_in_1864(&mut hw);
 
-    assert_eq!(result, 0xb65a);
-    assert_eq!(
+    assert.eq(result, 0xb65a);
+    assert.eq(
         &hw.events_snapshot()[..6],
-        &[
+        [
             Event::BeginInterruptExclusion,
             Event::StrAd16(false),
             Event::Sclk(false),
             Event::Nop,
             Event::Nop,
             Event::Nop,
-        ]
+        ],
     );
-    assert_eq!(
-        hw.count_events(Event::Nop),
-        LTC1864_ACQUISITION_DELAY_CYCLES as usize
-    );
-    assert_eq!(hw.count_events(Event::SDataIn1Read(true)), 9);
-    assert_eq!(hw.count_events(Event::SDataIn1Read(false)), 7);
-    assert_eq!(
-        hw.events_snapshot().last(),
-        Some(&Event::EndInterruptExclusion(0xa5))
-    );
+    assert.eq(hw.count_events(Event::Nop), LTC1864_ACQUISITION_DELAY_CYCLES as usize);
+    assert.eq(hw.count_events(Event::SDataIn1Read(true)), 9);
+    assert.eq(hw.count_events(Event::SDataIn1Read(false)), 7);
+    assert.eq(hw.events_snapshot().last(), Some(&Event::EndInterruptExclusion(0xa5)));
+    assert.finish();
 }
 
 #[test]
 fn on_sys_tick_selects_dac_from_dac16_present_flag() {
+    let mut assert = TestFailures::default();
+
     let mut state = DcgHardwareState {
         dac16_present: false,
         dac_raw_i: 0x0abc,
@@ -242,13 +245,13 @@ fn on_sys_tick_selects_dac_from_dac16_present_flag() {
         .copied()
         .filter(|event| matches!(event, Event::StrDac(_)))
         .collect();
-    assert_eq!(
+    assert.eq(
         str_dac_events,
         vec![
             Event::StrDac(true),
             Event::StrDac(false),
             Event::StrDac(true)
-        ]
+        ],
     );
 
     state.dac16_present = true;
@@ -262,14 +265,14 @@ fn on_sys_tick_selects_dac_from_dac16_present_flag() {
         .copied()
         .filter(|event| matches!(event, Event::StrDac(_)))
         .collect();
-    assert_eq!(
-        str_dac_events,
-        vec![Event::StrDac(false), Event::StrDac(true)]
-    );
+    assert.eq(str_dac_events, vec![Event::StrDac(false), Event::StrDac(true)]);
+    assert.finish();
 }
 
 #[test]
 fn on_sys_tick_waits_for_post_dac_settle_before_mux_update() {
+    let mut assert = TestFailures::default();
+
     let mut state = DcgHardwareState {
         dac16_present: true,
         dac_raw_i: 0x1234,
@@ -297,8 +300,9 @@ fn on_sys_tick_waits_for_post_dac_settle_before_mux_update() {
         .position(|event| *event == Event::MpxI(false))
         .unwrap();
 
-    assert!(latch_index < settle_index);
-    assert!(settle_index < adc_store_index);
-    assert!(settle_index < output_enable_index);
-    assert_eq!(hw.count_events(Event::PostDacSettle), 1);
+    assert.is_true(latch_index < settle_index);
+    assert.is_true(settle_index < adc_store_index);
+    assert.is_true(settle_index < output_enable_index);
+    assert.eq(hw.count_events(Event::PostDacSettle), 1);
+    assert.finish();
 }

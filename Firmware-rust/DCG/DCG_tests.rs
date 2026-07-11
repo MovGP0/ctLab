@@ -1,3 +1,4 @@
+use crate::test_failures::TestFailures;
 use super::*;
 
 #[derive(Debug, Default, Clone)]
@@ -122,48 +123,56 @@ fn mock_hardware() -> MockHardware {
 
 #[test]
 fn default_eeprom_matches_pascal_ada16_option_layout() {
+    let mut assert = TestFailures::default();
+
     let eeprom = EepromData::default();
-    assert_eq!(eeprom.option_array[OptionSlot::InitialVoltage.index()], 5.0);
-    assert_eq!(eeprom.option_array[OptionSlot::InitialCurrent.index()], 0.02);
-    assert_eq!(eeprom.option_array[OptionSlot::CurrentMeasurementGain.index()], 0.25);
-    assert_eq!(eeprom.option_array[OptionSlot::ReferenceVoltage.index()], 2.5);
-    assert_eq!(eeprom.option_array[OptionSlot::MaximumVoltage.index()], 30.0);
-    assert_eq!(eeprom.option_array[OptionSlot::SenseResistance2mA.index()], 470.0);
-    assert_eq!(eeprom.option_array[OptionSlot::SenseResistance2A.index()], 0.47);
-    assert_eq!(eeprom.option_array[OptionSlot::MaximumCurrent2mA.index()], 0.002);
-    assert_eq!(eeprom.option_array[OptionSlot::MaximumCurrent2A.index()], 2.0);
-    assert_eq!(eeprom.option_array[OptionSlot::LowVoltageAdcDivider.index()], 2.0);
-    assert_eq!(eeprom.option_array[OptionSlot::HighVoltageAdcDivider.index()], 6.0);
-    assert_eq!(eeprom.option_array[OptionSlot::InstalledHardware.index()], 7.0);
-    assert_eq!(eeprom.option_array[OptionSlot::VoltageRangeSwitchpoint.index()], 12.1);
-    assert_eq!(eeprom.option_array[OptionSlot::RelayHysteresisLow.index()], 8.6);
-    assert_eq!(eeprom.option_array[OptionSlot::RelayHysteresisHigh.index()], 8.9);
-    assert_eq!(eeprom.option_array[OptionSlot::FanOnTemperature.index()], 50.0);
-    assert_eq!(eeprom.option_array[OptionSlot::InitialRippleOnTime.index()], 4.0);
-    assert_eq!(eeprom.option_array[OptionSlot::InitialRippleOffTime.index()], 6.0);
+    assert.eq(eeprom.option_array[OptionSlot::InitialVoltage.index()], 5.0);
+    assert.eq(eeprom.option_array[OptionSlot::InitialCurrent.index()], 0.02);
+    assert.eq(eeprom.option_array[OptionSlot::CurrentMeasurementGain.index()], 0.25);
+    assert.eq(eeprom.option_array[OptionSlot::ReferenceVoltage.index()], 2.5);
+    assert.eq(eeprom.option_array[OptionSlot::MaximumVoltage.index()], 30.0);
+    assert.eq(eeprom.option_array[OptionSlot::SenseResistance2mA.index()], 470.0);
+    assert.eq(eeprom.option_array[OptionSlot::SenseResistance2A.index()], 0.47);
+    assert.eq(eeprom.option_array[OptionSlot::MaximumCurrent2mA.index()], 0.002);
+    assert.eq(eeprom.option_array[OptionSlot::MaximumCurrent2A.index()], 2.0);
+    assert.eq(eeprom.option_array[OptionSlot::LowVoltageAdcDivider.index()], 2.0);
+    assert.eq(eeprom.option_array[OptionSlot::HighVoltageAdcDivider.index()], 6.0);
+    assert.eq(eeprom.option_array[OptionSlot::InstalledHardware.index()], 7.0);
+    assert.eq(eeprom.option_array[OptionSlot::VoltageRangeSwitchpoint.index()], 12.1);
+    assert.eq(eeprom.option_array[OptionSlot::RelayHysteresisLow.index()], 8.6);
+    assert.eq(eeprom.option_array[OptionSlot::RelayHysteresisHigh.index()], 8.9);
+    assert.eq(eeprom.option_array[OptionSlot::FanOnTemperature.index()], 50.0);
+    assert.eq(eeprom.option_array[OptionSlot::InitialRippleOnTime.index()], 4.0);
+    assert.eq(eeprom.option_array[OptionSlot::InitialRippleOffTime.index()], 6.0);
+    assert.finish();
 }
 
 #[test]
 fn init_scales_derives_calibration_and_startup_state() {
+    let mut assert = TestFailures::default();
+
     let hw = mock_hardware();
     let mut state = DeviceState::with_eeprom(hw, test_eeprom());
     state.init_scales();
 
-    assert!(state.scale.dac16_present);
-    assert!(state.scale.adc16_present);
-    assert!(state.scale.dcp_present);
-    assert_eq!(state.scale.dac_max, 65_535);
-    assert_eq!(state.scale.switchpoint, 2.0);
-    assert_eq!(state.relay_voltage_low, 8.6);
-    assert_eq!(state.relay_voltage_high, 8.9);
-    assert_eq!(state.ripple_percent, 25.0);
-    assert_eq!(state.pw_on_time_ms, 4);
-    assert_eq!(state.pw_off_time_ms, 6);
-    assert_eq!(state.pw_counter_ms, 4);
+    assert.is_true(state.scale.dac16_present);
+    assert.is_true(state.scale.adc16_present);
+    assert.is_true(state.scale.dcp_present);
+    assert.eq(state.scale.dac_max, 65_535);
+    assert.eq(state.scale.switchpoint, 2.0);
+    assert.eq(state.relay_voltage_low, 8.6);
+    assert.eq(state.relay_voltage_high, 8.9);
+    assert.eq(state.ripple_percent, 25.0);
+    assert.eq(state.pw_on_time_ms, 4);
+    assert.eq(state.pw_off_time_ms, 6);
+    assert.eq(state.pw_counter_ms, 4);
+    assert.finish();
 }
 
 #[test]
 fn status_frame_uses_pascal_error_channel_payload() {
+    let mut assert = TestFailures::default();
+
     let hw = mock_hardware();
     let mut state = DeviceState::new(hw);
     state.main_channel = 3;
@@ -172,12 +181,15 @@ fn status_frame_uses_pascal_error_channel_payload() {
 
     let frame = state.status_frame(ErrorCode::ParamErr);
 
-    assert_eq!(frame, "3:255=53 [PARERR] [ICONST]\r\n");
-    assert_eq!(state.err_count, 1);
+    assert.eq(frame, "3:255=53 [PARERR] [ICONST]\r\n");
+    assert.eq(state.err_count, 1);
+    assert.finish();
 }
 
 #[test]
 fn status_frame_reports_fault_labels_in_low_nibble() {
+    let mut assert = TestFailures::default();
+
     let hw = mock_hardware();
     let mut state = DeviceState::new(hw);
     state.faults = FaultFlags {
@@ -189,11 +201,14 @@ fn status_frame_reports_fault_labels_in_low_nibble() {
 
     let frame = state.status_frame(ErrorCode::NoErr);
 
-    assert_eq!(frame, "0:255=5 [OVRPOWR] [OVRVOLT]\r\n");
+    assert.eq(frame, "0:255=5 [OVRPOWR] [OVRVOLT]\r\n");
+    assert.finish();
 }
 
 #[test]
 fn set_level_dac_blanks_changed_ranges_then_applies_offsets_and_ripple_off_level() {
+    let mut assert = TestFailures::default();
+
     let hw = mock_hardware();
     let mut state = DeviceState::with_eeprom(hw, test_eeprom());
     state.init_scales();
@@ -201,77 +216,92 @@ fn set_level_dac_blanks_changed_ranges_then_applies_offsets_and_ripple_off_level
     state.current_set = 0.25;
     state.set_level_dac();
 
-    assert_eq!(state.current_range, CurrentRange::Dc2A);
-    assert_eq!(state.voltage_range, VoltageRange::UHigh);
-    assert_eq!(state.hw.current.first(), Some(&0));
-    assert_eq!(state.hw.voltage_on.first(), Some(&0));
-    assert_eq!(state.hw.voltage_off.first(), Some(&0));
-    assert_eq!(state.hw.current_ranges, vec![CurrentRange::Dc2A]);
-    assert_eq!(state.hw.voltage_ranges, vec![VoltageRange::UHigh]);
-    assert_eq!(state.hw.delays, vec![4, 4]);
-    assert_eq!(state.dac_raw_i, 8_221);
-    assert_eq!(state.dac_raw_u_on, 65_535);
-    assert_eq!(state.dac_raw_u_off, 49_151);
-    assert_eq!(state.hw.current.last(), Some(&8_221));
-    assert_eq!(state.hw.voltage_on.last(), Some(&65_535));
-    assert_eq!(state.hw.voltage_off.last(), Some(&49_151));
+    assert.eq(state.current_range, CurrentRange::Dc2A);
+    assert.eq(state.voltage_range, VoltageRange::UHigh);
+    assert.eq(state.hw.current.first(), Some(&0));
+    assert.eq(state.hw.voltage_on.first(), Some(&0));
+    assert.eq(state.hw.voltage_off.first(), Some(&0));
+    assert.eq(state.hw.current_ranges, vec![CurrentRange::Dc2A]);
+    assert.eq(state.hw.voltage_ranges, vec![VoltageRange::UHigh]);
+    assert.eq(state.hw.delays, vec![4, 4]);
+    assert.eq(state.dac_raw_i, 8_221);
+    assert.eq(state.dac_raw_u_on, 65_535);
+    assert.eq(state.dac_raw_u_off, 49_151);
+    assert.eq(state.hw.current.last(), Some(&8_221));
+    assert.eq(state.hw.voltage_on.last(), Some(&65_535));
+    assert.eq(state.hw.voltage_off.last(), Some(&49_151));
+    assert.finish();
 }
 
 #[test]
 fn encoder_delta_waits_for_rast_then_rounds_and_applies_voltage_acceleration() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::with_eeprom(mock_hardware(), test_eeprom());
     state.init_scales();
     state.panel_modify = Modify::Volt;
     state.voltage_set = 1.26;
 
-    assert!(!state.apply_encoder_delta(3));
-    assert_eq!(state.voltage_set, 1.26);
-    assert!(state.apply_encoder_delta(1));
+    assert.is_false(state.apply_encoder_delta(3));
+    assert.eq(state.voltage_set, 1.26);
+    assert.is_true(state.apply_encoder_delta(1));
 
-    assert!((state.voltage_set - 1.4).abs() < 0.000001);
-    assert!(!state.first_turn);
-    assert_eq!(state.button_number, 4);
-    assert!(state.hw.serial.contains("0:255=68 [SRQUSR]\r\n"));
-    assert!(state.hw.serial.contains("0:0=1.400\r\n"));
+    assert.is_true((state.voltage_set - 1.4).abs() < 0.000001);
+    assert.is_false(state.first_turn);
+    assert.eq(state.button_number, 4);
+    assert.is_true(state.hw.serial.contains("0:255=68 [SRQUSR]\r\n"));
+    assert.is_true(state.hw.serial.contains("0:0=1.400\r\n"));
+    assert.finish();
 }
 
 #[test]
 fn encoder_delta_uses_pascal_acceleration_table_for_fast_voltage_turns() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::with_eeprom(mock_hardware(), test_eeprom());
     state.init_scales();
     state.panel_modify = Modify::Volt;
     state.voltage_set = 1.23;
 
-    assert!(state.apply_encoder_delta(12));
+    assert.is_true(state.apply_encoder_delta(12));
 
-    assert!((state.voltage_set - 1.7).abs() < 0.000001);
-    assert_eq!(state.incr_acc_float, 5.0);
+    assert.is_true((state.voltage_set - 1.7).abs() < 0.000001);
+    assert.eq(state.incr_acc_float, 5.0);
+    assert.finish();
 }
 
 #[test]
 fn fine_current_encoder_step_uses_current_divisor_without_coarse_rounding() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::with_eeprom(mock_hardware(), test_eeprom());
     state.init_scales();
     state.panel_modify = Modify::Ampere;
     state.incr_fine = true;
     state.current_set = 0.126;
 
-    assert!(state.apply_encoder_delta(4));
+    assert.is_true(state.apply_encoder_delta(4));
 
-    assert!((state.current_set - 0.1261).abs() < 0.000001);
-    assert_eq!(state.inc_fine_div, 10_000.0);
-    assert!(state.first_turn);
+    assert.is_true((state.current_set - 0.1261).abs() < 0.000001);
+    assert.eq(state.inc_fine_div, 10_000.0);
+    assert.is_true(state.first_turn);
+    assert.finish();
 }
 
 #[test]
 fn new_state_disables_tracking_like_pascal_eeprom_default() {
+    let mut assert = TestFailures::default();
+
     let state = DeviceState::new(mock_hardware());
 
-    assert_eq!(state.track_channel, 255);
+    assert.eq(state.track_channel, 255);
+    assert.finish();
 }
 
 #[test]
 fn measurement_conversion_uses_pascal_adc_paths_and_input_scaling() {
+    let mut assert = TestFailures::default();
+
     let mut eeprom = test_eeprom();
     eeprom.option_array[OptionSlot::InstalledHardware.index()] = 0.0;
     eeprom.adc_u_offsets = [3, 30];
@@ -292,13 +322,16 @@ fn measurement_conversion_uses_pascal_adc_paths_and_input_scaling() {
     let current = state.get_current();
     state.get_input_voltage();
 
-    assert!((voltage - 0.20117188).abs() < 0.000001);
-    assert!((current - 0.00005078).abs() < 0.000001);
-    assert!((state.input_voltage - 1.855).abs() < 0.0001);
+    assert.is_true((voltage - 0.20117188).abs() < 0.000001);
+    assert.is_true((current - 0.00005078).abs() < 0.000001);
+    assert.is_true((state.input_voltage - 1.855).abs() < 0.0001);
+    assert.finish();
 }
 
 #[test]
 fn check_limits_clamps_and_normalizes_ripple_and_tracking() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::with_eeprom(mock_hardware(), test_eeprom());
     state.voltage_set = 40.0;
     state.current_set = 3.0;
@@ -308,22 +341,25 @@ fn check_limits_clamps_and_normalizes_ripple_and_tracking() {
 
     let err = state.check_limits();
 
-    assert_eq!(err, ErrorCode::ParamErr);
-    assert_eq!(state.voltage_set, 30.0);
-    assert_eq!(state.current_set, 2.0);
-    assert_eq!(state.pw_on_time_ms, 2);
-    assert_eq!(state.ripple_percent, 100.0);
-    assert_eq!(state.track_channel, 7);
-    assert_eq!(state.ripple_voltage, 30.0);
-    assert!(!state.no_toggle);
+    assert.eq(err, ErrorCode::ParamErr);
+    assert.eq(state.voltage_set, 30.0);
+    assert.eq(state.current_set, 2.0);
+    assert.eq(state.pw_on_time_ms, 2);
+    assert.eq(state.ripple_percent, 100.0);
+    assert.eq(state.track_channel, 7);
+    assert.eq(state.ripple_voltage, 30.0);
+    assert.is_false(state.no_toggle);
 
     state.track_channel = 128;
-    assert_eq!(state.check_limits(), ErrorCode::NoErr);
-    assert_eq!(state.track_channel, 255);
+    assert.eq(state.check_limits(), ErrorCode::NoErr);
+    assert.eq(state.track_channel, 255);
+    assert.finish();
 }
 
 #[test]
 fn tracking_transmit_path_sends_voltage_and_current_commands() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(mock_hardware());
     state.track_channel = 4;
     state.voltage_set = 1.25;
@@ -331,11 +367,14 @@ fn tracking_transmit_path_sends_voltage_and_current_commands() {
 
     state.send_track_cmd();
 
-    assert_eq!(state.hw.serial, "4:0=1.250!\r\n4:1=0.500!\r\n");
+    assert.eq(state.hw.serial, "4:0=1.250!\r\n4:1=0.500!\r\n");
+    assert.finish();
 }
 
 #[test]
 fn fault_check_drops_relays_for_overtemp_overvoltage_and_fuse_loss() {
+    let mut assert = TestFailures::default();
+
     let hw = MockHardware {
         adc10: 100,
         temp_c: Some(71.0),
@@ -348,15 +387,18 @@ fn fault_check_drops_relays_for_overtemp_overvoltage_and_fuse_loss() {
 
     state.fault_check();
 
-    assert!(state.faults.over_temp);
-    assert!(!state.faults.over_voltage);
-    assert!(state.faults.fuse_blown);
-    assert!(state.status.overload_flag);
-    assert_eq!(state.hw.input_relays, vec![false, false]);
+    assert.is_true(state.faults.over_temp);
+    assert.is_false(state.faults.over_voltage);
+    assert.is_true(state.faults.fuse_blown);
+    assert.is_true(state.status.overload_flag);
+    assert.eq(state.hw.input_relays, vec![false, false]);
+    assert.finish();
 }
 
 #[test]
 fn chores_updates_measurements_overload_and_relay_hysteresis() {
+    let mut assert = TestFailures::default();
+
     let hw = MockHardware {
         adc_u: 10_000,
         adc_i: 10_000,
@@ -373,14 +415,17 @@ fn chores_updates_measurements_overload_and_relay_hysteresis() {
 
     state.chores();
 
-    assert!(state.status.overload_flag);
-    assert!(state.measured_voltage > 0.0);
-    assert!(state.measured_current > 0.0);
-    assert_eq!(state.hw.input_relays, vec![true]);
+    assert.is_true(state.status.overload_flag);
+    assert.is_true(state.measured_voltage > 0.0);
+    assert.is_true(state.measured_current > 0.0);
+    assert.eq(state.hw.input_relays, vec![true]);
+    assert.finish();
 }
 
 #[test]
 fn check_ser_drains_ascii_backspace_and_cr_commands() {
+    let mut assert = TestFailures::default();
+
     let mut hw = mock_hardware();
     hw.serial_in = "0:0=12.x\u{8}3!\r".chars().collect();
     let mut state = DeviceState::with_eeprom(hw, test_eeprom());
@@ -388,13 +433,16 @@ fn check_ser_drains_ascii_backspace_and_cr_commands() {
 
     state.check_ser();
 
-    assert_eq!(state.voltage_set, 12.3);
-    assert!(state.hw.serial.contains("0:0=12.300\r\n"));
-    assert!(state.ser_input.is_empty());
+    assert.eq(state.voltage_set, 12.3);
+    assert.is_true(state.hw.serial.contains("0:0=12.300\r\n"));
+    assert.is_true(state.ser_input.is_empty());
+    assert.finish();
 }
 
 #[test]
 fn init_all_follows_pascal_startup_order() {
+    let mut assert = TestFailures::default();
+
     let hw = MockHardware {
         adc10: 1023,
         current_limit_sense: true,
@@ -404,16 +452,19 @@ fn init_all_follows_pascal_startup_order() {
 
     state.init_all();
 
-    assert_eq!(state.voltage_set, 5.0);
-    assert_eq!(state.current_set, 0.02);
-    assert_eq!(state.panel_modify, Modify::Volt);
-    assert!(state.output_enabled);
-    assert_eq!(state.hw.outputs, vec![true]);
-    assert!(state
+    assert.eq(state.voltage_set, 5.0);
+    assert.eq(state.current_set, 0.02);
+    assert.eq(state.panel_modify, Modify::Volt);
+    assert.is_true(state.output_enabled);
+    assert.eq(state.hw.outputs, vec![true]);
+    assert.is_true(
+        state
         .hw
         .serial
-        .starts_with("0:254=2.92 [DCG by CM/c't 05/2010]\r\n"));
-    assert_eq!(state.hw.input_relays, vec![false]);
-    assert_eq!(state.capacity_mah, 0.0);
-    assert_eq!(state.capacity_mwh, 0.0);
+        .starts_with("0:254=2.92 [DCG by CM/c't 05/2010]\r\n"),
+    );
+    assert.eq(state.hw.input_relays, vec![false]);
+    assert.eq(state.capacity_mah, 0.0);
+    assert.eq(state.capacity_mwh, 0.0);
+    assert.finish();
 }

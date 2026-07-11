@@ -7,6 +7,9 @@
 #![deny(missing_docs)]
 #![deny(rustdoc::broken_intra_doc_links)]
 
+#[cfg(test)]
+mod test_failures;
+
 /// Shared volatile-register primitives and AVR MCU descriptions.
 pub mod avrd_support;
 

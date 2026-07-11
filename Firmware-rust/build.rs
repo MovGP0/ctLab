@@ -23,7 +23,7 @@ fn main()
     if !violations.is_empty()
     {
         panic!(
-            "Rust source layout check failed; keep at most one empty line, separate a completed item from the next doc comment, put function bodies on their own lines, and keep test bodies in dedicated *_tests.rs files:\n{}",
+            "Rust source layout check failed; keep at most one empty line, separate a completed item from the next doc comment, put function bodies on their own lines, keep test bodies in dedicated *_tests.rs files, and aggregate test observations with TestFailures:\n{}",
             violations.join("\n")
         );
     }
@@ -68,7 +68,12 @@ fn check_directory(directory: &Path, violations: &mut Vec<String>)
 fn check_file(path: &Path, violations: &mut Vec<String>)
 {
     let content = fs::read_to_string(path).expect("read Rust source");
+    let is_test_file = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name.ends_with("_tests.rs"));
     let mut consecutive_empty_lines = 0;
+    let mut previous_previous_line: Option<&str> = None;
     let mut previous_line: Option<&str> = None;
     for (index, line) in content.lines().enumerate()
     {
@@ -103,6 +108,25 @@ fn check_file(path: &Path, violations: &mut Vec<String>)
                 index + 1
             ));
         }
+        if is_test_file && is_fail_fast_test_assertion(line)
+        {
+            violations.push(format!(
+                "{}:{} (record the observation with TestFailures instead of a fail-fast assertion macro)",
+                path.display(),
+                index + 1
+            ));
+        }
+        if line.trim() == "}"
+            && previous_line.is_some_and(|previous| previous.trim().is_empty())
+            && previous_previous_line
+                .is_some_and(|previous| previous.trim() == "assert.finish();")
+        {
+            violations.push(format!(
+                "{}:{} (remove the empty line between assert.finish(); and the test's closing brace)",
+                path.display(),
+                index
+            ));
+        }
         if line.trim().is_empty()
         {
             consecutive_empty_lines += 1;
@@ -115,8 +139,19 @@ fn check_file(path: &Path, violations: &mut Vec<String>)
         {
             consecutive_empty_lines = 0;
         }
+        previous_previous_line = previous_line;
         previous_line = Some(line);
     }
+}
+
+/// Returns whether a test line uses a standard assertion macro that stops at its first failure.
+fn is_fail_fast_test_assertion(line: &str) -> bool
+{
+    let code = line.trim_start();
+    !code.starts_with("//")
+        && (code.contains("assert!(")
+            || code.contains("assert_eq!(")
+            || code.contains("assert_ne!("))
 }
 
 /// Detects both Rust's same-line and Allman opening-brace forms for an inline

@@ -1,3 +1,4 @@
+use crate::test_failures::TestFailures;
 use super::*;
 use std::cell::{Cell, RefCell};
 
@@ -209,21 +210,26 @@ impl AdacHardware for TestHardware {
 /// Verifies that shift in1864 blocks interrupts for the whole ltc1864 transaction remains faithful to the Pascal behavior.
 #[test]
 fn shift_in1864_blocks_interrupts_for_the_whole_ltc1864_transaction() {
+    let mut assert = TestFailures::default();
+
     let mut hw = TestHardware::with_input_word(0xb65a);
     let mut state = AdacState::default();
 
     shift_in1864(&mut hw, &mut state);
 
-    assert_eq!(state.ad_raw, 0xb65a);
-    assert_eq!(hw.first_event(), Some(Event::BeginInterruptExclusion));
-    assert_eq!(hw.last_event(), Some(Event::EndInterruptExclusion(0xa5)));
-    assert_eq!(hw.count_events(Event::Read(Signal::SDataIn1)), 16);
-    assert_eq!(hw.count_events(Event::Nop), 4);
+    assert.eq(state.ad_raw, 0xb65a);
+    assert.eq(hw.first_event(), Some(Event::BeginInterruptExclusion));
+    assert.eq(hw.last_event(), Some(Event::EndInterruptExclusion(0xa5)));
+    assert.eq(hw.count_events(Event::Read(Signal::SDataIn1)), 16);
+    assert.eq(hw.count_events(Event::Nop), 4);
+    assert.finish();
 }
 
 /// Verifies that DAC shift routines keep pascal nop timing remains faithful to the Pascal behavior.
 #[test]
 fn dac_shift_routines_keep_pascal_nop_timing() {
+    let mut assert = TestFailures::default();
+
     let state = AdacState {
         dac_temp: 0xa55a,
         ..AdacState::default()
@@ -231,20 +237,23 @@ fn dac_shift_routines_keep_pascal_nop_timing() {
 
     let mut hw = TestHardware::default();
     shift_out1257(&mut hw, &state);
-    assert_eq!(hw.count_events(Event::Nop), 12);
+    assert.eq(hw.count_events(Event::Nop), 12);
 
     let mut hw = TestHardware::default();
     shift_out1655(&mut hw, &state);
-    assert_eq!(hw.count_events(Event::Nop), 8);
+    assert.eq(hw.count_events(Event::Nop), 8);
 
     let mut hw = TestHardware::default();
     shift_out714(&mut hw, &state);
-    assert_eq!(hw.count_events(Event::Nop), 19);
+    assert.eq(hw.count_events(Event::Nop), 19);
+    assert.finish();
 }
 
 /// Verifies that shift register strobe keeps pascal nop timing remains faithful to the Pascal behavior.
 #[test]
 fn shift_register_strobe_keeps_pascal_nop_timing() {
+    let mut assert = TestFailures::default();
+
     let state = AdacState {
         port_sr0: 0x11,
         port_sr1: 0x22,
@@ -256,18 +265,23 @@ fn shift_register_strobe_keeps_pascal_nop_timing() {
 
     shift_out_sr(&mut hw, &state);
 
-    assert_eq!(hw.count_events(Event::Nop), 2);
-    assert!(hw.has_event_window(&[
-        Event::Signal(Signal::StrSr, true),
-        Event::Nop,
-        Event::Nop,
-        Event::Signal(Signal::StrSr, false),
-    ]));
+    assert.eq(hw.count_events(Event::Nop), 2);
+    assert.is_true(
+        hw.has_event_window(&[
+            Event::Signal(Signal::StrSr, true),
+            Event::Nop,
+            Event::Nop,
+            Event::Signal(Signal::StrSr, false),
+        ]),
+    );
+    assert.finish();
 }
 
 /// Verifies that on sys tick uses pascal delay loop cycle counts remains faithful to the Pascal behavior.
 #[test]
 fn on_sys_tick_uses_pascal_delay_loop_cycle_counts() {
+    let mut assert = TestFailures::default();
+
     let mut hw = TestHardware::with_input_word(0x8004);
     hw.input_bits
         .extend((0..16).rev().map(|bit| 0x8008 & (1 << bit) != 0));
@@ -284,24 +298,27 @@ fn on_sys_tick_uses_pascal_delay_loop_cycle_counts() {
 
     on_sys_tick(&mut hw, &mut state);
 
-    assert!(hw.contains_event(Event::WaitCycles(ADC16_DISCARD_CONVERSION_DELAY_CYCLES)));
-    assert!(hw.contains_event(Event::WaitCycles(DAC_SETTLE_DELAY_CYCLES)));
-    assert!(!hw.contains_event(Event::WaitCycles(15)));
-    assert!(!hw.contains_event(Event::WaitCycles(4)));
+    assert.is_true(hw.contains_event(Event::WaitCycles(ADC16_DISCARD_CONVERSION_DELAY_CYCLES)));
+    assert.is_true(hw.contains_event(Event::WaitCycles(DAC_SETTLE_DELAY_CYCLES)));
+    assert.is_false(hw.contains_event(Event::WaitCycles(15)));
+    assert.is_false(hw.contains_event(Event::WaitCycles(4)));
+    assert.finish();
 }
 
 /// Verifies that get adc10 matches pascal register sequence remains faithful to the Pascal behavior.
 #[test]
 fn get_adc10_matches_pascal_register_sequence() {
+    let mut assert = TestFailures::default();
+
     let mut hw =
         TestHardware::with_adc10(vec![ADCSRA_BUSY_BIT, ADCSRA_BUSY_BIT, 0], 0x34, 0x12);
 
     let result = get_adc10(&mut hw, 5, true);
 
-    assert_eq!(result, 0x1234);
-    assert_eq!(
-        *hw.events.borrow(),
-        vec![
+    assert.eq(result, 0x1234);
+    assert.eq(
+        hw.events.borrow().as_slice(),
+        [
             Event::Admux(ADC10_INTERNAL_REFERENCE_MASK | 4),
             Event::WaitCycles(ADC10_SETTLE_DELAY_CYCLES),
             Event::AdcsraWrite(ADCSRA_START_DIV128),
@@ -310,20 +327,21 @@ fn get_adc10_matches_pascal_register_sequence() {
             Event::AdcsraRead(0),
             Event::AdclRead(0x34),
             Event::AdchRead(0x12),
-        ]
+        ],
     );
+    assert.finish();
 }
 
 /// Verifies that get adc10 wraps and masks pascal byte channel remains faithful to the Pascal behavior.
 #[test]
 fn get_adc10_wraps_and_masks_pascal_byte_channel() {
+    let mut assert = TestFailures::default();
+
     let mut hw = TestHardware::with_adc10(vec![0], 0, 0);
 
     let result = get_adc10(&mut hw, 0, false);
 
-    assert_eq!(result, 0);
-    assert_eq!(
-        hw.events.borrow().first(),
-        Some(&Event::Admux(ADC10_CHANNEL_MASK))
-    );
+    assert.eq(result, 0);
+    assert.eq(hw.events.borrow().first(), Some(&Event::Admux(ADC10_CHANNEL_MASK)));
+    assert.finish();
 }

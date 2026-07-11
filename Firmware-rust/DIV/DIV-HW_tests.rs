@@ -1,3 +1,4 @@
+use crate::test_failures::TestFailures;
 use super::*;
 use std::cell::{Cell, RefCell};
 
@@ -100,30 +101,35 @@ impl DivHardware for MockHardware {
 /// Verifies that shift in 2400 negative reading suppresses positive clipping remains faithful to the Pascal behavior.
 #[test]
 fn shift_in_2400_negative_reading_suppresses_positive_clipping() {
+    let mut assert = TestFailures::default();
+
     let mut state = DivHardwareState::default();
     let mut hw = MockHardware::new(vec![false, true], vec![0x12, 0x34, 0x56]);
 
     shift_in_2400(&mut state, &mut hw);
 
-    assert!(state.negative_flag);
-    assert!(!state.over_voltage_flag);
-    assert_eq!(state.ad24_temp, 0xFF12_3456);
+    assert.is_true(state.negative_flag);
+    assert.is_false(state.over_voltage_flag);
+    assert.eq(state.ad24_temp, 0xFF12_3456);
+    assert.finish();
 }
 
 /// Verifies that shift in 2400 uses pascal ltc2400 SPI transaction remains faithful to the Pascal behavior.
 #[test]
 fn shift_in_2400_uses_pascal_ltc2400_spi_transaction() {
+    let mut assert = TestFailures::default();
+
     let mut state = DivHardwareState::default();
     let mut hw = MockHardware::new(vec![true, true], vec![0xAA, 0xBB, 0xCC]);
 
     shift_in_2400(&mut state, &mut hw);
 
-    assert!(!state.negative_flag);
-    assert!(state.over_voltage_flag);
-    assert_eq!(state.ad24_temp, 16_777_215);
-    assert_eq!(
-        *hw.events.borrow(),
-        vec![
+    assert.is_false(state.negative_flag);
+    assert.is_true(state.over_voltage_flag);
+    assert.eq(state.ad24_temp, 16_777_215);
+    assert.eq(
+        hw.events.borrow().as_slice(),
+        [
             Event::StrAd24(false),
             Event::Sclk(true),
             Event::Sclk(false),
@@ -160,13 +166,16 @@ fn shift_in_2400_uses_pascal_ltc2400_spi_transaction() {
             Event::Delay(1),
             Event::Sclk(false),
             Event::StrAd24(true),
-        ]
+        ],
     );
+    assert.finish();
 }
 
 /// Verifies that on sys tick abort uses pascal manual clock timing remains faithful to the Pascal behavior.
 #[test]
 fn on_sys_tick_abort_uses_pascal_manual_clock_timing() {
+    let mut assert = TestFailures::default();
+
     let mut state = DivHardwareState {
         abort_flag: true,
         ..DivHardwareState::default()
@@ -175,13 +184,13 @@ fn on_sys_tick_abort_uses_pascal_manual_clock_timing() {
 
     on_sys_tick(&mut state, &mut hw);
 
-    assert!(!state.abort_flag);
-    assert!(!state.ad24_ready);
-    assert!(state.ad10_ready);
-    assert_eq!(hw.sdata_read_index.get(), 0);
-    assert_eq!(
-        *hw.events.borrow(),
-        vec![
+    assert.is_false(state.abort_flag);
+    assert.is_false(state.ad24_ready);
+    assert.is_true(state.ad10_ready);
+    assert.eq(hw.sdata_read_index.get(), 0);
+    assert.eq(
+        hw.events.borrow().as_slice(),
+        [
             Event::Sclk(false),
             Event::StrAd24(false),
             Event::StrAd24(false),
@@ -190,18 +199,22 @@ fn on_sys_tick_abort_uses_pascal_manual_clock_timing() {
             Event::Delay(2),
             Event::Sclk(false),
             Event::StrAd24(true),
-        ]
+        ],
     );
+    assert.finish();
 }
 
 /// Verifies that int2 trigger only accepts falling edge remains faithful to the Pascal behavior.
 #[test]
 fn int2_trigger_only_accepts_falling_edge() {
+    let mut assert = TestFailures::default();
+
     let mut state = DivHardwareState::default();
 
     int2_trigger_edge(&mut state, true);
-    assert!(!state.trigger);
+    assert.is_false(state.trigger);
 
     int2_trigger(&mut state);
-    assert!(state.trigger);
+    assert.is_true(state.trigger);
+    assert.finish();
 }

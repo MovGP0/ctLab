@@ -1,3 +1,4 @@
+use crate::test_failures::TestFailures;
 use super::*;
 use std::collections::VecDeque;
 
@@ -103,29 +104,37 @@ fn xor_checksum(text: &str) -> String {
 
 #[test]
 fn frequency_protocol_uses_tenths_hz_on_the_wire() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware::default());
 
     state.process_serial_command("FRQ=1234.5!");
-    assert_eq!(state.frequency_tenths_hz, 12_345);
-    assert_eq!(state.hw.take_serial_output(), "#0:255=0 [OK]\r\n");
+    assert.eq(state.frequency_tenths_hz, 12_345);
+    assert.eq(state.hw.take_serial_output(), "#0:255=0 [OK]\r\n");
 
     state.process_serial_command("FRQ");
-    assert_eq!(state.hw.take_serial_output(), "#0:0=1234.5\r\n");
+    assert.eq(state.hw.take_serial_output(), "#0:0=1234.5\r\n");
+    assert.finish();
 }
 
 #[test]
 fn tuning_word_uses_fixed_decimal_decades_without_formatting_storage() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware::default());
 
     state.frequency_tenths_hz = 10_000;
-    assert_eq!(state.dds_tuning_word(), 64_000);
+    assert.eq(state.dds_tuning_word(), 64_000);
 
     state.frequency_tenths_hz = 12_345_670;
-    assert_eq!(state.dds_tuning_word(), 79_012_288);
+    assert.eq(state.dds_tuning_word(), 79_012_288);
+    assert.finish();
 }
 
 #[test]
 fn burst_mode_gates_waveform_on_systick() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware::default());
     state.waveform = Waveform::Square;
     state.burst_mode = 3;
@@ -133,148 +142,163 @@ fn burst_mode_gates_waveform_on_systick() {
     state.burst_gate_open = true;
 
     state.on_sys_tick();
-    assert_eq!(state.hw.waveforms.last(), Some(&Waveform::Square));
+    assert.eq(state.hw.waveforms.last(), Some(&Waveform::Square));
 
     state.on_sys_tick();
-    assert_eq!(state.hw.waveforms.last(), Some(&Waveform::Off));
+    assert.eq(state.hw.waveforms.last(), Some(&Waveform::Off));
 
     state.on_sys_tick();
     state.on_sys_tick();
     state.on_sys_tick();
-    assert_eq!(state.hw.waveforms.last(), Some(&Waveform::Square));
+    assert.eq(state.hw.waveforms.last(), Some(&Waveform::Square));
+    assert.finish();
 }
 
 #[test]
 fn waveform_external_selection_preserves_external_index() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware::default());
 
     state.process_serial_command("WAV=7!");
-    assert_eq!(state.waveform, Waveform::External(2));
-    assert_eq!(state.hw.aux_configs.last(), Some(&2));
-    assert_eq!(state.hw.waveforms.last(), Some(&Waveform::External(2)));
-    assert_eq!(state.hw.take_serial_output(), "#0:255=0 [OK]\r\n");
+    assert.eq(state.waveform, Waveform::External(2));
+    assert.eq(state.hw.aux_configs.last(), Some(&2));
+    assert.eq(state.hw.waveforms.last(), Some(&Waveform::External(2)));
+    assert.eq(state.hw.take_serial_output(), "#0:255=0 [OK]\r\n");
 
     state.process_serial_command("WAV");
-    assert_eq!(state.hw.take_serial_output(), "#0:4=7\r\n");
+    assert.eq(state.hw.take_serial_output(), "#0:4=7\r\n");
+    assert.finish();
 }
 
 #[test]
 fn calibration_semantics_follow_pascal_defaults() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware::default());
 
-    assert!((state.dac_level_to_rms(state.dac_level) - 774.6).abs() < 0.2);
-    assert!(state.level_to_db(774.597).abs() < 0.01);
+    assert.is_true((state.dac_level_to_rms(state.dac_level) - 774.6).abs() < 0.2);
+    assert.is_true(state.level_to_db(774.597).abs() < 0.01);
 
     state.waveform = Waveform::Triangle;
     let triangle_dac = state.rms_to_dac_level(774.597);
-    assert!((state.dac_level_to_rms(triangle_dac) - 774.597).abs() < 0.5);
+    assert.is_true((state.dac_level_to_rms(triangle_dac) - 774.597).abs() < 0.5);
 
     state.process_serial_command("WAV=4!");
-    assert!((state.dac_level_to_peak_mv() - state.eeprom.init_logic_level_mv).abs() < 0.5);
+    assert.is_true((state.dac_level_to_peak_mv() - state.eeprom.init_logic_level_mv).abs() < 0.5);
+    assert.finish();
 }
 
 #[test]
 fn range_control_is_explicit_input_range_not_output_bucket() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware::default());
 
     state.process_serial_command("RNG=2!");
-    assert_eq!(state.range, InputRange::Ac10V);
-    assert_eq!(state.hw.ranges.last(), Some(&InputRange::Ac10V));
+    assert.eq(state.range, InputRange::Ac10V);
+    assert.eq(state.hw.ranges.last(), Some(&InputRange::Ac10V));
     state.hw.take_serial_output();
 
     state.process_serial_command("LVL=10.0!");
-    assert_eq!(state.range, InputRange::Ac10V);
-    assert_eq!(state.hw.ranges.last(), Some(&InputRange::Ac10V));
+    assert.eq(state.range, InputRange::Ac10V);
+    assert.eq(state.hw.ranges.last(), Some(&InputRange::Ac10V));
+    assert.finish();
 }
 
 #[test]
 fn parser_supports_numeric_subchannels_omni_and_checksum() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware::default());
     let raw = "*:0=4321.1!";
     let checksum = xor_checksum(raw);
     let framed = format!("{raw}${checksum}");
 
     state.process_serial_command(&framed);
-    assert_eq!(state.frequency_tenths_hz, 43_211);
-    assert_eq!(
-        state.hw.take_serial_output(),
-        format!("{raw}${checksum}\r\n#0:255=0 [OK]\r\n")
-    );
+    assert.eq(state.frequency_tenths_hz, 43_211);
+    assert.eq(state.hw.take_serial_output(), format!("{raw}${checksum}\r\n#0:255=0 [OK]\r\n"));
+    assert.finish();
 }
 
 #[test]
 fn serial_framing_matches_pascal_verbose_rules() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware::default());
 
     state.process_serial_command("FRQ=1000.0");
-    assert_eq!(state.hw.take_serial_output(), "");
+    assert.eq(state.hw.take_serial_output(), "");
 
     state.process_serial_command("STR?");
-    assert_eq!(state.hw.take_serial_output(), "#0:255=0 [OK]\r\n");
+    assert.eq(state.hw.take_serial_output(), "#0:255=0 [OK]\r\n");
 
     state.process_serial_command("#1:0=1234.5");
-    assert_eq!(state.hw.take_serial_output(), "#1:0=1234.5\r\n");
+    assert.eq(state.hw.take_serial_output(), "#1:0=1234.5\r\n");
+    assert.finish();
 }
 
 #[test]
 fn serial_receive_loop_parses_backspaced_lines() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware::default());
     state.hw.push_serial("FRQ=1000.6\u{08}5!\r");
 
     state.check_ser();
 
-    assert_eq!(state.frequency_tenths_hz, 10_005);
-    assert_eq!(state.hw.take_serial_output(), "#0:255=0 [OK]\r\n");
+    assert.eq(state.frequency_tenths_hz, 10_005);
+    assert.eq(state.hw.take_serial_output(), "#0:255=0 [OK]\r\n");
+    assert.finish();
 }
 
 #[test]
 fn panel_loop_restores_coarse_fine_frequency_and_busy_semantics() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware::default());
     state.inc_rast = 2;
     state.lcd_present = true;
 
     state.handle_panel_event(PanelEvent::EncoderDelta(2));
-    assert_eq!(state.frequency_tenths_hz, 12_500);
-    assert!(state.status.busy_flag);
-    assert_eq!(
-        state.hw.take_serial_output(),
-        "#0:255=67 [OK]\r\n#0:0=1250.0\r\n"
-    );
+    assert.eq(state.frequency_tenths_hz, 12_500);
+    assert.is_true(state.status.busy_flag);
+    assert.eq(state.hw.take_serial_output(), "#0:255=67 [OK]\r\n#0:0=1250.0\r\n");
 
     state.process_serial_command("FRQ");
-    assert_eq!(state.hw.take_serial_output(), "#0:0=1250.0\r\n");
+    assert.eq(state.hw.take_serial_output(), "#0:0=1250.0\r\n");
 
     state.process_serial_command("FRQ=1300.0!");
-    assert_eq!(state.frequency_tenths_hz, 12_500);
-    assert_eq!(state.hw.take_serial_output(), "#0:255=2 [BUSY]\r\n");
+    assert.eq(state.frequency_tenths_hz, 12_500);
+    assert.eq(state.hw.take_serial_output(), "#0:255=2 [BUSY]\r\n");
 
     state.handle_panel_event(PanelEvent::Buttons {
         enter: true,
         left: false,
         right: false,
     });
-    assert!(state.incr_fine);
-    assert_eq!(state.hw.take_serial_output(), "#0:255=67 [OK]\r\n");
+    assert.is_true(state.incr_fine);
+    assert.eq(state.hw.take_serial_output(), "#0:255=67 [OK]\r\n");
 
     state.handle_panel_event(PanelEvent::IncrTimerElapsed);
-    assert_eq!(state.hw.take_serial_output(), "#0:255=64 [OK]\r\n");
+    assert.eq(state.hw.take_serial_output(), "#0:255=64 [OK]\r\n");
 
     state.frequency_tenths_hz = 12_345;
     state.first_turn = true;
     state.handle_panel_event(PanelEvent::EncoderDelta(2));
-    assert_eq!(state.frequency_tenths_hz, 12_350);
-    assert_eq!(
-        state.hw.take_serial_output(),
-        "#0:255=67 [OK]\r\n#0:0=1235.0\r\n"
-    );
+    assert.eq(state.frequency_tenths_hz, 12_350);
+    assert.eq(state.hw.take_serial_output(), "#0:255=67 [OK]\r\n#0:0=1235.0\r\n");
 
     state.handle_panel_event(PanelEvent::DisplayTimerElapsed);
-    assert!(!state.status.busy_flag);
-    assert!(!state.incr_fine);
+    assert.is_false(state.status.busy_flag);
+    assert.is_false(state.incr_fine);
+    assert.finish();
 }
 
 #[test]
 fn panel_loop_restores_amplitude_wave_and_service_transitions() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware::default());
     state.inc_rast = 1;
     state.panel_modify = Modify::AmplSel;
@@ -283,8 +307,8 @@ fn panel_loop_restores_amplitude_wave_and_service_transitions() {
     state.first_turn = true;
 
     state.handle_panel_event(PanelEvent::EncoderDelta(1));
-    assert!((state.dac_level - 124.0).abs() < 0.01);
-    assert_eq!(
+    assert.is_true((state.dac_level - 124.0).abs() < 0.01);
+    assert.eq(
         state.hw.take_serial_output(),
         format!(
             "#0:255=67 [OK]\r\n#0:1={}\r\n",
@@ -292,7 +316,7 @@ fn panel_loop_restores_amplitude_wave_and_service_transitions() {
                 state.dac_level_to_rms(state.dac_level),
                 1
             )
-        )
+        ),
     );
 
     state.handle_panel_event(PanelEvent::IncrTimerElapsed);
@@ -302,21 +326,21 @@ fn panel_loop_restores_amplitude_wave_and_service_transitions() {
     state.db = 1.8;
     state.dac_level = state.db_to_dac_level(state.db);
     state.handle_panel_event(PanelEvent::EncoderDelta(2));
-    assert!((state.db - 6.0).abs() < 0.01);
+    assert.is_true((state.db - 6.0).abs() < 0.01);
 
     state.panel_modify = Modify::WaveSel;
     state.first_turn = true;
     state.waveform = Waveform::Square;
     state.handle_panel_event(PanelEvent::EncoderDelta(1));
-    assert_eq!(state.waveform, Waveform::Logic);
-    assert!((state.dac_level_to_peak_mv() - state.eeprom.init_logic_level_mv).abs() < 0.5);
+    assert.eq(state.waveform, Waveform::Logic);
+    assert.is_true((state.dac_level_to_peak_mv() - state.eeprom.init_logic_level_mv).abs() < 0.5);
 
     state.handle_panel_event(PanelEvent::IncrTimerElapsed);
     state.hw.take_serial_output();
     state.first_turn = true;
     state.handle_panel_event(PanelEvent::EncoderDelta(1));
-    assert_eq!(state.waveform, Waveform::External(0));
-    assert_eq!(state.hw.aux_configs.last(), Some(&0));
+    assert.eq(state.waveform, Waveform::External(0));
+    assert.eq(state.hw.aux_configs.last(), Some(&0));
     state.hw.take_serial_output();
 
     state.handle_panel_event(PanelEvent::Buttons {
@@ -324,14 +348,14 @@ fn panel_loop_restores_amplitude_wave_and_service_transitions() {
         left: true,
         right: true,
     });
-    assert_eq!(
-        state.hw.take_serial_output(),
-        "#0:255=65 [OK]\r\n#0:255=66 [OK]\r\n"
-    );
+    assert.eq(state.hw.take_serial_output(), "#0:255=65 [OK]\r\n#0:255=66 [OK]\r\n");
+    assert.finish();
 }
 
 #[test]
 fn init_all_restores_startup_setup_and_banner_semantics() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware {
         lcd_setup_result: true,
         slave_channel: 2,
@@ -344,44 +368,39 @@ fn init_all_restores_startup_setup_and_banner_semantics() {
 
     state.init_all();
 
-    assert_eq!(state.eeprom.ee_ser_baud_reg, 51);
-    assert_eq!(state.serial_baud_reg, 51);
-    assert_eq!(state.slave_channel, 2);
-    assert!(state.lcd_present);
-    assert_eq!(state.range, InputRange::Ac1V);
-    assert_eq!(state.panel_modify, Modify::FreqSel);
-    assert_eq!(state.current_channel, 255);
-    assert_eq!(state.err_count, 0);
-    assert_eq!(state.burst_count, 1);
-    assert_eq!(state.burst_timer_ticks, 1);
-    assert!(state.changed_flag);
-    assert!(state.first_turn);
-    assert!(!state.incr_fine);
-    assert!(state.hw.serial_in.is_empty());
-    assert_eq!(state.hw.serial_baud_calls, vec![(51, true)]);
-    assert_eq!(
-        state.hw.lcd_custom_chars,
-        vec![(0, LCD_CHARSET_0), (1, LCD_CHARSET_1), (2, LCD_CHARSET_2),]
+    assert.eq(state.eeprom.ee_ser_baud_reg, 51);
+    assert.eq(state.serial_baud_reg, 51);
+    assert.eq(state.slave_channel, 2);
+    assert.is_true(state.lcd_present);
+    assert.eq(state.range, InputRange::Ac1V);
+    assert.eq(state.panel_modify, Modify::FreqSel);
+    assert.eq(state.current_channel, 255);
+    assert.eq(state.err_count, 0);
+    assert.eq(state.burst_count, 1);
+    assert.eq(state.burst_timer_ticks, 1);
+    assert.is_true(state.changed_flag);
+    assert.is_true(state.first_turn);
+    assert.is_false(state.incr_fine);
+    assert.is_true(state.hw.serial_in.is_empty());
+    assert.eq(state.hw.serial_baud_calls.as_slice(), [(51, true)]);
+    assert.eq(
+        state.hw.lcd_custom_chars.as_slice(),
+        [(0, LCD_CHARSET_0), (1, LCD_CHARSET_1), (2, LCD_CHARSET_2)],
     );
-    assert_eq!(
-        state.hw.lcd_lines,
-        vec![
+    assert.eq(
+        state.hw.lcd_lines.as_slice(),
+        &[
             (0, VERS3_STR.to_string()),
             (1, EE_NOT_PROGRAMMED_STR.to_string()),
-        ]
+        ],
     );
-    assert_eq!(
-        state.hw.delay_calls,
-        vec![1000, 150, 150, 150, 150, 500, 250]
-    );
-    assert_eq!(
-        state.hw.activity_led_states,
-        vec![true, false, true, false, true, false]
-    );
-    assert_eq!(state.hw.frequency_words.len(), 2);
-    assert_eq!(state.hw.amplitude_words.len(), 2);
-    assert_eq!(
+    assert.eq(state.hw.delay_calls.as_slice(), [1000, 150, 150, 150, 150, 500, 250]);
+    assert.eq(state.hw.activity_led_states.as_slice(), [true, false, true, false, true, false]);
+    assert.eq(state.hw.frequency_words.len(), 2);
+    assert.eq(state.hw.amplitude_words.len(), 2);
+    assert.eq(
         state.hw.take_serial_output(),
-        format!("#2:254={VERS1_STR}{EE_NOT_PROGRAMMED_STR}\r\n")
+        format!("#2:254={VERS1_STR}{EE_NOT_PROGRAMMED_STR}\r\n"),
     );
+    assert.finish();
 }

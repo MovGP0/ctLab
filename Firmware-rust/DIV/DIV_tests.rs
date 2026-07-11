@@ -1,3 +1,4 @@
+use crate::test_failures::TestFailures;
 use super::*;
 use std::collections::VecDeque;
 
@@ -134,10 +135,10 @@ impl DivHardware for MockHardware {
 }
 
 /// Compares floating-point results with the tolerance appropriate for translated calibration arithmetic.
-fn assert_close(actual: Float, expected: Float) {
-    assert!(
+fn assert_close(assert: &mut TestFailures, actual: Float, expected: Float) {
+    assert.is_true_with_message(
         (actual - expected).abs() < 0.00001,
-        "expected {expected}, got {actual}"
+        format_args!("expected {expected}, got {actual}"),
     );
 }
 
@@ -149,29 +150,34 @@ fn serial_rx(text: &str) -> VecDeque<u8> {
 /// Verifies that switch range applies pascal relay gain and display tables remains faithful to the Pascal behavior.
 #[test]
 fn switch_range_applies_pascal_relay_gain_and_display_tables() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware::default());
 
     state.switch_range(DivRange::Ac25V);
 
     let config = state.hw.range_configs.last().copied().unwrap();
-    assert_eq!(config.port_a, 0b0000_0011);
-    assert_eq!(config.port_c, 0b0100_1111);
-    assert!(!config.dc_gain_10);
-    assert_eq!(config.digits, 2);
-    assert_eq!(config.decimals, 4);
-    assert_eq!(state.integrate_24_fast, i64::from(ADC24_MID_SCALE));
-    assert_eq!(state.integrate_24_slow, i64::from(ADC24_MID_SCALE));
+    assert.eq(config.port_a, 0b0000_0011);
+    assert.eq(config.port_c, 0b0100_1111);
+    assert.is_false(config.dc_gain_10);
+    assert.eq(config.digits, 2);
+    assert.eq(config.decimals, 4);
+    assert.eq(state.integrate_24_fast, i64::from(ADC24_MID_SCALE));
+    assert.eq(state.integrate_24_slow, i64::from(ADC24_MID_SCALE));
 
     state.switch_range(DivRange::Dc10A);
     let config = state.hw.range_configs.last().copied().unwrap();
-    assert_eq!(config.port_a, 0b1000_0011);
-    assert_eq!(config.port_c, 0b1000_0011);
-    assert!(config.dc_gain_10);
+    assert.eq(config.port_a, 0b1000_0011);
+    assert.eq(config.port_c, 0b1000_0011);
+    assert.is_true(config.dc_gain_10);
+    assert.finish();
 }
 
 /// Verifies that wait ad10 clears stale flag and waits for next interrupt update remains faithful to the Pascal behavior.
 #[test]
 fn wait_ad10_clears_stale_flag_and_waits_for_next_irq_update() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware {
         ad10_ready_polls_before_ready: 2,
         ..MockHardware::default()
@@ -179,16 +185,16 @@ fn wait_ad10_clears_stale_flag_and_waits_for_next_irq_update() {
 
     state.wait_ad10();
 
-    assert_eq!(state.hw.ad10_ready_polls, 3);
-    assert_eq!(
-        state.hw.readiness_events,
-        vec!["clear-ad10", "poll-ad10", "poll-ad10", "poll-ad10"]
-    );
+    assert.eq(state.hw.ad10_ready_polls, 3);
+    assert.eq(state.hw.readiness_events, vec!["clear-ad10", "poll-ad10", "poll-ad10", "poll-ad10"]);
+    assert.finish();
 }
 
 /// Verifies that wait ad24 clears stale flag and waits for next interrupt update remains faithful to the Pascal behavior.
 #[test]
 fn wait_ad24_clears_stale_flag_and_waits_for_next_irq_update() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware {
         ad24_ready_polls_before_ready: 1,
         ..MockHardware::default()
@@ -196,16 +202,16 @@ fn wait_ad24_clears_stale_flag_and_waits_for_next_irq_update() {
 
     state.wait_ad24();
 
-    assert_eq!(state.hw.ad24_ready_polls, 2);
-    assert_eq!(
-        state.hw.readiness_events,
-        vec!["clear-ad24", "poll-ad24", "poll-ad24"]
-    );
+    assert.eq(state.hw.ad24_ready_polls, 2);
+    assert.eq(state.hw.readiness_events, vec!["clear-ad24", "poll-ad24", "poll-ad24"]);
+    assert.finish();
 }
 
 /// Verifies that scaling uses pascal per range factors and calibration scales remains faithful to the Pascal behavior.
 #[test]
 fn scaling_uses_pascal_per_range_factors_and_calibration_scales() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware {
         ad10: 612,
         ad24: ADC24_MID_SCALE + 1000,
@@ -222,56 +228,65 @@ fn scaling_uses_pascal_per_range_factors_and_calibration_scales() {
     state.get_ad24(0);
     state.get_ad10(5);
 
-    assert_close(state.measured_value, 1010.0 * (25.0 / 8_388_608.0) * 2.0);
-    assert_close(state.measured_aux, 102.0 * (25.0 / 512.0) * 0.5);
+    assert_close(&mut assert, state.measured_value, 1010.0 * (25.0 / 8_388_608.0) * 2.0);
+    assert_close(&mut assert, state.measured_aux, 102.0 * (25.0 / 512.0) * 0.5);
 
     state.switch_range(DivRange::Ac2V5);
-    assert_close(state.param_scale_24(-1000), 1000.0 * (2.5 / 8_388_608.0));
+    assert_close(&mut assert, state.param_scale_24(-1000), 1000.0 * (2.5 / 8_388_608.0));
+    assert.finish();
 }
 
 /// Verifies that display and serial format follow range tables remains faithful to the Pascal behavior.
 #[test]
 fn display_and_serial_format_follow_range_tables() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware::default());
     state.switch_range(DivRange::Dc250mV);
     state.measured_value = 0.01234;
 
-    assert_eq!(state.param_to_str(true), "+000.012");
-    assert_eq!(state.param_to_str(false), "0.01234");
+    assert.eq(state.param_to_str(true), "+000.012");
+    assert.eq(state.param_to_str(false), "0.01234");
 
     state.switch_range(DivRange::Ac25V);
     state.measured_value = 1.234567;
 
-    assert_eq!(state.param_to_str(true), "\x0301.2346");
-    assert_eq!(state.param_to_str(false), "1.234567");
+    assert.eq(state.param_to_str(true), "\x0301.2346");
+    assert.eq(state.param_to_str(false), "1.234567");
+    assert.finish();
 }
 
 /// Verifies that trigger edges timer and mask select pascal subchannels remains faithful to the Pascal behavior.
 #[test]
 fn trigger_edges_timer_and_mask_select_pascal_subchannels() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware::default());
     state.eeprom.trigger_mode = 0b0000_0111;
     state.set_trigger_edge_level(true);
 
     state.int2_trigger_edge(false);
-    assert!(!state.trigger_pending);
+    assert.is_false(state.trigger_pending);
 
     state.int2_trigger_edge(true);
-    assert_eq!(state.service_trigger(), &[0, 10, 11]);
-    assert!(!state.trigger_pending);
+    assert.eq(state.service_trigger(), [0, 10, 11]);
+    assert.is_false(state.trigger_pending);
 
     state.eeprom.trigger_mode = 0b0000_0010;
     state.eeprom.trigger_timer_ms = 25;
     state.tick_auto_trigger(24);
-    assert!(!state.trigger_pending);
+    assert.is_false(state.trigger_pending);
     state.tick_auto_trigger(1);
-    assert_eq!(state.service_trigger(), &[10]);
-    assert_eq!(state.hw.trigger_edges, vec![true]);
+    assert.eq(state.service_trigger(), [10]);
+    assert.eq(state.hw.trigger_edges, vec![true]);
+    assert.finish();
 }
 
 /// Verifies that ad24 integration mode selects pascal sources and fault flags remains faithful to the Pascal behavior.
 #[test]
 fn ad24_integration_mode_selects_pascal_sources_and_fault_flags() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware {
         ad24: ADC24_MID_SCALE + 100,
         ad24_fast: ADC24_MID_SCALE + 200,
@@ -282,28 +297,31 @@ fn ad24_integration_mode_selects_pascal_sources_and_fault_flags() {
 
     state.switch_range(DivRange::Dc2V5);
     state.get_ad24(0);
-    assert_close(state.measured_value, 100.0 * (2.5 / 8_388_608.0));
+    assert_close(&mut assert, state.measured_value, 100.0 * (2.5 / 8_388_608.0));
 
     state.get_ad24(1);
-    assert_close(state.measured_value, 200.0 * (2.5 / 8_388_608.0));
+    assert_close(&mut assert, state.measured_value, 200.0 * (2.5 / 8_388_608.0));
 
     state.get_ad24(2);
-    assert_close(state.measured_value, 300.0 * (2.5 / 8_388_608.0));
-    assert_eq!(state.fault_flags(), 0b0000_0001);
-    assert!(state.overload_flag());
+    assert_close(&mut assert, state.measured_value, 300.0 * (2.5 / 8_388_608.0));
+    assert.eq(state.fault_flags(), 0b0000_0001);
+    assert.is_true(state.overload_flag());
+    assert.finish();
 }
 
 /// Verifies that status prompt uses pascal prefix status byte and fault labels remains faithful to the Pascal behavior.
 #[test]
 fn status_prompt_uses_pascal_prefix_status_byte_and_fault_labels() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware::default());
     state.slave_ch = 2;
     state.busy_flag = true;
     state.ee_unlocked = true;
 
     state.ser_prompt(ErrorCode::BusyErr);
-    assert_eq!(state.hw.serial, "#2:255=146 [BUSY]\r\n");
-    assert_eq!(state.err_count, 1);
+    assert.eq(state.hw.serial.as_str(), "#2:255=146 [BUSY]\r\n");
+    assert.eq(state.err_count, 1);
 
     state.hw.serial.clear();
     state.busy_flag = false;
@@ -312,30 +330,36 @@ fn status_prompt_uses_pascal_prefix_status_byte_and_fault_labels() {
     state.overload_positive = true;
 
     state.ser_prompt(ErrorCode::OvlErr);
-    assert_eq!(state.hw.serial, "#2:255=35 [OVRNEG] [OVRPOS]\r\n");
+    assert.eq(state.hw.serial, "#2:255=35 [OVRNEG] [OVRPOS]\r\n");
+    assert.finish();
 }
 
 /// Verifies that check limits clamps pascal byte range and reports parameter error remains faithful to the Pascal behavior.
 #[test]
 fn check_limits_clamps_pascal_byte_range_and_reports_param_error() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware::default());
 
-    assert!(!state.check_limits_raw_range(15));
-    assert_eq!(state.range, DivRange::Ac10A);
-    assert_eq!(state.check_limit_err, ErrorCode::NoErr);
+    assert.is_false(state.check_limits_raw_range(15));
+    assert.eq(state.range, DivRange::Ac10A);
+    assert.eq(state.check_limit_err, ErrorCode::NoErr);
 
-    assert!(state.check_limits_raw_range(16));
-    assert_eq!(state.range, DivRange::Ac10A);
-    assert_eq!(state.check_limit_err, ErrorCode::ParamErr);
+    assert.is_true(state.check_limits_raw_range(16));
+    assert.eq(state.range, DivRange::Ac10A);
+    assert.eq(state.check_limit_err, ErrorCode::ParamErr);
 
-    assert!(state.check_limits_raw_range(255));
-    assert_eq!(state.range, DivRange::Dc250mV);
-    assert_eq!(state.check_limit_err, ErrorCode::ParamErr);
+    assert.is_true(state.check_limits_raw_range(255));
+    assert.eq(state.range, DivRange::Dc250mV);
+    assert.eq(state.check_limit_err, ErrorCode::ParamErr);
+    assert.finish();
 }
 
 /// Verifies that rng set uses pascal check limits before switching range remains faithful to the Pascal behavior.
 #[test]
 fn rng_set_uses_pascal_check_limits_before_switching_range() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware {
         rx: serial_rx("0:RNG=16\r0:RNG=255\r"),
         ..MockHardware::default()
@@ -344,18 +368,18 @@ fn rng_set_uses_pascal_check_limits_before_switching_range() {
 
     state.check_ser();
 
-    assert_eq!(state.range, DivRange::Dc250mV);
-    assert_eq!(state.hw.range_configs[0].range, DivRange::Ac10A);
-    assert_eq!(state.hw.range_configs[1].range, DivRange::Dc250mV);
-    assert_eq!(
-        state.hw.serial,
-        "#0:255=5 [PARERR]\r\n#0:255=5 [PARERR]\r\n"
-    );
+    assert.eq(state.range, DivRange::Dc250mV);
+    assert.eq(state.hw.range_configs[0].range, DivRange::Ac10A);
+    assert.eq(state.hw.range_configs[1].range, DivRange::Dc250mV);
+    assert.eq(state.hw.serial, "#0:255=5 [PARERR]\r\n#0:255=5 [PARERR]\r\n");
+    assert.finish();
 }
 
 /// Verifies that init all restores EEPROM defaults and initialises zero offsets remains faithful to the Pascal behavior.
 #[test]
 fn init_all_restores_eeprom_defaults_and_initialises_zero_offsets() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware {
         ad24_fast: ADC24_MID_SCALE + 123,
         ..MockHardware::default()
@@ -368,23 +392,28 @@ fn init_all_restores_eeprom_defaults_and_initialises_zero_offsets() {
 
     state.init_all();
 
-    assert_eq!(state.range, DivRange::Ac10A);
-    assert_eq!(state.lcd_integrate, 2);
-    assert_eq!(state.inc_rast, 7);
-    assert_eq!(state.eeprom.ad24_offsets, [-123; 16]);
-    assert_eq!(state.eeprom.offset_initialised, OFFSET_INITIALISED_MAGIC);
-    assert_eq!(state.hw.trigger_edges, vec![true]);
-    assert!(state
+    assert.eq(state.range, DivRange::Ac10A);
+    assert.eq(state.lcd_integrate, 2);
+    assert.eq(state.inc_rast, 7);
+    assert.eq(state.eeprom.ad24_offsets, [-123; 16]);
+    assert.eq(state.eeprom.offset_initialised, OFFSET_INITIALISED_MAGIC);
+    assert.eq(state.hw.trigger_edges, vec![true]);
+    assert.is_true(
+        state
         .hw
         .serial
-        .contains("#0:254=3.10 [DIV by CM/c't 03/2007]"));
-    assert!(state.hw.serial.contains("#0:255=130 [BUSY]\r\n"));
-    assert!(state.hw.serial.ends_with("#0:255=0 [OK]\r\n"));
+        .contains("#0:254=3.10 [DIV by CM/c't 03/2007]"),
+    );
+    assert.is_true(state.hw.serial.contains("#0:255=130 [BUSY]\r\n"));
+    assert.is_true(state.hw.serial.ends_with("#0:255=0 [OK]\r\n"));
+    assert.finish();
 }
 
 /// Verifies that check serial buffers ascii handles backspace and parses cr frames remains faithful to the Pascal behavior.
 #[test]
 fn check_ser_buffers_ascii_handles_backspace_and_parses_cr_frames() {
+    let mut assert = TestFailures::default();
+
     let mut state = DeviceState::new(MockHardware {
         rx: serial_rx("0:RNG=5x\x08\r0:RNG?\r#9:19=3\r"),
         ..MockHardware::default()
@@ -393,7 +422,8 @@ fn check_ser_buffers_ascii_handles_backspace_and_parses_cr_frames() {
 
     state.check_ser();
 
-    assert_eq!(state.range, DivRange::Ac2V5);
-    assert_eq!(state.hw.serial, "#0:19=5\r\n#9:19=3\r\n");
-    assert!(state.ser_input.is_empty());
+    assert.eq(state.range, DivRange::Ac2V5);
+    assert.eq(state.hw.serial, "#0:19=5\r\n#9:19=3\r\n");
+    assert.is_true(state.ser_input.is_empty());
+    assert.finish();
 }

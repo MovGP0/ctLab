@@ -1,3 +1,4 @@
+use crate::test_failures::TestFailures;
 use super::*;
 
 /// Supplies controlled conversions and captures output while parser tests exercise the live DIV runtime adapter.
@@ -118,6 +119,8 @@ fn new_parser() -> DivParser<DivRuntimeAdapter<'static, MockHardware>> {
 /// Verifies every command owns its mnemonic instead of depending on enum position.
 #[test]
 fn command_mnemonics_round_trip_through_enum_methods() {
+    let mut assert = TestFailures::default();
+
     #[rustfmt::skip]
     let commands = [
         CmdWhich::Str,
@@ -140,52 +143,61 @@ fn command_mnemonics_round_trip_through_enum_methods() {
 
     for command in commands {
         let mnemonic = command.as_str().expect("wire command has a mnemonic");
-        assert_eq!(CmdWhich::from_mnemonic(mnemonic), command);
-        assert_eq!(
-            CmdWhich::from_mnemonic(&mnemonic.to_ascii_lowercase()),
-            command
-        );
+        assert.eq(CmdWhich::from_mnemonic(mnemonic), command);
+        assert.eq(CmdWhich::from_mnemonic(&mnemonic.to_ascii_lowercase()), command);
     }
-    assert_eq!(CmdWhich::Err.as_str(), None);
-    assert_eq!(CmdWhich::from_mnemonic("UNKNOWN"), CmdWhich::Err);
+    assert.eq(CmdWhich::Err.as_str(), None);
+    assert.eq(CmdWhich::from_mnemonic("UNKNOWN"), CmdWhich::Err);
+    assert.finish();
 }
 
 /// Verifies status and fault labels are attached to their owning enums.
 #[test]
 fn status_labels_come_from_typed_variants() {
-    assert_eq!(ParserError::NoErr.as_str(), "[OK]");
-    assert_eq!(ParserError::ChecksumErr.as_str(), "[CHKSUM]");
-    assert_eq!(DivFault::NegativeOverload.as_str(), "[OVRNEG]");
-    assert_eq!(DivFault::PositiveOverload.as_str(), "[OVRPOS]");
+    let mut assert = TestFailures::default();
+
+    assert.eq(ParserError::NoErr.as_str(), "[OK]");
+    assert.eq(ParserError::ChecksumErr.as_str(), "[CHKSUM]");
+    assert.eq(DivFault::NegativeOverload.as_str(), "[OVRNEG]");
+    assert.eq(DivFault::PositiveOverload.as_str(), "[OVRPOS]");
+    assert.finish();
 }
 
 /// Verifies that busy commands fail before execution remains faithful to the Pascal behavior.
 #[test]
 fn busy_commands_fail_before_execution() {
+    let mut assert = TestFailures::default();
+
     let mut parser = new_parser();
     parser.hooks.busy = true;
 
     run_frame(&mut parser, "1:RNG?");
 
-    assert_eq!(parser.hooks.device.hw.serial, "#1:255=130 [BUSY]\r\n");
-    assert_eq!(parser.hooks.activity_timer_ticks, None);
+    assert.eq(parser.hooks.device.hw.serial.as_str(), "#1:255=130 [BUSY]\r\n");
+    assert.eq(parser.hooks.activity_timer_ticks, None);
+    assert.finish();
 }
 
 /// Verifies that runtime adapter waits use device interrupt handshakes remains faithful to the Pascal behavior.
 #[test]
 fn runtime_adapter_waits_use_device_irq_handshakes() {
+    let mut assert = TestFailures::default();
+
     let mut parser = new_parser();
 
     parser.hooks.wait_ad10(&mut parser.state);
     parser.hooks.wait_ad24(&mut parser.state);
 
-    assert_eq!(parser.hooks.device.hw.ad10_ready_clears, 1);
-    assert_eq!(parser.hooks.device.hw.ad24_ready_clears, 1);
+    assert.eq(parser.hooks.device.hw.ad10_ready_clears, 1);
+    assert.eq(parser.hooks.device.hw.ad24_ready_clears, 1);
+    assert.finish();
 }
 
 /// Verifies that calibration and range writes hit live device state remains faithful to the Pascal behavior.
 #[test]
 fn calibration_and_range_writes_hit_live_device_state() {
+    let mut assert = TestFailures::default();
+
     let mut parser = new_parser();
 
     run_frame(&mut parser, "1:WEN=1");
@@ -199,18 +211,21 @@ fn calibration_and_range_writes_hit_live_device_state() {
     run_frame(&mut parser, "1:WEN=1");
     run_frame(&mut parser, "1:SCL 20=2.5");
 
-    assert_eq!(parser.hooks.device.range, DivRange::Ac2V5);
-    assert_eq!(parser.hooks.device.hw.last_range, Some(DivRange::Ac2V5));
-    assert_eq!(parser.hooks.device.eeprom.ad24_offsets[0], 42);
-    assert_eq!(parser.hooks.device.eeprom.ad10_offsets[0], 7);
-    assert_eq!(parser.hooks.device.eeprom.ad24_scales[0], 1.5);
-    assert_eq!(parser.hooks.device.eeprom.ad10_scales[0], 2.5);
-    assert!(!parser.state.ee_unlocked);
+    assert.eq(parser.hooks.device.range, DivRange::Ac2V5);
+    assert.eq(parser.hooks.device.hw.last_range, Some(DivRange::Ac2V5));
+    assert.eq(parser.hooks.device.eeprom.ad24_offsets[0], 42);
+    assert.eq(parser.hooks.device.eeprom.ad10_offsets[0], 7);
+    assert.eq(parser.hooks.device.eeprom.ad24_scales[0], 1.5);
+    assert.eq(parser.hooks.device.eeprom.ad10_scales[0], 2.5);
+    assert.is_false(parser.state.ee_unlocked);
+    assert.finish();
 }
 
 /// Verifies that trigger commands update runtime state remains faithful to the Pascal behavior.
 #[test]
 fn trigger_commands_update_runtime_state() {
+    let mut assert = TestFailures::default();
+
     let mut parser = new_parser();
 
     run_frame(&mut parser, "1:WEN=1");
@@ -219,33 +234,40 @@ fn trigger_commands_update_runtime_state() {
     run_frame(&mut parser, "1:TRT=25");
     run_frame(&mut parser, "1:TRG?");
 
-    assert_eq!(parser.hooks.device.eeprom.trigger_mode, 3);
-    assert_eq!(parser.hooks.device.eeprom.trigger_timer_ms, 25);
-    assert!(parser.hooks.device.trigger_pending);
-    assert!(parser.hooks.device.hw.serial.ends_with("#1:255=0 [OK]\r\n"));
+    assert.eq(parser.hooks.device.eeprom.trigger_mode, 3);
+    assert.eq(parser.hooks.device.eeprom.trigger_timer_ms, 25);
+    assert.is_true(parser.hooks.device.trigger_pending);
+    assert.is_true(parser.hooks.device.hw.serial.ends_with("#1:255=0 [OK]\r\n"));
+    assert.finish();
 }
 
 /// Verifies that forwarded frames preserve pascal wire format remains faithful to the Pascal behavior.
 #[test]
 fn forwarded_frames_preserve_pascal_wire_format() {
+    let mut assert = TestFailures::default();
+
     let mut parser = new_parser();
 
     run_frame(&mut parser, "#2:19=5");
     run_frame(&mut parser, "2:IDN?");
 
-    assert_eq!(parser.hooks.device.hw.serial, "#2:19=5\r\n2:IDN?\r\n");
+    assert.eq(parser.hooks.device.hw.serial.as_str(), "#2:19=5\r\n2:IDN?\r\n");
+    assert.finish();
 }
 
 /// Verifies that replies use prefixed pascal framing remains faithful to the Pascal behavior.
 #[test]
 fn replies_use_prefixed_pascal_framing() {
+    let mut assert = TestFailures::default();
+
     let mut parser = new_parser();
 
     run_frame(&mut parser, "1:IDN?");
     run_frame(&mut parser, "1:RNG?");
 
-    assert_eq!(
-        parser.hooks.device.hw.serial,
-        "#1:254=3.10 [DIV by CM/c't 03/2007] \r\n#1:19=1\r\n"
+    assert.eq(
+        parser.hooks.device.hw.serial.as_str(),
+        "#1:254=3.10 [DIV by CM/c't 03/2007] \r\n#1:19=1\r\n",
     );
+    assert.finish();
 }

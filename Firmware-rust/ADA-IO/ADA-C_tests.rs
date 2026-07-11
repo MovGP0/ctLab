@@ -1,14 +1,18 @@
+use crate::test_failures::TestFailures;
 use super::*;
 use std::collections::VecDeque;
 
 /// Verifies that command and error enums own the exact wire text without positional string tables.
 #[test]
 fn enum_text_mappings_preserve_wire_protocol() {
-    assert_eq!(CmdWhich::from_mnemonic("  iCa  "), CmdWhich::Ica);
-    assert_eq!(CmdWhich::Ica.as_str(), Some("ICA"));
-    assert_eq!(CmdWhich::from_mnemonic("unknown"), CmdWhich::Err);
-    assert_eq!(CmdWhich::Err.as_str(), None);
-    assert_eq!(ErrorCode::LockedErr.as_str(), "[LOCKED]");
+    let mut assert = TestFailures::default();
+
+    assert.eq(CmdWhich::from_mnemonic("  iCa  "), CmdWhich::Ica);
+    assert.eq(CmdWhich::Ica.as_str(), Some("ICA"));
+    assert.eq(CmdWhich::from_mnemonic("unknown"), CmdWhich::Err);
+    assert.eq(CmdWhich::Err.as_str(), None);
+    assert.eq(ErrorCode::LockedErr.as_str(), "[LOCKED]");
+    assert.finish();
 }
 
 /// Emulates detected ADA daughterboards, conversion inputs, and serial output so startup and trigger flows can be tested without AVR registers.
@@ -210,6 +214,8 @@ impl AdaHardware for MockHardware {
 /// Verifies that init all restores detection and startup settings remains faithful to the Pascal behavior.
 #[test]
 fn init_all_restores_detection_and_startup_settings() {
+    let mut assert = TestFailures::default();
+
     let hw = MockHardware {
         detect_io_expander: true,
         has_dac12: true,
@@ -227,23 +233,26 @@ fn init_all_restores_detection_and_startup_settings() {
 
     let banner = state.init_all();
 
-    assert!(state.io_present);
-    assert!(state.dac16_present);
-    assert!(!state.dac12_present);
-    assert!(!state.dac714_present);
-    assert!(state.adc16_present);
-    assert_eq!(state.hw.baud, Some((115, true)));
-    assert_eq!(state.hw.internal_reference, Some(true));
-    assert_eq!(state.hw.trigger_edge_positive, Some(true));
-    assert!(state.hw.interrupts_enabled);
-    assert!(banner[0].contains("#2:254=1.742 [ADA by CM/c't 04/2007; [DA16 AD16 IO32 ]"));
-    assert!(state.hw.twi_writes.contains(&(0x3b, 0x0155)));
-    assert!(state.hw.twi_writes.contains(&(0x3b, 0x0200)));
+    assert.is_true(state.io_present);
+    assert.is_true(state.dac16_present);
+    assert.is_false(state.dac12_present);
+    assert.is_false(state.dac714_present);
+    assert.is_true(state.adc16_present);
+    assert.eq(state.hw.baud, Some((115, true)));
+    assert.eq(state.hw.internal_reference, Some(true));
+    assert.eq(state.hw.trigger_edge_positive, Some(true));
+    assert.is_true(state.hw.interrupts_enabled);
+    assert.is_true(banner[0].contains("#2:254=1.742 [ADA by CM/c't 04/2007; [DA16 AD16 IO32 ]"));
+    assert.is_true(state.hw.twi_writes.contains(&(0x3b, 0x0155)));
+    assert.is_true(state.hw.twi_writes.contains(&(0x3b, 0x0200)));
+    assert.finish();
 }
 
 /// Verifies that serial loop restores control subchannels and backspace handling remains faithful to the Pascal behavior.
 #[test]
 fn serial_loop_restores_control_subchannels_and_backspace_handling() {
+    let mut assert = TestFailures::default();
+
     let mut hw = MockHardware {
         slave_channel: 0,
         ..MockHardware::default()
@@ -273,57 +282,74 @@ fn serial_loop_restores_control_subchannels_and_backspace_handling() {
     state.init_all();
     state.check_ser();
 
-    assert_eq!(state.inc_rast, 7);
-    assert_eq!(state.eeprom.inc_rast_def, 7);
-    assert_eq!(state.eeprom.trig_mask_array[0], 129);
-    assert_eq!(state.eeprom.trig_timer_value, 10);
-    assert_eq!(state.eeprom.trig_level, 1);
-    assert_eq!(state.eeprom.ext_ref, 1);
-    assert_eq!(state.eeprom.ee_ser_baud_reg, 115);
-    assert_eq!(state.hw.trigger_edge_positive, Some(true));
-    assert_eq!(state.hw.internal_reference, Some(true));
-    assert_eq!(state.hw.baud, Some((51, true)));
-    assert!(state
+    assert.eq(state.inc_rast, 7);
+    assert.eq(state.eeprom.inc_rast_def, 7);
+    assert.eq(state.eeprom.trig_mask_array[0], 129);
+    assert.eq(state.eeprom.trig_timer_value, 10);
+    assert.eq(state.eeprom.trig_level, 1);
+    assert.eq(state.eeprom.ext_ref, 1);
+    assert.eq(state.eeprom.ee_ser_baud_reg, 115);
+    assert.eq(state.hw.trigger_edge_positive, Some(true));
+    assert.eq(state.hw.internal_reference, Some(true));
+    assert.eq(state.hw.baud, Some((51, true)));
+    assert.is_true(
+        state
         .hw
         .serial_out
         .iter()
-        .any(|line| line.contains("#0:159=7\r\n")));
-    assert!(state
+        .any(|line| line.contains("#0:159=7\r\n")),
+    );
+    assert.is_true(
+        state
         .hw
         .serial_out
         .iter()
-        .any(|line| line.contains("#0:240=129\r\n")));
-    assert!(state
+        .any(|line| line.contains("#0:240=129\r\n")),
+    );
+    assert.is_true(
+        state
         .hw
         .serial_out
         .iter()
-        .any(|line| line.contains("#0:247=10\r\n")));
-    assert!(state
+        .any(|line| line.contains("#0:247=10\r\n")),
+    );
+    assert.is_true(
+        state
         .hw
         .serial_out
         .iter()
-        .any(|line| line.contains("#0:248=1\r\n")));
-    assert!(state
+        .any(|line| line.contains("#0:248=1\r\n")),
+    );
+    assert.is_true(
+        state
         .hw
         .serial_out
         .iter()
-        .any(|line| line.contains("#0:246=1\r\n")));
-    assert!(state
+        .any(|line| line.contains("#0:246=1\r\n")),
+    );
+    assert.is_true(
+        state
         .hw
         .serial_out
         .iter()
-        .any(|line| line.contains("#0:252=115\r\n")));
-    assert!(state
+        .any(|line| line.contains("#0:252=115\r\n")),
+    );
+    assert.is_true(
+        state
         .hw
         .serial_out
         .iter()
-        .any(|line| line == "#7:1=foreign\r\n"));
-    assert!(state.hw.serial_out.iter().any(|line| line == "1:VAL0?\r\n"));
+        .any(|line| line == "#7:1=foreign\r\n"),
+    );
+    assert.is_true(state.hw.serial_out.iter().any(|line| line == "1:VAL0?\r\n"));
+    assert.finish();
 }
 
 /// Verifies that auto trigger scheduler and side effects are restored remains faithful to the Pascal behavior.
 #[test]
 fn auto_trigger_scheduler_and_side_effects_are_restored() {
+    let mut assert = TestFailures::default();
+
     let hw = MockHardware {
         adc_values: [10, 20, 30, 40, 50, 60, 70, 80],
         io_values: [0, 1, 2, 3, 4, 5, 6, 0xAA],
@@ -340,18 +366,19 @@ fn auto_trigger_scheduler_and_side_effects_are_restored() {
     state.eeprom.trig_timer_value = 10;
 
     let first = state.service_auto_trigger(0);
-    assert_eq!(first.len(), 3);
-    assert!(first[0].contains("#0:7="));
-    assert!(first[1].contains("#0:17="));
-    assert_eq!(first[2], "#0:37=170\r\n");
-    assert_eq!(state.hw.trigger_led_events.last(), Some(&true));
+    assert.eq(first.len(), 3);
+    assert.is_true(first[0].contains("#0:7="));
+    assert.is_true(first[1].contains("#0:17="));
+    assert.eq(first.get(2).map(String::as_str), Some("#0:37=170\r\n"));
+    assert.eq(state.hw.trigger_led_events.last(), Some(&true));
 
     let second = state.service_auto_trigger(10);
-    assert_eq!(second.len(), 3);
-    assert!(second[0].contains("#0:7="));
+    assert.eq(second.len(), 3);
+    assert.is_true(second[0].contains("#0:7="));
 
     state.eeprom.trig_timer_value = 0;
     let none = state.service_auto_trigger(60);
-    assert!(none.is_empty());
-    assert_eq!(state.hw.trigger_led_events.last(), Some(&false));
+    assert.is_true(none.is_empty());
+    assert.eq(state.hw.trigger_led_events.last(), Some(&false));
+    assert.finish();
 }
