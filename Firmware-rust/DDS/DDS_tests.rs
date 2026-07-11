@@ -385,7 +385,7 @@ fn init_all_restores_startup_setup_and_banner_semantics() {
     assert.eq(state.hw.serial_baud_calls.as_slice(), [(51, true)]);
     assert.eq(
         state.hw.lcd_custom_chars.as_slice(),
-        [(0, LCD_CHARSET_0), (1, LCD_CHARSET_1), (2, LCD_CHARSET_2)],
+        [(0, LCD_CHARSET_0), (1, LCD_CHARSET_1), (2, LCD_CHARSET_2), ],
     );
     assert.eq(
         state.hw.lcd_lines.as_slice(),
