@@ -2,16 +2,21 @@ use crate::test_failures::TestFailures;
 use super::*;
 
 #[test]
-fn all_pascal_commands_keep_their_offsets()
+fn command_enum_owns_wire_text_and_pascal_offsets()
 {
     let mut assert = TestFailures::default();
 
-    assert.eq(COMMANDS.len(), 66);
-    assert.eq(COMMAND_OFFSETS.len(), 66);
-    assert.eq(command_subchannel("REG", 9), Some(309));
-    assert.eq(command_subchannel("BRL", 0), Some(1600));
-    assert.eq(command_subchannel("OUT", 63), Some(2063));
-    assert.eq(command_subchannel("NOP", 0), Some(253));
+    assert.eq(CmdWhich::from_mnemonic("  rEg  "), CmdWhich::Reg);
+    assert.eq(CmdWhich::Reg.as_str(), Some("REG"));
+    assert.eq(CmdWhich::Reg.sub_channel(9), Some(309));
+    assert.eq(CmdWhich::Brl.sub_channel(0), Some(1600));
+    assert.eq(CmdWhich::Out.sub_channel(63), Some(2063));
+    assert.eq(CmdWhich::Gto.sub_channel_offset(), CmdWhich::Bra.sub_channel_offset());
+    assert.eq(CmdWhich::Lst.sub_channel_offset(), CmdWhich::Dir.sub_channel_offset());
+    assert.eq(CmdWhich::Rem.sub_channel_offset(), CmdWhich::Nop.sub_channel_offset());
+    assert.eq(CmdWhich::from_mnemonic("unknown"), CmdWhich::Err);
+    assert.eq(CmdWhich::Err.as_str(), None);
+    assert.eq(CmdWhich::Err.sub_channel(0), None);
     assert.finish();
 }
 

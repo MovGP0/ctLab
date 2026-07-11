@@ -9,6 +9,11 @@
 mod parse_error;
 pub use parse_error::ParseError;
 
+/// Typed FPGA command mnemonics and their Pascal subchannel offsets.
+#[path = "fpga_parser/cmd_which.rs"]
+mod cmd_which;
+pub use cmd_which::CmdWhich;
+
 /// Typed right-hand-side values retained after parsing.
 #[path = "fpga_parser/parameter.rs"]
 mod parameter;
@@ -18,162 +23,6 @@ pub use parameter::Parameter;
 #[path = "fpga_parser/parsed_frame.rs"]
 mod parsed_frame;
 pub use parsed_frame::ParsedFrame;
-
-/// Ordered Pascal mnemonic table; its index must stay aligned with [`COMMAND_OFFSETS`].
-#[rustfmt::skip]
-pub const COMMANDS: [&str; 66] = [
-    "STR",
-    "IDN",
-    "VAL",
-    "REG",
-    "ACC",
-    "MOV",
-    "DEC",
-    "INC",
-    "CPZ",
-    "XCH",
-    "GET",
-    "PUT",
-    "MUL",
-    "DIV",
-    "ADD",
-    "SUB",
-    "SQR",
-    "SQU",
-    "NEG",
-    "LBL",
-    "GTO",
-    "BRA",
-    "BRG",
-    "BGE",
-    "BEQ",
-    "BLE",
-    "BRL",
-    "INP",
-    "OUT",
-    "TTF",
-    "TTY",
-    "TSF",
-    "XMR",
-    "TSR",
-    "TSS",
-    "COM",
-    "AIR",
-    "AIS",
-    "AIW",
-    "BLD",
-    "BSV",
-    "AIM",
-    "AIE",
-    "CLK",
-    "OPT",
-    "MCH",
-    "SCH",
-    "WTH",
-    "WTM",
-    "WTS",
-    "DLY",
-    "FWR",
-    "FWV",
-    "CFG",
-    "LST",
-    "DIR",
-    "FNM",
-    "FNA",
-    "FDL",
-    "FQU",
-    "HEX",
-    "WEN",
-    "ERC",
-    "SBD",
-    "REM",
-    "NOP",
-];
-
-/// Base subchannel for each mnemonic; numeric command arguments are added to these values.
-#[rustfmt::skip]
-pub const COMMAND_OFFSETS: [u16; 66] = [
-    255,
-    254,
-    0,
-    300,
-    300,
-    310,
-    320,
-    330,
-    340,
-    350,
-    400,
-    500,
-    600,
-    610,
-    620,
-    630,
-    640,
-    650,
-    660,
-    1000,
-    1100,
-    1100,
-    1200,
-    1300,
-    1400,
-    1500,
-    1600,
-    2000,
-    2000,
-    800,
-    880,
-    881,
-    890,
-    900,
-    980,
-    990,
-    280,
-    281,
-    282,
-    283,
-    284,
-    285,
-    286,
-    90,
-    150,
-    270,
-    271,
-    290,
-    291,
-    292,
-    299,
-    220,
-    230,
-    240,
-    241,
-    241,
-    242,
-    243,
-    244,
-    249,
-    88,
-    250,
-    251,
-    252,
-    253,
-    253,
-];
-
-/// Resolves a case-insensitive mnemonic while preserving the table's protocol index.
-pub fn command_index(command: &str) -> Option<usize>
-{
-    let command = command.trim().to_ascii_uppercase();
-    COMMANDS.iter().position(|candidate| *candidate == command)
-}
-
-/// Converts a mnemonic and optional numeric argument into its concrete subchannel.
-pub fn command_subchannel(command: &str, argument: u16) -> Option<u16>
-{
-    let index = command_index(command)?;
-    COMMAND_OFFSETS[index].checked_add(argument)
-}
 
 /// Computes the bytewise XOR checksum used after the protocol's `$HH` suffix.
 pub fn xor_checksum(bytes: &[u8]) -> u8
@@ -252,7 +101,9 @@ pub fn parse_frame(input: &str) -> Result<ParsedFrame, ParseError>
     }
     else
     {
-        command_subchannel(token, argument).ok_or(ParseError::Syntax)?
+        CmdWhich::from_mnemonic(token)
+            .sub_channel(argument)
+            .ok_or(ParseError::Syntax)?
     };
 
     let parameter = match value_text
