@@ -33,9 +33,9 @@ mod tests {
     /// Verifies that command and error enums own the exact wire text without positional string tables.
     #[test]
     fn enum_text_mappings_preserve_wire_protocol() {
-        assert_eq!(CmdWhich::from_str("  iCs  "), CmdWhich::Ics);
+        assert_eq!(CmdWhich::from_mnemonic("  iCs  "), CmdWhich::Ics);
         assert_eq!(CmdWhich::Ics.as_str(), Some("ICS"));
-        assert_eq!(CmdWhich::from_str("unknown"), CmdWhich::Err);
+        assert_eq!(CmdWhich::from_mnemonic("unknown"), CmdWhich::Err);
         assert_eq!(CmdWhich::Err.as_str(), None);
         assert_eq!(ParseError::ChecksumErr.as_str(), "[CHKSUM]");
     }

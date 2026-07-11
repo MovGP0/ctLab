@@ -143,9 +143,9 @@ mod tests {
     /// Verifies that command and error enums own the exact wire text without positional string tables.
     #[test]
     fn enum_text_mappings_preserve_wire_protocol() {
-        assert_eq!(CmdWhich::from_str("  iCa  "), CmdWhich::Ica);
+        assert_eq!(CmdWhich::from_mnemonic("  iCa  "), CmdWhich::Ica);
         assert_eq!(CmdWhich::Ica.as_str(), Some("ICA"));
-        assert_eq!(CmdWhich::from_str("unknown"), CmdWhich::Err);
+        assert_eq!(CmdWhich::from_mnemonic("unknown"), CmdWhich::Err);
         assert_eq!(CmdWhich::Err.as_str(), None);
         assert_eq!(ErrorCode::LockedErr.as_str(), "[LOCKED]");
     }

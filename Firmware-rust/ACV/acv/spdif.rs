@@ -7,20 +7,20 @@ use super::*;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum Spdif {
     /// Uses consumer-format S/PDIF at 48 kHz.
-    C48Khz,
+    C48,
 
     /// Uses consumer-format S/PDIF at 96 kHz.
-    C96Khz,
+    C96,
 
     /// Uses consumer-format S/PDIF at 192 kHz.
-    C192Khz,
+    C192,
 
     /// Uses professional-format S/PDIF at 48 kHz.
-    P48Khz,
+    P48,
 
     /// Uses professional-format S/PDIF at 96 kHz.
-    P96Khz,
+    P96,
 
     /// Uses professional-format S/PDIF at 192 kHz.
-    P192Khz,
+    P192,
 }

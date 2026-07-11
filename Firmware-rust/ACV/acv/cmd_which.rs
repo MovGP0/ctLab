@@ -71,7 +71,7 @@ impl CmdWhich {
     }
 
     /// Parses an ACV mnemonic without allocating; matching is ASCII case-insensitive and ignores surrounding whitespace.
-    pub(super) fn from_str(keyword: &str) -> Self {
+    pub(super) fn from_mnemonic(keyword: &str) -> Self {
         let keyword = keyword.trim();
         if keyword.eq_ignore_ascii_case("STR") {
             Self::Str

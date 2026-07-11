@@ -957,7 +957,7 @@ impl<H: AdaHardware> DeviceState<H> {
             self.cmd_which = CmdWhich::Val;
             0
         } else {
-            self.cmd_which = CmdWhich::from_str(&self.param_str);
+            self.cmd_which = CmdWhich::from_mnemonic(&self.param_str);
             if self.cmd_which == CmdWhich::Err {
                 return Err(ErrorCode::SyntaxErr);
             }

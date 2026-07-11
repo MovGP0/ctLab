@@ -204,10 +204,13 @@ mod tests {
             assert_ne!(cmd_which, CmdWhich::Err);
             assert_eq!(cmd_which.as_str(), Some(command));
             assert_eq!(cmd_which.sub_channel_offset(), Some(sub_ch));
-            assert_eq!(CmdWhich::from_str(&command.to_ascii_lowercase()), cmd_which);
+            assert_eq!(
+                CmdWhich::from_mnemonic(&command.to_ascii_lowercase()),
+                cmd_which
+            );
         }
 
-        assert_eq!(CmdWhich::from_str("unknown"), CmdWhich::Err);
+        assert_eq!(CmdWhich::from_mnemonic("unknown"), CmdWhich::Err);
         assert_eq!(CmdWhich::Err.as_str(), None);
         assert_eq!(Error::ChecksumErr.as_str(), "[CHKSUM]");
     }
@@ -231,19 +234,21 @@ mod tests {
     /// Verifies that init spdif updates ADC board config for sample rate remains faithful to the Pascal behavior.
     #[test]
     fn init_spdif_updates_adc_board_config_for_sample_rate() {
-        let mut state = AcvState::default();
+        let mut state = AcvState {
+            spdif_rate: Spdif::C48,
+            ..Default::default()
+        };
 
-        state.spdif_rate = Spdif::C48Khz;
         state.init_spdif();
         assert_eq!(state.hw.adc_config, 0b0100_0100);
         assert_eq!(state.hw.i2c_registers[0x04], 0b0110_0000);
 
-        state.spdif_rate = Spdif::P96Khz;
+        state.spdif_rate = Spdif::P96;
         state.init_spdif();
         assert_eq!(state.hw.adc_config, 0b0100_0101);
         assert_eq!(state.hw.i2c_registers[0x04], 0b0100_0000);
 
-        state.spdif_rate = Spdif::C192Khz;
+        state.spdif_rate = Spdif::C192;
         state.init_spdif();
         assert_eq!(state.hw.adc_config, 0b0100_0110);
         assert_eq!(state.hw.i2c_registers[0x04], 0b0111_0000);
@@ -335,9 +340,11 @@ mod tests {
     /// Verifies that LCD menu pages include pascal cursor glyph and fixed width rows remains faithful to the Pascal behavior.
     #[test]
     fn lcd_menu_pages_include_pascal_cursor_glyph_and_fixed_width_rows() {
-        let mut state = AcvState::default();
-        state.modify = Modify::GainSel;
-        state.gain = 2;
+        let mut state = AcvState {
+            modify: Modify::GainSel,
+            gain: 2,
+            ..Default::default()
+        };
 
         state.soll_werte_on_lcd();
 

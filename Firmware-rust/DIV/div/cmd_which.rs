@@ -95,7 +95,7 @@ impl CmdWhich {
     /// Matching ASCII case-insensitively preserves the Pascal parser's terminal-
     /// friendly behavior. Unknown text becomes Self::Err so dispatch cannot
     /// accidentally execute a valid command.
-    pub fn from_str(value: &str) -> Self {
+    pub fn from_mnemonic(value: &str) -> Self {
         if value.eq_ignore_ascii_case("STR") {
             Self::Str
         } else if value.eq_ignore_ascii_case("IDN") {

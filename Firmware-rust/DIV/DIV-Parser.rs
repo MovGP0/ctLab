@@ -25,8 +25,8 @@ pub use div_parser_hooks::DivParserHooks;
 mod div_runtime_adapter;
 pub use div_runtime_adapter::DivRuntimeAdapter;
 #[path = "div_parser/div_parser.rs"]
-mod div_parser;
-pub use div_parser::DivParser;
+mod parser_impl;
+pub use parser_impl::DivParser;
 
 /// Provides the full identification string returned by the `IDN` command.
 pub const VERS1_STR: &str = "3.10 [DIV by CM/c't 03/2007] ";
@@ -237,11 +237,14 @@ mod tests {
 
         for command in commands {
             let mnemonic = command.as_str().expect("wire command has a mnemonic");
-            assert_eq!(CmdWhich::from_str(mnemonic), command);
-            assert_eq!(CmdWhich::from_str(&mnemonic.to_ascii_lowercase()), command);
+            assert_eq!(CmdWhich::from_mnemonic(mnemonic), command);
+            assert_eq!(
+                CmdWhich::from_mnemonic(&mnemonic.to_ascii_lowercase()),
+                command
+            );
         }
         assert_eq!(CmdWhich::Err.as_str(), None);
-        assert_eq!(CmdWhich::from_str("UNKNOWN"), CmdWhich::Err);
+        assert_eq!(CmdWhich::from_mnemonic("UNKNOWN"), CmdWhich::Err);
     }
 
     /// Verifies status and fault labels are attached to their owning enums.

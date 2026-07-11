@@ -674,7 +674,7 @@ impl DcgParser {
 
     /// Matches mnemonics case-insensitively against the ordered protocol table, returning `Err` rather than borrowing another command's index.
     pub fn cmd_to_index(&mut self) -> CmdWhich {
-        CmdWhich::from_str(&self.param_str)
+        CmdWhich::from_mnemonic(&self.param_str)
     }
 
     // Extract either a command token or a numeric parameter token from SerInpStr.

@@ -123,7 +123,7 @@ impl CmdWhich {
     }
 
     /// Decodes a DCG mnemonic without allocating or changing the protocol's case-insensitive behavior.
-    pub fn from_str(value: &str) -> Self {
+    pub fn from_mnemonic(value: &str) -> Self {
         Self::ALL
             .iter()
             .copied()

@@ -214,18 +214,18 @@ impl<H: FpgaHardware, F: FileSystem> FpgaController<H, F>
         {
             2 =>
             {
-                for bytes in data.chunks_exact(2)
+                for bytes in data.as_chunks::<2>().0
                 {
-                    self.bus.exchange_u16(self.auto_increment_register, u16::from_le_bytes([bytes[0], bytes[1]]));
+                    self.bus.exchange_u16(self.auto_increment_register, u16::from_le_bytes(*bytes));
                 }
             }
             4 =>
             {
-                for bytes in data.chunks_exact(4)
+                for bytes in data.as_chunks::<4>().0
                 {
                     self.bus.exchange_u32(
                         self.auto_increment_register,
-                        u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
+                        u32::from_le_bytes(*bytes),
                     );
                 }
             }

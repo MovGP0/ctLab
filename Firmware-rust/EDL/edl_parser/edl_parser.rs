@@ -756,7 +756,7 @@ impl EdlParser {
 
     /// Resolves the mnemonic through the compiler-checked command enum without allocation.
     pub fn cmd_to_index(&mut self) -> CmdWhich {
-        CmdWhich::from_str(&self.param_str)
+        CmdWhich::from_mnemonic(&self.param_str)
     }
 
     /// Consumes one numeric or quoted token from the serial cursor and records whether conversion succeeded.

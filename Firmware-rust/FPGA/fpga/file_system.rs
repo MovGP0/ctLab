@@ -1,8 +1,9 @@
-﻿/// Storage boundary used by the controller's SD/FAT command handlers.
+﻿//! Storage boundary used by the controller's SD/FAT command handlers.
+//!
+//! The firmware logic needs whole-file semantics, while the implementation may
+//! use a FAT16 card, a simulator, or an in-memory test store.
 
-///
-/// The firmware logic needs whole-file semantics, while the implementation may
-/// use a FAT16 card, a simulator, or an in-memory test store.
+/// Storage boundary used by the controller's SD/FAT command handlers.
 pub trait FileSystem
 {
     /// Backend-specific failure returned without erasing diagnostic detail.

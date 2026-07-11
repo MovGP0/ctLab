@@ -159,7 +159,7 @@ impl Default for FirmwareState {
             verbose: false,
             changed_flag: true,
             lcd_present: false,
-            modify: Modify::FreqSel,
+            modify: Modify::Frequency,
             first_turn: true,
             status: StatusFlags::default(),
             err_count: 0,
@@ -458,7 +458,7 @@ impl FirmwareState {
 
     /// Matches mnemonics case-insensitively against the ordered protocol table, returning `Err` rather than borrowing another command's index.
     pub(super) fn cmd_to_index(cmd: &str) -> CmdWhich {
-        CmdWhich::from_str(cmd)
+        CmdWhich::from_mnemonic(cmd)
     }
 
     // Extract either a command token or a numeric parameter token from the
@@ -658,7 +658,8 @@ impl FirmwareState {
             }
             Waveform::Logic => {
                 self.set_switch_output(SwitchOutput::Square, true);
-                offset_mv = (self.dac_level * self.pwr_gain * 1.41421).round() as i32;
+                offset_mv =
+                    (self.dac_level * self.pwr_gain * core::f64::consts::SQRT_2).round() as i32;
                 self.set_switch_output(SwitchOutput::Offset, false);
                 Ad9833Control::Square
             }
@@ -797,7 +798,7 @@ impl FirmwareState {
                 }
 
                 match self.modify {
-                    Modify::FreqSel => {
+                    Modify::Frequency => {
                         if self.incr_fine {
                             if self.first_turn {
                                 self.frequenz = (self.frequenz / 10) * 10;
@@ -809,19 +810,19 @@ impl FirmwareState {
                             self.frequenz = TERZ_ARRAY[self.terz_num as usize];
                         }
                     }
-                    Modify::AmplSel => {
+                    Modify::Amplitude => {
                         self.level_range = !self.level_range;
                         self.dac_level = if self.level_range { 5000.0 } else { 1000.0 };
                     }
-                    Modify::WaveSel => {
+                    Modify::Waveform => {
                         let next_wave = self.wave.as_byte().wrapping_add(incr_diff_byte);
                         self.wave = Waveform::from_sqg_byte(next_wave).0;
                     }
-                    Modify::BurstSel => {
+                    Modify::Burst => {
                         self.burst_mode = self.burst_mode.wrapping_add(incr_diff as u8);
                         self.check_limits();
                     }
-                    Modify::DcSel => {
+                    Modify::DcOffset => {
                         self.offset_mv += incr_acc_int10;
                     }
                 }
@@ -909,7 +910,7 @@ impl FirmwareState {
         // This matches the Pascal power-up state before the first user action.
         self.status = StatusFlags::default();
         self.burst_count = 1;
-        self.modify = Modify::FreqSel;
+        self.modify = Modify::Frequency;
         self.incr_fine = false;
         self.incr_diff = 0;
         self.first_turn = true;

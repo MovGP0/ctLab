@@ -996,7 +996,7 @@ impl<H: DcgHardware> DeviceState<H> {
         if let Ok(sub_channel) = selector.parse::<u8>() {
             return Some(sub_channel);
         }
-        let command = CmdWhich::from_str(selector);
+        let command = CmdWhich::from_mnemonic(selector);
         (command != CmdWhich::Err).then_some(command.default_subchannel())
     }
 

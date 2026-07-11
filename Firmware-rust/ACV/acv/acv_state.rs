@@ -166,7 +166,7 @@ impl Default for AcvState {
             slave_ch: 0,
             switch_state: 0,
             aux_cmd: 0,
-            spdif_rate: Spdif::C48Khz,
+            spdif_rate: Spdif::C48,
             activity_timer: Timer8 { ticks: 0 },
             display_timer: Timer8 { ticks: 0 },
             bar_graph_delay_timer: Timer8 { ticks: 0 },
@@ -394,11 +394,11 @@ impl AcvState {
         self.i2c_out_adr10(0x12, 0b0000_0000);
 
         match self.spdif_rate {
-            Spdif::C96Khz | Spdif::P96Khz => {
+            Spdif::C96 | Spdif::P96 => {
                 self.hw.adc_config = 0b0100_0101;
                 self.i2c_out_adr10(0x04, 0b0100_0000);
             }
-            Spdif::C192Khz | Spdif::P192Khz => {
+            Spdif::C192 | Spdif::P192 => {
                 self.hw.adc_config = 0b0100_0110;
                 self.i2c_out_adr10(0x04, 0b0111_0000);
             }
@@ -575,7 +575,7 @@ impl AcvState {
             out_of_range = true;
         }
         if self.spdif_rate as u8 > 5 {
-            self.spdif_rate = Spdif::P192Khz;
+            self.spdif_rate = Spdif::P192;
             out_of_range = true;
         }
 
@@ -804,7 +804,7 @@ impl AcvState {
 
     /// Parses the current command token into its case-insensitive semantic command enum.
     pub(super) fn cmd_to_index(&mut self) -> CmdWhich {
-        CmdWhich::from_str(&self.param_str)
+        CmdWhich::from_mnemonic(&self.param_str)
     }
 
     /// Parses extract and updates only the state owned by that protocol phase.
@@ -1220,12 +1220,12 @@ impl AcvState {
     /// Maps spdif from byte into the typed state used internally, rejecting or defaulting unsupported wire values as the implementation specifies.
     pub(super) fn spdif_from_byte(value: u8) -> Spdif {
         match value {
-            1 => Spdif::C96Khz,
-            2 => Spdif::C192Khz,
-            3 => Spdif::P48Khz,
-            4 => Spdif::P96Khz,
-            5 => Spdif::P192Khz,
-            _ => Spdif::C48Khz,
+            1 => Spdif::C96,
+            2 => Spdif::C192,
+            3 => Spdif::P48,
+            4 => Spdif::P96,
+            5 => Spdif::P192,
+            _ => Spdif::C48,
         }
     }
 

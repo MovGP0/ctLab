@@ -285,7 +285,7 @@ where
 
     /// Maps cmd2index onto the command enum so dispatch uses a bounded match instead of string comparisons.
     pub fn cmd2index(&mut self) -> CmdWhich {
-        CmdWhich::from_str(&self.state.param_str)
+        CmdWhich::from_mnemonic(&self.state.param_str)
     }
 
     /// Parses extract and updates only the state owned by that protocol phase.
@@ -306,8 +306,7 @@ where
         // are all treated as parameter payload.
         let is_param = (b'*'..=b'9').contains(&first);
 
-        for idx in self.state.ser_inp_ptr..bytes.len() {
-            let byte = bytes[idx];
+        for (idx, &byte) in bytes.iter().enumerate().skip(self.state.ser_inp_ptr) {
             let keep = if is_param { byte <= b'9' } else { byte >= b'A' };
 
             if keep {

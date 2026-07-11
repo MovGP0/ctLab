@@ -95,7 +95,7 @@ impl CmdWhich {
     }
 
     /// Decodes an SQG mnemonic without allocating or changing case-insensitive command handling.
-    pub(super) fn from_str(value: &str) -> Self {
+    pub(super) fn from_mnemonic(value: &str) -> Self {
         Self::ALL
             .iter()
             .copied()

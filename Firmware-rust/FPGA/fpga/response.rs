@@ -1,8 +1,9 @@
-﻿/// Value returned by command dispatch before serial framing is applied.
+﻿//! Value returned by command dispatch before serial framing is applied.
+//!
+//! Separating protocol values from transport formatting keeps calculations and
+//! register access testable without reproducing UART side effects.
 
-///
-/// Separating protocol values from transport formatting keeps calculations and
-/// register access testable without reproducing UART side effects.
+/// Value returned by command dispatch before serial framing is applied.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Response
 {

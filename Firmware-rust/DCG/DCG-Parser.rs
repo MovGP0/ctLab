@@ -18,8 +18,8 @@ mod error;
 pub use error::Error;
 
 #[path = "dcg_parser/dcg_parser.rs"]
-mod dcg_parser;
-pub use dcg_parser::DcgParser;
+mod parser_impl;
+pub use parser_impl::DcgParser;
 
 /// Firmware banner returned by identification requests and shown during startup for service traceability.
 pub const VERS1_STR: &str = "2.92 [DCG by CM/c't 05/2010]";
@@ -87,7 +87,7 @@ mod tests {
         };
         assert_eq!(parser.cmd_to_index(), CmdWhich::Tmp);
         assert_eq!(CmdWhich::Pwon.as_str(), "RON");
-        assert_eq!(CmdWhich::from_str("rof"), CmdWhich::Pwoff);
+        assert_eq!(CmdWhich::from_mnemonic("rof"), CmdWhich::Pwoff);
         assert_eq!(CmdWhich::Pwoff.default_subchannel(), 28);
     }
 

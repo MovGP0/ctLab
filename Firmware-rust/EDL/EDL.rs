@@ -230,13 +230,15 @@ mod tests {
     }
 
     fn test_eeprom() -> EepromData {
-        let mut eeprom = EepromData::default();
-        eeprom.adc_u_offsets = [0, 0];
-        eeprom.adc_u_scales = [1.0, 1.0];
-        eeprom.adc_i_offsets = [0, 0, 0, 0];
-        eeprom.adc_i_scales = [1.0, 1.0, 1.0, 1.0];
-        eeprom.dac_i_offsets = [0, 0, 0, 0];
-        eeprom.dac_i_scales = [1.0, 1.0, 1.0, 1.0];
+        let mut eeprom = EepromData {
+            adc_u_offsets: [0, 0],
+            adc_u_scales: [1.0, 1.0],
+            adc_i_offsets: [0, 0, 0, 0],
+            adc_i_scales: [1.0, 1.0, 1.0, 1.0],
+            dac_i_offsets: [0, 0, 0, 0],
+            dac_i_scales: [1.0, 1.0, 1.0, 1.0],
+            ..EepromData::default()
+        };
         eeprom.option_array[OPT_INIT_LOW_DIVIDER_U] = 1.0;
         eeprom.option_array[OPT_INIT_HI_DIVIDER_U] = 1.0;
         eeprom.option_array[OPT_INIT_GAIN_I] = 1.0;

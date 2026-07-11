@@ -139,7 +139,7 @@ impl CmdWhich {
     }
 
     /// Parses an EDL mnemonic without allocation, accepting ASCII case differences and surrounding whitespace.
-    pub fn from_str(keyword: &str) -> Self {
+    pub fn from_mnemonic(keyword: &str) -> Self {
         let keyword = keyword.trim();
         if keyword.eq_ignore_ascii_case("STR") { Self::Str }
         else if keyword.eq_ignore_ascii_case("IDN") { Self::Idn }

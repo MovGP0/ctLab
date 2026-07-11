@@ -53,13 +53,13 @@ const TRIANGLE_RMS_FACTOR: Float = 0.816_496;
 const TRIANGLE_DAC_FACTOR: Float = 1.224_745;
 
 /// Converts the firmware's square-wave DAC amplitude representation to RMS output level.
-const SQUARE_RMS_FACTOR: Float = 1.414_21;
+const SQUARE_RMS_FACTOR: Float = core::f32::consts::SQRT_2;
 
 /// Inverse square-wave factor used to obtain a DAC amplitude from an RMS request.
-const SQUARE_DAC_FACTOR: Float = 0.707_11;
+const SQUARE_DAC_FACTOR: Float = core::f32::consts::FRAC_1_SQRT_2;
 
 /// Converts the amplitude-DAC representation through the output-stage convention to peak millivolts.
-const PEAK_FACTOR: Float = 2.828_427_1;
+const PEAK_FACTOR: Float = 2.0 * core::f32::consts::SQRT_2;
 
 /// AD9833 tuning contribution of each decimal frequency digit, summed without allocation or runtime exponentiation.
 #[rustfmt::skip]

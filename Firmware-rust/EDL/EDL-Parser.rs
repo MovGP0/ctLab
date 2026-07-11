@@ -68,8 +68,8 @@ const ADC_MAX_16: f64 = 65535.0;
 
 /// Source-faithful protocol state and command dispatch.
 #[path = "edl_parser/edl_parser.rs"]
-mod edl_parser;
-pub use edl_parser::EdlParser;
+mod implementation;
+pub use implementation::EdlParser;
 
 #[cfg(test)]
 mod tests {

@@ -86,8 +86,8 @@ const FHZ: [f64; 9] = [
     13_421_772.8,
     1_342_177.28,
     134_217.728,
-    13_421.7728,
-    1_342.17728,
+    13_421.772_8,
+    1_342.177_28,
     134.217728,
     13.4217728,
     1.34217728,
@@ -313,7 +313,7 @@ mod tests {
                 SwitchOutput::Attenuator.mask() | SwitchOutput::Square.mask(),
             )]
         );
-        assert_eq!(state.level_range, false);
+        assert!(!state.level_range);
     }
 
     #[test]
@@ -380,7 +380,7 @@ mod tests {
 
         state.run_main_loop_iteration(&mut hw);
 
-        assert_eq!(state.modify, Modify::FreqSel);
+        assert_eq!(state.modify, Modify::Frequency);
         assert!(hw
             .panel_events
             .contains(&PanelEvent::Button(PanelButton::Left)));
@@ -400,7 +400,7 @@ mod tests {
 
         state.run_main_loop_iteration(&mut hw);
 
-        assert_eq!(state.modify, Modify::AmplSel);
+        assert_eq!(state.modify, Modify::Amplitude);
         assert!(state.status.busy);
         assert!(hw.serial.contains("#0:1=5000"));
     }
@@ -484,7 +484,7 @@ mod tests {
         assert!(state.lcd_present);
         assert_eq!(state.status, StatusFlags::default());
         assert_eq!(state.burst_count, 1);
-        assert_eq!(state.modify, Modify::FreqSel);
+        assert_eq!(state.modify, Modify::Frequency);
         assert_eq!(state.current_ch, 255);
         assert_eq!(state.err_count, 0);
         assert!(!state.err_flag);
@@ -531,7 +531,7 @@ mod tests {
         assert_eq!(CmdWhich::Nop.as_str(), "NOP");
         assert_eq!(CmdWhich::Nop.default_subchannel(), 0);
         assert_eq!(CmdWhich::Ofs.as_str(), "DCO");
-        assert_eq!(CmdWhich::from_str("dbu"), CmdWhich::Dbu);
+        assert_eq!(CmdWhich::from_mnemonic("dbu"), CmdWhich::Dbu);
         assert_eq!(CmdWhich::Dbu.default_subchannel(), 3);
     }
 

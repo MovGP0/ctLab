@@ -1,8 +1,9 @@
-﻿/// Electrical operations required by the FPGA controller bus.
+﻿//! Electrical operations required by the FPGA controller bus.
+//!
+//! None of these operations has a default because omitting a select pulse,
+//! configuration edge, or delay would silently corrupt hardware behavior.
 
-///
-/// None of these operations has a default because omitting a select pulse,
-/// configuration edge, or delay would silently corrupt hardware behavior.
+/// Electrical operations required by the FPGA controller bus.
 pub trait FpgaHardware
 {
     /// Sends one byte through the ATmega UART when serial traffic is externally routed.

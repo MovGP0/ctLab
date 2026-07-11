@@ -176,8 +176,10 @@ mod tests
 
     fn controller() -> FpgaController<MockHardware, MemoryFiles>
     {
-        let mut files = MemoryFiles::default();
-        files.present = true;
+        let files = MemoryFiles {
+            present: true,
+            ..MemoryFiles::default()
+        };
         FpgaController::new(MockHardware::default(), files, EepromSettings::default())
     }
 

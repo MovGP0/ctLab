@@ -42,7 +42,7 @@ impl Default for EepromImage {
             ee_initialized: EE_INITIALIZED_MAGIC,
             init_inc_rast: 4,
             init_gain: 2,
-            init_rate: Spdif::C48Khz,
+            init_rate: Spdif::C48,
             init_aux_cmd: 7,
             ee_ser_baud_reg: 51,
             adc_scales_l: [

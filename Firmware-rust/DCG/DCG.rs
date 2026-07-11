@@ -254,9 +254,11 @@ mod tests {
     }
 
     fn test_eeprom() -> EepromData {
-        let mut eeprom = EepromData::default();
-        eeprom.dac_u_offsets = [10, 20];
-        eeprom.dac_i_offsets = [1, 2, 3, 4];
+        let mut eeprom = EepromData {
+            dac_u_offsets: [10, 20],
+            dac_i_offsets: [1, 2, 3, 4],
+            ..EepromData::default()
+        };
         eeprom.option_array[OPT_INIT_GAIN_PRE] = 1.0;
         eeprom.option_array[OPT_INIT_GAIN_OUT] = 1.0;
         eeprom.option_array[OPT_INIT_GAIN_I] = 1.0;

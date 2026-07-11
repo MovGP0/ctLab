@@ -263,7 +263,8 @@ impl DdsHardwareState {
                 self.set_square_sw(true);
                 if self.board_has_two_shift_registers {
                     // The 2-SR logic variant reuses the offset DAC as a power/output level helper.
-                    my_offset = (self.dac_level * self.pwr_gain * 1.414_21).round() as i32;
+                    my_offset =
+                        (self.dac_level * self.pwr_gain * core::f32::consts::SQRT_2).round() as i32;
                     self.set_offs_sw(false);
                 } else {
                     self.set_logic_sw(true);

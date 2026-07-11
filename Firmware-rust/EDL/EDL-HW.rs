@@ -68,8 +68,8 @@ pub use edl_state::EdlState;
 
 /// Bit-banged ADC/DAC transactions and timer-driven acquisition pipeline.
 #[path = "edl_hw/edl_hw.rs"]
-mod edl_hw;
-pub use edl_hw::EdlHw;
+mod implementation;
+pub use implementation::EdlHw;
 
 #[cfg(test)]
 mod tests {

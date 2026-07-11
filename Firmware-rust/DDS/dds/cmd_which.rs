@@ -103,7 +103,7 @@ impl CmdWhich {
     }
 
     /// Decodes a DDS mnemonic without allocating or changing case-insensitive command handling.
-    pub fn from_str(value: &str) -> Self {
+    pub fn from_mnemonic(value: &str) -> Self {
         Self::ALL
             .iter()
             .copied()

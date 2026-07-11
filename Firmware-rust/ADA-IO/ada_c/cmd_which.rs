@@ -119,7 +119,7 @@ impl CmdWhich {
     }
 
     /// Parses an ADA mnemonic without allocating; matching is ASCII case-insensitive and ignores surrounding whitespace.
-    pub fn from_str(keyword: &str) -> Self {
+    pub fn from_mnemonic(keyword: &str) -> Self {
         let keyword = keyword.trim();
         if keyword.eq_ignore_ascii_case("TRG") {
             Self::Trg

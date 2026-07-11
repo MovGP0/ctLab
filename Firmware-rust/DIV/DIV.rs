@@ -111,19 +111,19 @@ pub const NACHKOMMA_ARR: [u8; 16] = [
 /// Maps each DIV range index to its Port A relay and gain bit pattern.
 #[rustfmt::skip]
 pub const RANGE_ARR_PORT_A: [u8; 16] = [
-    0b0000_0000 | PORT_A_INIT,
-    0b0000_0000 | PORT_A_INIT,
+    PORT_A_INIT,
+    PORT_A_INIT,
     0b0010_0000 | PORT_A_INIT,
     0b0010_0000 | PORT_A_INIT,
-    0b0000_0000 | PORT_A_INIT,
-    0b0000_0000 | PORT_A_INIT,
-    0b0000_0000 | PORT_A_INIT,
-    0b0000_0000 | PORT_A_INIT,
-    0b0000_0000 | PORT_A_INIT,
+    PORT_A_INIT,
+    PORT_A_INIT,
+    PORT_A_INIT,
+    PORT_A_INIT,
+    PORT_A_INIT,
     0b0100_0000 | PORT_A_INIT,
     0b1000_0000 | PORT_A_INIT,
     0b1000_0000 | PORT_A_INIT,
-    0b0000_0000 | PORT_A_INIT,
+    PORT_A_INIT,
     0b0100_0000 | PORT_A_INIT,
     0b1000_0000 | PORT_A_INIT,
     0b1000_0000 | PORT_A_INIT,
@@ -132,8 +132,8 @@ pub const RANGE_ARR_PORT_A: [u8; 16] = [
 /// Maps each DIV range index to its Port C AC/DC and attenuation relay pattern.
 #[rustfmt::skip]
 pub const RANGE_ARR_PORT_C: [u8; 16] = [
-    0b0000_0000 | PORT_C_INIT,
-    0b0000_0000 | PORT_C_INIT,
+    PORT_C_INIT,
+    PORT_C_INIT,
     0b0001_0000 | PORT_C_INIT,
     0b0010_0000 | PORT_C_INIT,
     0b0100_0100 | PORT_C_INIT,

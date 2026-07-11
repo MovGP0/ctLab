@@ -21,7 +21,7 @@ impl Default for AdaIoParser {
 impl AdaIoParser {
     /// Maps command to index onto the command enum so dispatch uses a bounded match instead of string comparisons.
     pub fn cmd_to_index(&mut self) -> CmdWhich {
-        CmdWhich::from_str(&self.ctx.param_str)
+        CmdWhich::from_mnemonic(&self.ctx.param_str)
     }
 
     /// Parses extract and updates only the state owned by that protocol phase.

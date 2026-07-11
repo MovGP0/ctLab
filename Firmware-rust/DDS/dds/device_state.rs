@@ -724,7 +724,7 @@ impl<H: DdsHardware> DeviceState<H> {
 
     /// Resolves a command mnemonic to its protocol-table index so command and subchannel arrays remain paired.
     pub fn cmd2_index(&self, text: &str) -> CmdWhich {
-        CmdWhich::from_str(text)
+        CmdWhich::from_mnemonic(text)
     }
 
     /// Decodes alpha prefix without widening the command grammar beyond what existing controllers send.

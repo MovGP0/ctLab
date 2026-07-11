@@ -123,8 +123,8 @@ impl MockHardware {
     pub(super) fn lcd_bar_out(&mut self, row: usize, value: u8) {
         let mut line = vec![' '; LCD_COLUMNS];
         let segments = usize::from(value / 32).min(7);
-        for column in 1..=segments {
-            line[column] = '#';
+        for cell in line.iter_mut().take(segments + 1).skip(1) {
+            *cell = '#';
         }
         self.lcd_write_line(row, line.into_iter().collect());
     }
@@ -134,8 +134,8 @@ impl MockHardware {
         let mut line = vec![' '; LCD_COLUMNS];
         line[0] = channel;
         let segments = usize::from(value / 32).min(7);
-        for column in 1..=segments {
-            line[column] = '#';
+        for cell in line.iter_mut().take(segments + 1).skip(1) {
+            *cell = '#';
         }
         if value < 96 {
             line[6] = LCD_ZERO_DB_MARK_CHAR;
