@@ -90,7 +90,9 @@ mod tests
 
     impl FpgaHardware for MockHardware
     {
-        fn external_serial_write(&mut self, _byte: u8) {}
+        fn external_serial_write(&mut self, _byte: u8) {
+            // This controller test does not observe forwarded serial bytes.
+        }
 
         fn select_fpga_register(&mut self, register: u8)
         {
@@ -123,7 +125,9 @@ mod tests
             read >= 1
         }
 
-        fn delay_us(&mut self, _microseconds: u16) {}
+        fn delay_us(&mut self, _microseconds: u16) {
+            // Timing is intentionally omitted from the deterministic test double.
+        }
     }
 
     #[derive(Default)]

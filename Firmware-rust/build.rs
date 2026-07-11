@@ -1,8 +1,8 @@
-//! Cargo build hook that rejects repeated empty separator lines in Rust sources.
+//! Cargo build hook that rejects unreadable layout in maintained Rust sources.
 //!
 //! Keeping the layout check in every build prevents mechanically generated or
 //! refactored firmware files from regressing into the hard-to-read spacing that
-//! motivated the repository's one-empty-line rule.
+//! motivated the repository's spacing and multi-line-function rules.
 
 #![deny(missing_docs)]
 #![deny(rustdoc::broken_intra_doc_links)]
@@ -23,7 +23,7 @@ fn main()
     if !violations.is_empty()
     {
         panic!(
-            "Rust source layout check failed; keep at most one empty line and separate a completed item from the next doc comment:\n{}",
+            "Rust source layout check failed; keep at most one empty line, separate a completed item from the next doc comment, and put function bodies on their own lines:\n{}",
             violations.join("\n")
         );
     }
@@ -56,13 +56,15 @@ fn check_directory(directory: &Path, violations: &mut Vec<String>)
     }
 }
 
-/// Records repeated empty lines and documentation attached without visual separation.
+/// Records repeated empty lines, attached documentation, and one-line function bodies.
 ///
 /// Reporting one location per run keeps the compiler message actionable while
 /// still allowing a single build to reveal problems across multiple files. A
 /// completed item followed immediately by `///` requires one empty line so
 /// separate declarations, fields, and variants remain scannable. Opening braces
 /// and attributes stay attached to the documentation for their first item.
+/// Function bodies use separate lines even when empty so implementations remain
+/// visually consistent and have room for future behavior or rationale.
 fn check_file(path: &Path, violations: &mut Vec<String>)
 {
     let content = fs::read_to_string(path).expect("read Rust source");
@@ -85,6 +87,14 @@ fn check_file(path: &Path, violations: &mut Vec<String>)
                 index + 1
             ));
         }
+        if is_one_line_function(line)
+        {
+            violations.push(format!(
+                "{}:{} (put the function body on lines between the opening and closing braces)",
+                path.display(),
+                index + 1
+            ));
+        }
         if line.trim().is_empty()
         {
             consecutive_empty_lines += 1;
@@ -99,4 +109,43 @@ fn check_file(path: &Path, violations: &mut Vec<String>)
         }
         previous_line = Some(line);
     }
+}
+
+/// Returns whether `line` contains a complete function definition and body.
+///
+/// Function-pointer types and macros are excluded because their braces do not
+/// delimit a Rust function body. Comments are ignored so documentation examples
+/// can show compact syntax without affecting the maintained source layout.
+fn is_one_line_function(line: &str) -> bool
+{
+    let trimmed = line.trim();
+    if trimmed.starts_with("//")
+        || trimmed.starts_with("/*")
+        || trimmed.starts_with('*')
+        || trimmed.starts_with("macro_rules!")
+    {
+        return false;
+    }
+
+    let Some(function_position) = trimmed.find("fn ") else
+    {
+        return false;
+    };
+    let prefix = &trimmed[..function_position];
+    if prefix.contains('=') || prefix.contains(':') || prefix.contains('!')
+    {
+        return false;
+    }
+
+    let function = &trimmed[function_position..];
+    let Some(opening_brace) = function.find('{') else
+    {
+        return false;
+    };
+    let Some(closing_brace) = function.rfind('}') else
+    {
+        return false;
+    };
+
+    opening_brace < closing_brace
 }

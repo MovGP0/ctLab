@@ -652,7 +652,9 @@ impl<H: EdlHardware> DeviceState<H> {
     }
 
     /// Accepts Pascal cursor-mode requests without altering LCD rows because this hardware contract exposes text lines but no cursor control.
-    pub fn set_cursor(&mut self, _full_cursor: bool) {}
+    pub fn set_cursor(&mut self, _full_cursor: bool) {
+        // Cursor rendering belongs to the optional LCD backend.
+    }
 
     /// Writes measured voltage in the fixed front-panel row layout.
     pub fn spannung_on_lcd(&mut self) {

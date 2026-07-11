@@ -1000,10 +1000,14 @@ impl EdlParser {
     }
 
     /// Marks the Pascal critical-section boundary in the hardware-independent parser model.
-    fn disable_ints(&mut self) {}
+    fn disable_ints(&mut self) {
+        // The parser model records the boundary but has no interrupt controller.
+    }
 
     /// Marks restoration of interrupts after parser-side calibration updates.
-    fn enable_ints(&mut self) {}
+    fn enable_ints(&mut self) {
+        // The parser model records the boundary but has no interrupt controller.
+    }
 
     /// Records display invalidation caused by a setter without depending on an LCD backend.
     fn werte_on_lcd(&mut self) {
@@ -1044,7 +1048,9 @@ impl EdlParser {
     }
 
     /// Represents the three-millisecond analog settling interval after calibration changes; this parser-only model has no clock to advance.
-    fn mdelay(&mut self, _ms: u16) {}
+    fn mdelay(&mut self, _ms: u16) {
+        // The parser-only model has no hardware clock to advance.
+    }
 
     /// Clamps setpoints and timing and records the exact verbose limit outcome.
     fn check_limits(&mut self) {

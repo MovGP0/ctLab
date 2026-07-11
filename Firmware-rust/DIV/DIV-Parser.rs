@@ -176,7 +176,9 @@ mod tests {
             self.last_range = Some(config.range);
         }
 
-        fn set_trigger_edge(&mut self, _positive_edge: bool) {}
+        fn set_trigger_edge(&mut self, _positive_edge: bool) {
+            // This parser test double does not model an external interrupt pin.
+        }
 
         /// Encodes poll serial byte in the compact representation consumed by registers or the serial protocol.
         fn poll_serial_byte(&mut self) -> Option<u8> {

@@ -957,7 +957,9 @@ impl AcvState {
     }
 
     /// Executes chores to service pending serial, trigger, measurement, and panel work without reordering them.
-    pub(super) fn chores(&mut self) {}
+    pub(super) fn chores(&mut self) {
+        // The structural ACV port has no additional foreground maintenance yet.
+    }
 
     /// Handles serial char as one bounded polling-loop or interrupt service step.
     pub(super) fn process_serial_char(&mut self, my_char: char) {

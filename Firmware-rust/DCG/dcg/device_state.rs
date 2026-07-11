@@ -655,7 +655,9 @@ impl<H: DcgHardware> DeviceState<H> {
     }
 
     /// Selects the panel cursor shape that distinguishes full menu selection from digit-level editing.
-    pub fn set_cursor(&mut self, _full_cursor: bool) {}
+    pub fn set_cursor(&mut self, _full_cursor: bool) {
+        // Cursor rendering belongs to the optional LCD backend.
+    }
 
     /// Renders ist leistung in its fixed panel position so updates do not disturb the other row.
     pub fn ist_leistung_on_lcd(&mut self) {

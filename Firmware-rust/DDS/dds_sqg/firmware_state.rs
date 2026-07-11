@@ -698,7 +698,9 @@ impl FirmwareState {
     // Regelmaessig ausserhalb des Interrupts aus CheckSer heraus aufgerufen.
 
     /// Runs the slower foreground maintenance work that must not lengthen the timer interrupt, including measurement filtering, protection, telemetry, and display refresh.
-    pub(super) fn chores(&mut self) {}
+    pub(super) fn chores(&mut self) {
+        // SQG has no slower foreground maintenance beyond its explicit service paths.
+    }
 
     /// Drains bounded serial input while continuing foreground service so a slow or partial command cannot starve protection work.
     pub(super) fn check_ser<H: HardwareInterface>(&mut self, hw: &mut H) {
