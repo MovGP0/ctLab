@@ -1,5 +1,9 @@
 use super::*;
 
+/// Compile-time register map for the ATmega644 variant of the EDL firmware.
+///
+/// The uninhabited marker carries no run-time state; it exists so EDL can reuse
+/// [`AvrdPortIo`] while compiling accesses to the ATmega644 register addresses.
 pub enum Atmega644 {}
 impl Mcu for Atmega644 {
     const PINA: *mut u8 = avrd::atmega644::PINA;

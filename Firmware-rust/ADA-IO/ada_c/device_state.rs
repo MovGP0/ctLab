@@ -1,61 +1,164 @@
+//! Defines ADA state retained across parser, polling-loop, or interrupt operations.
+
 #[allow(unused_imports)]
 use super::*;
 
+/// Collects device state that must survive across polling-loop or interrupt updates.
 #[derive(Debug, Clone)]
 pub struct DeviceState<H> {
+    /// Owns the hardware boundary through which this state performs all converter, relay, serial, and LCD access.
     pub hw: H,
+
+    /// Keeps EEPROM values together so reset and write-enable handling use one source of truth.
     pub eeprom: EepromData,
+
+    /// Holds all eight live output bytes; local hardware writes retransmit the complete 4094 image.
     pub port_array: [u8; 8],
+
+    /// Caches the last byte read from each of the eight I2C input expanders.
     pub io_pin_cache: [u8; 8],
+
+    /// Stores eight calibrated DAC setpoints indexed by output channel 0..7.
     pub dac_value_array: [Float; 8],
+
+    /// Stores eight unclamped DAC codes indexed by output channel 0..7.
     pub dac_raw_array: [u16; 8],
+
+    /// Stores external ADC samples indexed by the corresponding protocol channel.
     pub adc_raw_array: [i16; 8],
+
+    /// Latches omni flag until the polling loop or status response consumes it.
     pub omni_flag: bool,
+
+    /// Records whether `?` or `!` requested a verbose status response for the active frame.
     pub verbose: bool,
+
+    /// Contains ad10 flag in converter counts until scaling or hardware output consumes it.
     pub ad10_flag: bool,
+
+    /// Contains ad16 flag in converter counts until scaling or hardware output consumes it.
     pub ad16_flag: bool,
+
+    /// Records detection of an LTC1257 so DAC writes use its 12-bit transfer and offset-binary encoding.
     pub dac12_present: bool,
+
+    /// Records detection of an LTC1655 so DAC writes use its 16-bit offset-binary encoding.
     pub dac16_present: bool,
+
+    /// Records detection of a DAC714 so output values use signed 16-bit encoding and its clock phase.
     pub dac714_present: bool,
+
+    /// Records detection of the LTC1864 path so trigger scans include AD16 subchannels 10..17.
     pub adc16_present: bool,
+
+    /// Records detection of the first optional 24-bit ADC daughterboard.
     pub adc24_1_present: bool,
+
+    /// Records detection of the second optional 24-bit ADC daughterboard.
     pub adc24_2_present: bool,
+
+    /// Records display detection so startup and panel writes avoid an absent LCD.
     pub lcd_present: bool,
+
+    /// Selects I2C expanders instead of the local 4094 chain for digital-port access.
     pub io_present: bool,
+
+    /// Selects whether four external AD16 samples are accumulated before publication.
     pub integrate_ad16: bool,
+
+    /// Latches an external, automatic, or command trigger until the polling loop services it.
     pub trigger: bool,
+
+    /// Uses bits to select which measurement subchannels are emitted by a trigger.
     pub trig_mask: u8,
+
+    /// Contains the current CR-terminated command frame without its trailing carriage return.
     pub ser_inp_str: String,
+
+    /// Indexes the next unconsumed byte in the current command frame during token extraction.
     pub ser_inp_ptr: usize,
+
+    /// Stores parameter string in the wire or LCD representation expected by the original firmware.
     pub param_str: String,
+
+    /// Stores parameter text string in the wire or LCD representation expected by the original firmware.
     pub param_text_str: String,
+
+    /// Contains the parsed floating-point operand until range checking and command execution complete.
     pub param: Float,
+
+    /// Contains the parsed integer operand until range checking and command execution complete.
     pub param_int: i16,
+
+    /// Contains the parsed byte operand until range checking and command execution complete.
     pub param_byte: u8,
+
+    /// Stores the enum produced by mnemonic lookup and consumed by command dispatch.
     pub cmd_which: CmdWhich,
+
+    /// Stores command string in the wire or LCD representation expected by the original firmware.
     pub cmd_str: String,
+
+    /// Stores the address read from board straps and used to accept or prefix serial frames.
     pub slave_ch: u8,
+
+    /// Holds the protocol subchannel selected by the current frame; 255 is the status channel.
     pub sub_ch: u8,
+
+    /// Tracks the most recently addressed channel so short-form commands can omit the address.
     pub current_ch: u8,
+
+    /// Selects the front-panel value or visualization currently being edited.
     pub modify: u8,
+
+    /// Sets the number of raw encoder increments required for one accepted detent.
     pub inc_rast: i16,
+
+    /// Sets the field width used by the active serial or LCD formatter.
     pub digits: u8,
+
+    /// Sets the number of fractional digits emitted for the active parameter.
     pub nachkomma: u8,
+
+    /// Requests a display refresh after a setter or front-panel edit changes visible state.
     pub changed_flag: bool,
+
+    /// Caches the packed protocol status byte: error in the low nibble, then unlock, overload, user-request, and busy bits.
     pub status: RuntimeStatus,
+
+    /// Counts protocol errors returned by `ERC` until that command clears the counter.
     pub err_count: i16,
+
+    /// Marks a parser failure so the next status response reports it once.
     pub err_flag: bool,
+
+    /// Caches the AD10 full-scale divisor used before per-channel calibration.
     pub base_scale_ad10: Float,
+
+    /// Caches the AD16 full-scale divisor used before per-channel calibration.
     pub base_scale_ad16: Float,
+
+    /// Caches the DA12 counts-per-unit factor used by output conversion.
     pub base_scale_da12: Float,
+
+    /// Caches the DA16 counts-per-unit factor used by output conversion.
     pub base_scale_da16: Float,
+
+    /// Stores the active 7-bit I2C slave address used by ICB, ICW, ICS, ICT, and ICA operations.
     pub i2c_slave_adr: u8,
+
+    /// Carries elapsed milliseconds below the two-millisecond timer quantum between polling-loop calls.
     pub systick_remainder_ms: u16,
+
+    /// Counts auto trigger ticks remaining in systicks until the corresponding nonblocking action is due.
     pub auto_trigger_ticks_remaining: Option<u16>,
+
+    /// Counts trigger led ticks remaining in systicks until the corresponding nonblocking action is due.
     pub trigger_led_ticks_remaining: u16,
 }
 
 impl<H: AdaHardware> DeviceState<H> {
+    /// Creates an uninitialized ADA runtime with Pascal reset defaults; `init_all` later restores EEPROM and detects daughterboards.
     pub fn new(hw: H) -> Self {
         Self {
             hw,
@@ -111,10 +214,12 @@ impl<H: AdaHardware> DeviceState<H> {
         }
     }
 
+    /// Latches ext int2 trigger for deferred processing outside the interrupt-sensitive edge handler.
     pub fn ext_int2_trigger(&mut self) {
         self.trigger = true;
     }
 
+    /// Loads the four converter full-scale divisors from their reserved calibration slots 9, 19, 28, and 29.
     pub fn set_base_scales(&mut self) {
         self.base_scale_ad10 = self.eeprom.scale_array[9];
         self.base_scale_ad16 = self.eeprom.scale_array[19];
@@ -122,6 +227,7 @@ impl<H: AdaHardware> DeviceState<H> {
         self.base_scale_da16 = self.eeprom.scale_array[29];
     }
 
+    /// Calibrates DAC subchannel 20..27 and encodes it for the detected DAC714, LTC1655, or LTC1257 hardware.
     pub fn set_dac(&mut self, my_sub_ch: u8) {
         if !(20..=27).contains(&my_sub_ch) {
             return;
@@ -151,6 +257,7 @@ impl<H: AdaHardware> DeviceState<H> {
         }
     }
 
+    /// Returns port from the selected local port or I2C expander cache.
     pub fn get_port(&mut self, my_port: u8) -> u8 {
         let index = my_port as usize;
         if self.io_present {
@@ -162,6 +269,7 @@ impl<H: AdaHardware> DeviceState<H> {
         }
     }
 
+    /// Updates one live output byte, then writes it to its I2C expander or retransmits the local 4094 chain.
     pub fn set_port(&mut self, my_port: u8, my_val: u8) {
         let index = my_port as usize;
         self.port_array[index] = my_val;
@@ -174,17 +282,20 @@ impl<H: AdaHardware> DeviceState<H> {
         }
     }
 
+    /// Programs one detected I2C expander's direction byte; local 4094 outputs have no direction register.
     pub fn set_dir(&mut self, my_port: u8, my_val: u8) {
         if self.io_present {
             self.hw.write_io_dir(my_port, my_val);
         }
     }
 
+    /// Persists and immediately applies one I2C expander direction byte.
     pub fn set_dir_init(&mut self, my_port: u8, my_val: u8) {
         self.eeprom.dir_init_array[my_port as usize] = my_val;
         self.set_dir(my_port, my_val);
     }
 
+    /// Extracts the setter value following '=' and converts it according to the active command's parameter type.
     pub fn get_new_value(&mut self, my_sub_ch: u8) -> bool {
         self.param_int = 0;
         self.param = 0.0;
@@ -224,20 +335,24 @@ impl<H: AdaHardware> DeviceState<H> {
         }
     }
 
+    /// Terminates the current serial response with CRLF because existing clients parse line-delimited frames.
     pub fn ser_crlf() -> &'static str {
         "\r\n"
     }
 
+    /// Writes the addressed channel prefix before a payload so every response keeps the Pascal wire framing.
     pub fn write_ch_prefix(&self) -> String {
         format!("#{}:{}=", char::from(self.slave_ch + b'0'), self.sub_ch)
     }
 
+    /// Writes serial input to the serial, display, or peripheral destination selected by the implementation.
     pub fn write_ser_input(&self) -> String {
         let mut out = self.ser_inp_str.clone();
         out.push_str(Self::ser_crlf());
         out
     }
 
+    /// Encodes the current status and error flags into the Pascal prompt frame returned after commands.
     pub fn ser_prompt(&mut self, err: ErrorCode, my_status: u8) -> Option<String> {
         let should_write = self.verbose || err != ErrorCode::NoErr;
         let line = if should_write {
@@ -246,7 +361,7 @@ impl<H: AdaHardware> DeviceState<H> {
                 "{}{} {}{}",
                 self.write_ch_prefix(),
                 err as u8 + my_status,
-                ERR_STR_ARR[err as usize],
+                err.as_str(),
                 Self::ser_crlf()
             ))
         } else {
@@ -261,10 +376,12 @@ impl<H: AdaHardware> DeviceState<H> {
         line
     }
 
+    /// Rounds the active floating parameter to three decimal places before storing or emitting a DAC value.
     pub fn param_round1000(&mut self) {
         self.param = (self.param * 1000.0).round() / 1000.0;
     }
 
+    /// Converts to string into the representation used on the wire or display.
     pub fn param_to_str(&mut self) {
         if self.param == 0.0 {
             self.param_str = "0.0".to_string();
@@ -273,6 +390,7 @@ impl<H: AdaHardware> DeviceState<H> {
         }
     }
 
+    /// Converts to pm string into the representation used on the wire or display.
     pub fn param_to_pm_str(&mut self) {
         self.param_to_str();
         if !self.param_str.starts_with('-') {
@@ -280,6 +398,7 @@ impl<H: AdaHardware> DeviceState<H> {
         }
     }
 
+    /// Formats the calibrated value with subchannel-specific precision and returns a channel-prefixed CRLF frame.
     pub fn write_param(&mut self) -> String {
         self.digits = 1;
         self.nachkomma = if (8..=27).contains(&self.sub_ch) || (200..=227).contains(&self.sub_ch) {
@@ -296,6 +415,7 @@ impl<H: AdaHardware> DeviceState<H> {
         )
     }
 
+    /// Formats the raw integer without calibration and returns a channel-prefixed CRLF frame.
     pub fn write_param_int(&mut self) -> String {
         self.param_str = self.param_int.to_string();
         format!(
@@ -306,6 +426,7 @@ impl<H: AdaHardware> DeviceState<H> {
         )
     }
 
+    /// Writes features to the serial, display, or peripheral destination selected by the implementation.
     pub fn write_features(&self) -> String {
         let mut out = String::from("[");
         if self.dac12_present {
@@ -327,6 +448,7 @@ impl<H: AdaHardware> DeviceState<H> {
         out
     }
 
+    /// Initializes all in the same order as the original startup routine.
     pub fn init_all(&mut self) -> Vec<String> {
         self.io_present = self.hw.detect_i2c_expander();
 
@@ -415,6 +537,7 @@ impl<H: AdaHardware> DeviceState<H> {
         vec![banner]
     }
 
+    /// Samples every channel selected by the four trigger masks and returns responses in the Pascal scan order.
     pub fn trigger_scan_outputs(&mut self) -> Vec<String> {
         let mut lines = Vec::new();
 
@@ -458,6 +581,7 @@ impl<H: AdaHardware> DeviceState<H> {
         lines
     }
 
+    /// Parses get parameter and updates only the state owned by that protocol phase.
     pub fn parse_get_param(&mut self) -> Result<Vec<String>, ErrorCode> {
         let mut lines = Vec::new();
         let mut is_integer = false;
@@ -639,6 +763,7 @@ impl<H: AdaHardware> DeviceState<H> {
         Ok(lines)
     }
 
+    /// Parses set parameter and updates only the state owned by that protocol phase.
     pub fn parse_set_param(&mut self) -> Result<Vec<String>, ErrorCode> {
         self.changed_flag = true;
 
@@ -770,6 +895,7 @@ impl<H: AdaHardware> DeviceState<H> {
         Ok(lines)
     }
 
+    /// Parses sub channel and updates only the state owned by that protocol phase.
     pub fn parse_sub_ch(&mut self) -> Result<Vec<String>, ErrorCode> {
         if self.ser_inp_str.is_empty() {
             return Ok(self
@@ -831,7 +957,7 @@ impl<H: AdaHardware> DeviceState<H> {
             self.cmd_which = CmdWhich::Val;
             0
         } else {
-            self.cmd_which = CmdWhich::from_keyword(&self.param_str);
+            self.cmd_which = CmdWhich::from_str(&self.param_str);
             if self.cmd_which == CmdWhich::Err {
                 return Err(ErrorCode::SyntaxErr);
             }
@@ -871,6 +997,7 @@ impl<H: AdaHardware> DeviceState<H> {
         Ok(lines)
     }
 
+    /// Handles serial line as one bounded polling-loop or interrupt service step.
     pub fn process_serial_line(&mut self, line: &str) -> Vec<String> {
         self.ser_inp_str.clear();
         self.ser_inp_str.push_str(line);
@@ -883,6 +1010,7 @@ impl<H: AdaHardware> DeviceState<H> {
         lines
     }
 
+    /// Validates serial before dependent hardware state is changed.
     pub fn check_ser(&mut self) {
         while let Some(byte) = self.hw.serial_read_byte_timeout(SERIAL_POLL_TIMEOUT_MS) {
             match byte {
@@ -904,6 +1032,7 @@ impl<H: AdaHardware> DeviceState<H> {
         self.emit_outputs(trigger_lines);
     }
 
+    /// Handles auto trigger as one bounded polling-loop or interrupt service step.
     pub fn service_auto_trigger(&mut self, elapsed_ms: u16) -> Vec<String> {
         self.advance_trigger_led(elapsed_ms);
 
@@ -931,6 +1060,7 @@ impl<H: AdaHardware> DeviceState<H> {
         self.drain_trigger_outputs()
     }
 
+    /// Executes run forever to service pending serial, trigger, measurement, and panel work without reordering them.
     pub fn run_forever(&mut self) -> ! {
         let init_lines = self.init_all();
         self.emit_outputs(init_lines);
@@ -941,12 +1071,14 @@ impl<H: AdaHardware> DeviceState<H> {
         }
     }
 
+    /// Writes each already-framed protocol response to the serial sink in scan order.
     pub(super) fn emit_outputs(&mut self, lines: Vec<String>) {
         for line in lines {
             self.hw.serial_write(&line);
         }
     }
 
+    /// Consumes trigger outputs once so it is not emitted or processed twice.
     pub(super) fn drain_trigger_outputs(&mut self) -> Vec<String> {
         if !self.trigger {
             return Vec::new();
@@ -957,6 +1089,7 @@ impl<H: AdaHardware> DeviceState<H> {
         self.trigger_scan_outputs()
     }
 
+    /// Advances trigger LED using elapsed time supplied by the caller.
     pub(super) fn advance_trigger_led(&mut self, elapsed_ms: u16) {
         let mut remaining_ms = elapsed_ms;
         while remaining_ms >= SYS_TICK_MS && self.trigger_led_ticks_remaining > 0 {
@@ -968,14 +1101,17 @@ impl<H: AdaHardware> DeviceState<H> {
         }
     }
 
+    /// Converts the configured trigger interval into systicks, preserving the firmware's two-millisecond timer base.
     pub(super) fn auto_trigger_ticks(&self) -> u16 {
         (self.eeprom.trig_timer_value >> 1).max(1)
     }
 
+    /// Arms or clears the status latch checked before EEPROM and calibration writes.
     pub(super) fn set_ee_unlocked(&mut self, unlocked: bool) {
         self.status.ee_unlocked = unlocked;
     }
 
+    /// Rejects EEPROM-changing commands unless WEN has armed writes, preventing accidental calibration changes.
     pub(super) fn require_unlocked(&self) -> Result<(), ErrorCode> {
         if self.status.ee_unlocked {
             Ok(())
@@ -984,6 +1120,7 @@ impl<H: AdaHardware> DeviceState<H> {
         }
     }
 
+    /// Parses extract and updates only the state owned by that protocol phase.
     pub(super) fn parse_extract(&mut self) -> bool {
         self.param_str.clear();
 
@@ -1016,16 +1153,19 @@ impl<H: AdaHardware> DeviceState<H> {
         is_param
     }
 
+    /// Advances the parser with peek char while keeping the byte cursor within the received frame.
     pub(super) fn peek_char(&self) -> Option<char> {
         self.ser_inp_str[self.ser_inp_ptr..].chars().next()
     }
 
+    /// Advances the parser with skip char while keeping the byte cursor within the received frame.
     pub(super) fn skip_char(&mut self, expected: char) {
         if self.peek_char() == Some(expected) {
             self.ser_inp_ptr += expected.len_utf8();
         }
     }
 
+    /// Parses u8 or wildcard and updates only the state owned by that protocol phase.
     pub(super) fn parse_u8_or_wildcard(&self, value: &str) -> Result<u8, ErrorCode> {
         if value.trim() == "*" {
             Ok(self.current_ch)
@@ -1034,10 +1174,12 @@ impl<H: AdaHardware> DeviceState<H> {
         }
     }
 
+    /// Parses f32 and updates only the state owned by that protocol phase.
     pub(super) fn parse_f32(&self, value: &str) -> Result<f32, ErrorCode> {
         value.trim().parse::<f32>().map_err(|_| ErrorCode::ParamErr)
     }
 
+    /// Consumes bracket text once so it is not emitted or processed twice.
     pub(super) fn extract_bracket_text(&self) -> String {
         match (
             self.ser_inp_str.find('['),

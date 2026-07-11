@@ -1,3 +1,12 @@
+//! Builds one AVR firmware release and enforces its flash-size limits.
+//!
+//! The wrapper keeps compilation, size accounting, regression checks, and HEX
+//! generation in one Rust-based release path. This matters because a successful
+//! link alone does not guarantee that the image fits the selected ATmega.
+
+#![deny(missing_docs)]
+#![deny(rustdoc::broken_intra_doc_links)]
+
 #[path = "release_avr/options.rs"]
 mod options;
 use options::Options;
@@ -7,6 +16,10 @@ use std::env;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
+/// Runs the release workflow and maps its diagnostic result to a process status.
+///
+/// A conventional non-zero exit code lets local scripts and CI treat either a
+/// compiler failure or an exceeded flash budget as a failed release.
 fn main() -> ExitCode
 {
     match run()
@@ -20,6 +33,15 @@ fn main() -> ExitCode
     }
 }
 
+/// Executes argument parsing, compilation, size validation, and optional HEX output.
+///
+/// The order is intentional: no image is emitted until the linked ELF has passed
+/// both the physical flash limit and any project-specific regression threshold.
+///
+/// # Errors
+///
+/// Returns a diagnostic if arguments are invalid, a tool cannot run, the build
+/// fails, the ELF exceeds its limits, or HEX generation fails.
 fn run() -> Result<(), String>
 {
     let arguments = env::args().skip(1).collect::<Vec<_>>();
@@ -33,6 +55,15 @@ fn run() -> Result<(), String>
     write_hex(&options)
 }
 
+/// Converts command-line tokens into validated release options.
+///
+/// Arguments after `--` are forwarded untouched to Cargo so the wrapper can
+/// select bins or other build options without duplicating Cargo's interface.
+///
+/// # Errors
+///
+/// Returns a diagnostic for missing values, unknown options, malformed numbers,
+/// omitted required options, or an unsupported MCU.
 fn parse_arguments(arguments: &[String]) -> Result<Options, String>
 {
     let mut mcu = None;
@@ -80,11 +111,25 @@ fn parse_arguments(arguments: &[String]) -> Result<Options, String>
     })
 }
 
+/// Parses a decimal byte count and names the failing option in diagnostics.
+///
+/// # Errors
+///
+/// Returns an error when `value` is not a valid unsigned decimal integer.
 fn parse_number(name: &str, value: &str) -> Result<u64, String>
 {
     value.parse().map_err(|_| format!("invalid {name}: {value}"))
 }
 
+/// Returns the physical flash capacity of a supported firmware MCU.
+///
+/// Centralizing the capacities makes the same device constraint govern argument
+/// validation and the final size check instead of relying on caller-supplied data.
+///
+/// # Errors
+///
+/// Returns an error when `mcu` is not one of the ATmega targets supported by the
+/// translated firmware.
 fn flash_limit(mcu: &str) -> Result<u64, String>
 {
     match mcu.to_ascii_lowercase().as_str()
@@ -96,6 +141,17 @@ fn flash_limit(mcu: &str) -> Result<u64, String>
     }
 }
 
+/// Invokes Cargo's optimized AVR build for the selected MCU.
+///
+/// MCU-specific compiler and linker flags are appended to existing target flags
+/// so specialization is preserved without discarding the caller's environment.
+/// Building `core` is required because the `avr-none` target has no prebuilt
+/// standard library.
+///
+/// # Errors
+///
+/// Returns a diagnostic when the manifest cannot be resolved, has no parent,
+/// Cargo cannot start, or Cargo reports an unsuccessful build.
 fn build_release(options: &Options) -> Result<(), String>
 {
     let manifest = options.manifest.canonicalize().map_err(|error|
@@ -134,6 +190,15 @@ fn build_release(options: &Options) -> Result<(), String>
     Ok(())
 }
 
+/// Converts the validated ELF into Intel HEX when an output path was requested.
+///
+/// EEPROM is deliberately excluded because flashing program memory must not
+/// overwrite calibration or configuration retained in the controller EEPROM.
+///
+/// # Errors
+///
+/// Returns a diagnostic if the output directory cannot be created, `avr-objcopy`
+/// cannot start, or conversion fails.
 fn write_hex(options: &Options) -> Result<(), String>
 {
     let Some(hex) = &options.hex else
@@ -159,6 +224,14 @@ fn write_hex(options: &Options) -> Result<(), String>
     Ok(())
 }
 
+/// Creates an output file's parent directory when the path contains one.
+///
+/// Bare filenames need no directory operation; accepting both forms keeps the
+/// release command convenient locally and predictable in CI artifact folders.
+///
+/// # Errors
+///
+/// Returns a diagnostic when the parent directory cannot be created.
 fn ensure_parent_directory(path: &Path) -> Result<(), String>
 {
     let Some(parent) = path.parent() else
@@ -175,6 +248,17 @@ fn ensure_parent_directory(path: &Path) -> Result<(), String>
     })
 }
 
+/// Measures linked flash consumption and enforces physical and regression limits.
+///
+/// AVR initializes `.data` from a copy stored in flash, so both `.text` and
+/// `.data` count toward the image even though `.data` later resides in SRAM.
+/// `.bss` is excluded because zero-initialized storage consumes no flash payload.
+///
+/// # Errors
+///
+/// Returns a diagnostic if the ELF is missing, `avr-size` fails or produces no
+/// `.text`, arithmetic overflows, a requested budget exceeds physical flash, or
+/// the measured image exceeds its budget or allowed baseline regression.
 fn check_size(options: &Options) -> Result<(), String>
 {
     if !options.elf.is_file()
@@ -216,6 +300,10 @@ fn check_size(options: &Options) -> Result<(), String>
     Ok(())
 }
 
+/// Extracts section sizes from the System V output emitted by `avr-size`.
+///
+/// Non-section header and summary lines are ignored so callers can address the
+/// relevant sections by name without depending on their printed order.
 fn parse_sections(output: &str) -> BTreeMap<String, u64>
 {
     output
@@ -230,6 +318,15 @@ fn parse_sections(output: &str) -> BTreeMap<String, u64>
         .collect()
 }
 
+/// Exercises size parsing, argument forwarding, and MCU capacities without tools.
+///
+/// This lightweight mode catches wrapper regressions on hosts that do not have
+/// the AVR compiler installed, while real release builds remain the end-to-end
+/// validation of external tool behavior.
+///
+/// # Errors
+///
+/// Returns a diagnostic when any built-in expectation fails.
 fn self_test() -> Result<(), String>
 {
     let sections = parse_sections(".text 1000 0\n.data 64 1000\n.bss 10 1064\n");

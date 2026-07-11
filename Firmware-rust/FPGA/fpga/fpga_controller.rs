@@ -1,27 +1,68 @@
+﻿//! High-level controller state machine joining serial commands, FPGA SPI, and SD storage.
+
 use super::*;
 
+/// Stateful ATmega644-side implementation of the FPGA module protocol.
+///
+/// It combines the calculator registers, FPGA register mirrors, EEPROM boot
+/// options, and SD-card workflows that the Pascal foreground loop coordinated.
 pub struct FpgaController<H, F>
 {
+    /// Width-aware SPI bridge and core serial interrupt buffer.
     pub bus: FpgaBus<H>,
+
+    /// Storage backend used for bitstreams, scripts, data transfers, and directory listings.
     pub files: F,
+
+    /// Mutable EEPROM image so protocol setters affect the next boot configuration.
     pub eeprom: EepromSettings,
+
+    /// Normal c't-Lab address accepted by this controller.
     pub main_channel: u8,
+
+    /// Destination channel used when transferring parsed script commands.
     pub transfer_main_channel: u8,
+
+    /// Destination subchannel paired with `transfer_main_channel`.
     pub transfer_subchannel: u16,
+
+    /// Ten floating-point scratch registers implementing the serial calculator commands.
     pub registers: [f64; REGISTER_COUNT],
+
+    /// Values transmitted on the next access to each FPGA register.
     pub output_registers: [u32; FPGA_REGISTER_COUNT],
+
+    /// Most recently received values, retained separately from outgoing data.
     pub input_registers: [u32; FPGA_REGISTER_COUNT],
+
+    /// Base FPGA register implementing streaming address/data transfers.
     pub auto_increment_register: u8,
+
+    /// FPGA-defined stream/memory bank selector written before an auto-increment transfer.
     pub auto_increment_select: u8,
+
+    /// File element width: one byte by default, or 2/4 for word-oriented transfers.
     pub auto_increment_width: u8,
+
+    /// First FPGA-side address used by load/save operations.
     pub auto_increment_start: u32,
+
+    /// Exclusive end address used to size data saved from the FPGA.
     pub auto_increment_end: u32,
+
+    /// Cached root entries, capped at the Pascal firmware's 64-name storage.
     pub directory: Vec<String>,
+
+    /// Last sampled card-presence state exposed to status/command handling.
     pub card_ok: bool,
+
+    /// Persistent protocol error counter reset through subchannel 251.
     pub error_count: u32,
 }
+
 impl<H: FpgaHardware, F: FileSystem> FpgaController<H, F>
 {
+    /// Restores calculator and channel state from EEPROM while leaving hardware idle.
     pub fn new(hardware: H, files: F, eeprom: EepromSettings) -> Self
     {
         let mut registers = [0.0; REGISTER_COUNT];
@@ -54,12 +95,19 @@ impl<H: FpgaHardware, F: FileSystem> FpgaController<H, F>
         }
     }
 
+    /// Refreshes the cached card-detect flag before filesystem access.
     pub fn check_card(&mut self) -> bool
     {
         self.card_ok = self.files.card_present();
         self.card_ok
     }
 
+    /// Rebuilds the bounded directory cache used by list and filename commands.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ControllerError::NoCard`] when card detection is inactive, or
+    /// [`ControllerError::File`] when the root directory cannot be read.
     pub fn refresh_directory(&mut self) -> Result<&[String], ControllerError<F::Error>>
     {
         if !self.check_card()
@@ -73,6 +121,12 @@ impl<H: FpgaHardware, F: FileSystem> FpgaController<H, F>
 
     /// Configures the FPGA from a bitstream, preserving the Pascal PROG pulse,
     /// DONE-low acknowledgement, 256-byte streaming, and trailing clocks.
+    ///
+    /// # Errors
+    ///
+    /// Returns `NoCard` or `File` when the bitstream cannot be read. Returns
+    /// `ConfigurationFailed` if `DONE` is high before streaming or remains low
+    /// after the trailing configuration clocks.
     pub fn load_fpga_configuration(&mut self, file_name: &str) -> Result<usize, ControllerError<F::Error>>
     {
         if !self.check_card()
@@ -107,6 +161,11 @@ impl<H: FpgaHardware, F: FileSystem> FpgaController<H, F>
         Ok(sent)
     }
 
+    /// Exchanges a mirrored 32-bit register and records the simultaneously received value.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ControllerError::InvalidRegister`] for indices outside `0..64`.
     pub fn exchange_fpga_register(&mut self, register: u8) -> Result<u32, ControllerError<F::Error>>
     {
         let index = register as usize;
@@ -119,6 +178,7 @@ impl<H: FpgaHardware, F: FileSystem> FpgaController<H, F>
         Ok(received)
     }
 
+    /// Programs selector and start address before streaming through the auto-increment register.
     pub fn setup_auto_increment(&mut self, for_read: bool)
     {
         self.bus.exchange_u8(self.auto_increment_register.wrapping_add(1), self.auto_increment_select);
@@ -127,11 +187,21 @@ impl<H: FpgaHardware, F: FileSystem> FpgaController<H, F>
         self.bus.send_register(self.auto_increment_register);
     }
 
+    /// Disables auto-increment selection so later ordinary register accesses are not redirected.
     pub fn reset_auto_increment(&mut self)
     {
         self.bus.exchange_u8(self.auto_increment_register.wrapping_add(1), 0);
     }
 
+    /// Streams a data file into FPGA memory using the configured element width.
+    ///
+    /// File elements are decoded little-endian, then the bus emits the FPGA's
+    /// required big-endian SPI representation.
+    ///
+    /// # Errors
+    ///
+    /// Returns `NoCard` when no card is detected or `File` when the named file
+    /// cannot be read. Trailing partial 16/32-bit elements are intentionally ignored.
     pub fn load_data_file(&mut self, file_name: &str) -> Result<usize, ControllerError<F::Error>>
     {
         if !self.check_card()
@@ -171,6 +241,12 @@ impl<H: FpgaHardware, F: FileSystem> FpgaController<H, F>
         Ok(data.len())
     }
 
+    /// Reads the configured address range byte-by-byte and replaces a card file with it.
+    ///
+    /// # Errors
+    ///
+    /// Returns `NoCard` when no card is detected or `File` if the collected
+    /// bytes cannot be written to the requested path.
     pub fn save_data_file(&mut self, file_name: &str) -> Result<usize, ControllerError<F::Error>>
     {
         if !self.check_card()
@@ -189,6 +265,15 @@ impl<H: FpgaHardware, F: FileSystem> FpgaController<H, F>
         Ok(data.len())
     }
 
+    /// Replays a file either into a chosen FPGA register or through the active serial route.
+    ///
+    /// Register playback preserves the long carriage-return pause expected by command
+    /// consumers; serial playback expands CR to CR/LF like the original terminal path.
+    ///
+    /// # Errors
+    ///
+    /// Returns `NoCard` when no card is detected or `File` when the source file
+    /// cannot be read.
     pub fn type_file(&mut self, file_name: &str, register: Option<u8>) -> Result<usize, ControllerError<F::Error>>
     {
         if !self.check_card()
@@ -222,6 +307,12 @@ impl<H: FpgaHardware, F: FileSystem> FpgaController<H, F>
         Ok(data.len())
     }
 
+    /// Parses and executes frames addressed to this module or the legacy fixed channel 9.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Parse` for malformed serial input and propagates register,
+    /// parameter, arithmetic, card, and filesystem errors from command execution.
     pub fn parse_and_execute(&mut self, input: &str) -> Result<Response, ControllerError<F::Error>>
     {
         let frame = parse_frame(input).map_err(ControllerError::Parse)?;
@@ -235,6 +326,7 @@ impl<H: FpgaHardware, F: FileSystem> FpgaController<H, F>
         self.execute(frame)
     }
 
+    /// Dispatches getters and setters after syntax and channel validation are complete.
     fn execute(&mut self, frame: ParsedFrame) -> Result<Response, ControllerError<F::Error>>
     {
         if frame.is_request
@@ -245,6 +337,7 @@ impl<H: FpgaHardware, F: FileSystem> FpgaController<H, F>
         Ok(Response::None)
     }
 
+    /// Maps read-only subchannels to calculator, status, file, or FPGA register values.
     fn get_subchannel(&mut self, subchannel: u16) -> Result<Response, ControllerError<F::Error>>
     {
         match subchannel
@@ -261,6 +354,7 @@ impl<H: FpgaHardware, F: FileSystem> FpgaController<H, F>
         }
     }
 
+    /// Applies setter side effects while enforcing register and arithmetic invariants.
     fn set_subchannel(&mut self, subchannel: u16, parameter: Parameter) -> Result<(), ControllerError<F::Error>>
     {
         let number = parameter_number(&parameter);

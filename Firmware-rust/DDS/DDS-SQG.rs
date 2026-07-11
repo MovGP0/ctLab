@@ -37,49 +37,111 @@ firmware uses AVR/Pascal-specific libraries and inline assembly; those parts are
 represented here via a hardware abstraction trait and explicit stubs.
 */
 
+/// Ten-millisecond SQG scheduler period used to advance burst, panel-busy, display, and encoder-release timers.
 const SYS_TICK_MS: u8 = 10;
 
 // Wave selector values from the original firmware: off, sine, triangle/saw,
 // square, logic-level square, or external source routing.
+
+/// Wire/panel waveform code that disables DDS output.
 const C_OFF: u8 = 0;
+
+/// Wire/panel waveform code selecting the AD9833 sine path.
 const C_SINW: u8 = 1;
+
+/// Wire/panel waveform code selecting the AD9833 triangle path.
 const C_TRIW: u8 = 2;
+
+/// Wire/panel waveform code selecting the board's square-wave path.
 const C_SQUW: u8 = 3;
+
+/// Wire/panel waveform code selecting logic-level square output.
 const C_LOGIC: u8 = 4;
+
+/// First wire/panel waveform code reserved for external routes.
 const C_EXT: u8 = 5;
 
 // AD9833-DDS command words.
+
+/// AD9833 control frame holding the DDS in reset while frequency and waveform registers are reprogrammed.
 const C_DDS_RESET_CMD: u16 = 0b0010_0001_0000_0000;
+
+/// AD9833 control frame releasing reset in sine-output mode.
 const C_DDS_SINE_CMD: u16 = 0b0010_0000_0000_0000;
+
+/// AD9833 control frame enabling triangle output with the selected frequency register.
 const C_DDS_TRIANGLE_CMD: u16 = 0b0010_0000_0000_0010;
+
+/// AD9833 control frame enabling sign-bit square output and the required divider mode.
 const C_DDS_SQUARE_CMD: u16 = 0b0010_0000_0010_1000;
+
+/// AD9833 frequency-register-zero prefix ORed into each fourteen-bit half of the SQG tuning word.
 const DDS_FREQ_REG_CMD: u16 = 0b0100_0000_0000_0000;
 
 // Relay bits for the Platine2SR SQG board.
+
+/// Relay-shadow bit routing the SQG square-wave output.
 const SQUARE_SW_BIT: u8 = 4;
+
+/// Relay-shadow bit selecting the SQG attenuator range.
 const ATTN_SW_BIT: u8 = 5;
+
+/// Relay-shadow bit enabling the SQG external output stage.
 const EXT_ON_BIT: u8 = 6;
+
+/// Relay-shadow bit connecting the SQG offset-DAC path.
 const OFFS_SW_BIT: u8 = 7;
 
+/// Panel event byte emitted in the user-service-request frame so a remote controller can identify the local action.
 const USER_SRQ_RELEASED: u8 = 64;
+
+/// Panel event byte emitted in the user-service-request frame so a remote controller can identify the local action.
 const USER_SRQ_LEFT: u8 = 65;
+
+/// Panel event byte emitted in the user-service-request frame so a remote controller can identify the local action.
 const USER_SRQ_RIGHT: u8 = 66;
+
+/// Panel event byte emitted in the user-service-request frame so a remote controller can identify the local action.
 const USER_SRQ_PANEL_ACTIVE: u8 = 67;
 
+/// Subchannel sentinel returned by mnemonic lookup when no valid command mapping exists.
 const ERR_SUB_CH: u8 = 255;
+
+/// Firmware banner returned by identification requests and shown during startup for service traceability.
 const VERS1_STR: &str = "0.10 [SQG by CM/c't 03/2007]";
+
+/// Firmware banner returned by identification requests and shown during startup for service traceability.
 const VERS3_STR: &str = "SQG 0.10";
+
+/// Panel text shown while the SQG EEPROM marker indicates that factory defaults must be installed.
 const EEPROM_EMPTY_STR: &str = "EEPROM EMPTY! ";
+
+/// Serial reply label placed before the instrument's configured multidrop address.
 const ADR_STR: &str = "Adr ";
+
+/// Fixed LCD label for the SQG frequency edit page.
 const FREQU_STR: &str = "Frequ Hz";
+
+/// Fixed LCD label for the SQG amplitude edit page.
 const LEVEL_STR: &str = "Level ";
+
+/// Fixed LCD label for the measured RMS input page.
 const RMS_INPUT_STR: &str = "Input ";
+
+/// Fixed LCD label for waveform selection.
 const WAVE_STR: &str = "Function";
+
+/// Fixed LCD label for burst-interval editing.
 const BURST_STR: &str = "Burst ms";
+
+/// EEPROM format signature checked at startup before persisted calibration is trusted.
 const EEPROM_INITIALIZED: u16 = 0xAA55;
 
 // Frequency decade weights for the AD9833 tuning-word calculation at a 20 MHz
 // reference clock. The Pascal code builds the DDS word digit by digit.
+
+/// Decimal-decade factors used by SQG tuning-word generation to reproduce the Pascal floating-point sum.
+#[rustfmt::skip]
 const FHZ: [f64; 9] = [
     134_217_728.0,
     13_421_772.8,
@@ -92,17 +154,8 @@ const FHZ: [f64; 9] = [
     1.34217728,
 ];
 
-const ERR_STR_ARR: [&str; 8] = [
-    "[OK]",
-    "[SRQUSR]",
-    "[BUSY]",
-    "[OVERLD]",
-    "[CMDERR]",
-    "[PARERR]",
-    "[LOCKED]",
-    "[CHKSUM]",
-];
-
+/// Panel waveform names indexed by the validated waveform selector.
+#[rustfmt::skip]
 const WAVE_SEL_STR_ARR: [&str; 6] = [
     "Off",
     "Sin",
@@ -112,29 +165,8 @@ const WAVE_SEL_STR_ARR: [&str; 6] = [
     "Ext",
 ];
 
-const CMD_TABLE: [(&str, u8, CmdWhich); 20] = [
-    ("STR", 255, CmdWhich::Str),
-    ("IDN", 254, CmdWhich::Idn),
-    ("TRG", 249, CmdWhich::Trg),
-    ("VAL", 0, CmdWhich::Val),
-    ("FRQ", 0, CmdWhich::Frq),
-    ("LVL", 1, CmdWhich::Lvl),
-    ("LVP", 2, CmdWhich::Lvp),
-    ("DBU", 3, CmdWhich::Dbv),
-    ("WAV", 4, CmdWhich::Wav),
-    ("BST", 5, CmdWhich::Bst),
-    ("INL", 10, CmdWhich::Inl),
-    ("RNG", 19, CmdWhich::Rng),
-    ("DCO", 20, CmdWhich::Ofs),
-    ("DSP", 80, CmdWhich::Dsp),
-    ("ALL", 99, CmdWhich::All),
-    ("SCL", 200, CmdWhich::Scl),
-    ("WEN", 250, CmdWhich::Wen),
-    ("ERC", 251, CmdWhich::Erc),
-    ("SBD", 252, CmdWhich::Sbd),
-    ("NOP", 0, CmdWhich::Nop),
-];
-
+/// Preferred one-third-octave frequency setpoints in tenths of a hertz used by coarse panel tuning.
+#[rustfmt::skip]
 const TERZ_ARRAY: [i32; 32] = [
     10,
     20,
@@ -200,6 +232,7 @@ use status_flags::StatusFlags;
 
 #[path = "dds_sqg/firmware_state.rs"]
 mod firmware_state;
+
 #[cfg(test)]
 use firmware_state::FirmwareState;
 
@@ -545,13 +578,11 @@ mod tests {
     fn command_table_includes_pascal_nop_mapping() {
         assert_eq!(FirmwareState::cmd_to_index("NOP"), CmdWhich::Nop);
         assert_eq!(FirmwareState::cmd_to_index("nop"), CmdWhich::Nop);
-        assert_eq!(
-            CMD_TABLE
-                .iter()
-                .find(|(command, _, _)| *command == "NOP")
-                .map(|(_, sub_channel, which)| (*sub_channel, *which)),
-            Some((0, CmdWhich::Nop))
-        );
+        assert_eq!(CmdWhich::Nop.as_str(), "NOP");
+        assert_eq!(CmdWhich::Nop.default_subchannel(), 0);
+        assert_eq!(CmdWhich::Ofs.as_str(), "DCO");
+        assert_eq!(CmdWhich::from_str("dbu"), CmdWhich::Dbu);
+        assert_eq!(CmdWhich::Dbu.default_subchannel(), 3);
     }
 
     #[test]

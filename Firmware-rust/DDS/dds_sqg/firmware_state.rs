@@ -1,54 +1,138 @@
+//! Implements the SQG parser, panel loop, and AD9833 update sequence.
+
 use super::*;
 
+/// Square-wave-generator firmware state coordinating parsing, output programming, panel activity, and EEPROM-backed defaults.
 #[derive(Debug, Clone)]
 pub(super) struct FirmwareState {
     // EEPROM-backed defaults / runtime parameters.
+
+    /// Owns the factory EEPROM image used to restore SQG calibration, baud rate, and panel defaults after reset.
     pub(super) defaults: EepromDefaults,
+
+    /// Configured multidrop instrument address accepted before SQG/DCG parser command dispatch and emitted in `#channel:subchannel=` replies.
     pub(super) slave_ch: u8,
+
+    /// Address parsed from the current DCG frame before it is compared with the configured slave channel.
     pub(super) current_ch: u8,
+
+    /// Numeric protocol subchannel selected by mnemonic lookup or explicit `VAL` syntax for the current request/set operation.
     pub(super) sub_ch: u8,
+
+    /// Persisted SQG startup frequency in tenths of a hertz, copied before AD9833 tuning-word generation.
     pub(super) frequenz: i32, // 1/10 Hz, 10000 = 1000.0 Hz
+
+    /// Indexes the preferred one-third-octave frequency table used by coarse panel tuning.
     pub(super) terz_num: u8,
+
+    /// Calibrated amplitude DAC code latched with the current attenuation and waveform routing.
     pub(super) dac_level: f64,
+
+    /// Stores the requested offset mv; limit checking and calibrated output conversion consume this same value before hardware is updated.
     pub(super) offset_mv: i32,
+
+    /// Stores the requested SQG waveform selector from which AD9833 mode and relay bits are derived.
     pub(super) wave: u8,
+
+    /// Stores the requested burst interval; zero leaves the output continuous and nonzero values drive the periodic gate.
     pub(super) burst_mode: u8,
+
+    /// Counts raw encoder edges toward one logical detent before applying an edit.
     pub(super) inc_rast: i32,
+
+    /// Defines the amplitude threshold where the attenuator relay changes range to preserve DAC resolution.
     pub(super) attn_switch_point: f64,
+
+    /// Amplitude correction applied when the attenuator relay selects the low-level range.
     pub(super) attn_fac: f64,
+
+    /// Output-stage gain used to translate requested RMS/peak level into the amplitude-DAC domain.
     pub(super) pwr_gain: f64,
+
+    /// Persisted conversion from requested DDS level to amplitude-DAC code in the attenuated low-level range.
     pub(super) level_scale_low: f64,
+
+    /// Persisted conversion from requested SQG level to amplitude-DAC code in the high-level range.
     pub(super) level_scale_hi: f64,
 
     // Control state.
+
+    /// Caches the AD9833 control word so waveform changes can preserve unrelated frequency-register bits.
     pub(super) dss_cmd: u16,
+
+    /// Caches the board relay/logic waveform selection paired with the AD9833 control word.
     pub(super) wave_cmd: u16,
+
+    /// Caches the 28-bit AD9833 tuning value derived from the current tenths-hertz setpoint.
     pub(super) dds_frequ: i32,
+
+    /// Shadows the cascaded relay byte so attenuation, offset, waveform, and external-output bits latch together.
     pub(super) switch_state: u8,
+
+    /// Amplitude attenuation range currently reflected in relay state and level calibration.
     pub(super) level_range: bool,
+
+    /// Selects the fine engineering-unit step used for the active panel quantity.
     pub(super) incr_fine: bool,
+
+    /// Stores the signed detent delta awaiting acceleration and setpoint application.
     pub(super) incr_diff: i32,
+
+    /// Counts completed system ticks toward the configured burst gate transition.
     pub(super) burst_count: u8,
+
+    /// Controls whether successful serial commands emit the legacy status prompt in addition to mandatory error replies.
     pub(super) verbose: bool,
+
+    /// Requests one output/display refresh after a setpoint changes, coalescing multiple parser or panel updates.
     pub(super) changed_flag: bool,
+
+    /// Records successful LCD probing so headless boards skip every later display transaction.
     pub(super) lcd_present: bool,
+
+    /// Selects modify, which controls the exhaustive branch used by panel handling and output calculation.
     pub(super) modify: Modify,
+
+    /// Marks the first detent of an edit so the value is snapped to the visible decimal grid before acceleration begins.
     pub(super) first_turn: bool,
+
+    /// Collects protocol-visible operating flags before they are packed into the legacy status response.
     pub(super) status: StatusFlags,
+
+    /// Number of parser failures accumulated for the ERC diagnostic response.
     pub(super) err_count: i32,
+
+    /// Retains the most recent parser result until prompt generation serializes its error code.
     pub(super) err_flag: bool,
 
     // Parser scratch values.
+
+    /// Stores the parsed floating-point parameter used by engineering-unit setters.
     pub(super) param: f64,
+
+    /// Stores the parsed signed integer parameter used by indexed and timing subchannels.
     pub(super) param_int: i32,
+
+    /// Stores the checked byte-sized parameter used by option, waveform, and selector subchannels.
     pub(super) param_byte: u8,
+
+    /// Stores the wide integer form needed by SQG frequency and timer parameters without truncation.
     pub(super) param_long: i32,
+
+    /// Counts numeric token digits so fixed-width parsing can detect overflow and reproduce Pascal precision.
     pub(super) digits: usize,
+
+    /// Counts digits after the decimal separator to scale the parsed integer into engineering units.
     pub(super) nachkomma: usize,
+
+    /// Buffers param str so partial serial input and framed output remain independent of hardware receive timing.
     pub(super) param_str: String,
+
+    /// Buffers ser inp str so partial serial input and framed output remain independent of hardware receive timing.
     pub(super) ser_inp_str: String,
 }
 impl Default for FirmwareState {
+    /// Creates SQG live state from factory EEPROM defaults with output disabled and parser/panel timers cleared.
     fn default() -> Self {
         let defaults = EepromDefaults::default();
         Self {
@@ -98,6 +182,8 @@ impl Default for FirmwareState {
 impl FirmwareState {
     // Restore the editable setpoints that the Pascal firmware copied from
     // EEPROM during reset and after EEPROM writes.
+
+    /// Copies persisted defaults into live setpoints after reset or EEPROM writes without disturbing unrelated runtime latches.
     pub(super) fn patch_copy_from_ee(&mut self) {
         self.wave = self.defaults.init_wave;
         self.frequenz = self.defaults.init_frequenz;
@@ -112,17 +198,20 @@ impl FirmwareState {
         self.level_scale_hi = self.defaults.level_scale_hi;
     }
 
+    /// Emits carriage return followed by line feed as separate bytes, preserving the controller-visible legacy line ending without allocation.
     pub(super) fn ser_crlf<H: HardwareInterface>(&self, hw: &mut H) {
         hw.serout_byte(b'\r');
         hw.serout_byte(b'\n');
     }
 
+    /// Writes `#<slave-channel>:<subchannel>=`, the addressed reply prefix expected by the DDS/SQG and parser protocols.
     pub(super) fn write_ch_prefix<H: HardwareInterface>(&self, hw: &mut H) {
         let mut prefix = String::new();
         let _ = write!(&mut prefix, "#{}:{}=", self.slave_ch, self.sub_ch);
         hw.write_serial(&prefix);
     }
 
+    /// Echoes the stored or supplied serial input text verbatim, then terminates the echo with the legacy CR/LF pair.
     pub(super) fn write_ser_inp<H: HardwareInterface>(&self, hw: &mut H) {
         hw.write_serial(&self.ser_inp_str);
         self.ser_crlf(hw);
@@ -130,6 +219,8 @@ impl FirmwareState {
 
     // Error/status response. The original parser used sub-channel 255 for
     // these prompts and encoded status bits plus the error number together.
+
+    /// Emits status only when protocol verbosity or an error requires it, while latching error accounting consistently.
     pub(super) fn ser_prompt<H: HardwareInterface>(&mut self, hw: &mut H, err: ErrorCode, status: u8) {
         if self.verbose || err != ErrorCode::NoErr {
             self.sub_ch = ERR_SUB_CH;
@@ -139,7 +230,7 @@ impl FirmwareState {
                 &mut self.param_str,
                 "{} {}",
                 code,
-                ERR_STR_ARR[err.code() as usize]
+                err.as_str()
             );
             hw.write_serial(&self.param_str);
             self.ser_crlf(hw);
@@ -151,12 +242,14 @@ impl FirmwareState {
         }
     }
 
+    /// Writes the addressed channel/subchannel prefix, the already-formatted parameter text, and CR/LF.
     pub(super) fn write_param_str_ser<H: HardwareInterface>(&self, hw: &mut H) {
         self.write_ch_prefix(hw);
         hw.write_serial(&self.param_str);
         self.ser_crlf(hw);
     }
 
+    /// Formats param to str with stable precision so LCD and serial representations agree.
     pub(super) fn param_to_str(&mut self) {
         self.param_str.clear();
         if self.param == 0.0 {
@@ -172,6 +265,7 @@ impl FirmwareState {
         }
     }
 
+    /// Formats the current SQG parameter and prefixes nonnegative values with `+` for signed offset replies.
     pub(super) fn param_to_pm_str(&mut self) {
         self.param_to_str();
         if !self.param_str.starts_with('-') {
@@ -179,20 +273,24 @@ impl FirmwareState {
         }
     }
 
+    /// Formats param long to str with stable precision so LCD and serial representations agree.
     pub(super) fn param_long_to_str(&mut self) {
         self.param = self.param_long as f64 / 10.0;
         self.param_to_str();
     }
 
+    /// Converts the stored millivolt offset to volts for the floating-point serial formatter.
     pub(super) fn offset_to_param(&mut self) {
         self.param = self.offset_mv as f64 / 1000.0;
     }
 
+    /// Formats the current floating-point parameter, writes the addressed channel/subchannel prefix, then appends CR/LF.
     pub(super) fn write_param_ser<H: HardwareInterface>(&mut self, hw: &mut H) {
         self.param_to_str();
         self.write_param_str_ser(hw);
     }
 
+    /// Formats the byte parameter in base 10 and sends it through the addressed parameter-response path.
     pub(super) fn write_param_byte_ser<H: HardwareInterface>(&mut self, hw: &mut H) {
         self.param_str.clear();
         let _ = write!(&mut self.param_str, "{}", self.param_byte);
@@ -201,6 +299,8 @@ impl FirmwareState {
 
     // Clamp user-facing values to the same legal ranges as the Pascal code.
     // A true return means the input had to be corrected.
+
+    /// Normalizes unsafe or unrepresentable settings before they reach DAC or relay calculations, returning an error when the requested value had to be corrected.
     pub(super) fn check_limits(&mut self) -> bool {
         let mut out_of_range = false;
 
@@ -236,6 +336,7 @@ impl FirmwareState {
         out_of_range
     }
 
+    /// Formats the selected runtime or calibration value using the subchannel's protocol units and precision.
     pub(super) fn parse_get_param<H: HardwareInterface>(&mut self, hw: &mut H) {
         self.digits = 2;
         self.nachkomma = 1;
@@ -303,6 +404,7 @@ impl FirmwareState {
         }
     }
 
+    /// Applies a parsed value to its owning setting, enforcing EEPROM unlock and recalculation side effects where required.
     pub(super) fn parse_set_param<H: HardwareInterface>(&mut self, hw: &mut H) {
         if self.status.busy {
             self.ser_prompt(hw, ErrorCode::BusyErr, 0);
@@ -366,17 +468,15 @@ impl FirmwareState {
         self.set_level_dds(hw);
     }
 
+    /// Matches mnemonics case-insensitively against the ordered protocol table, returning `Err` rather than borrowing another command's index.
     pub(super) fn cmd_to_index(cmd: &str) -> CmdWhich {
-        for (text, _, which) in CMD_TABLE {
-            if cmd.eq_ignore_ascii_case(text) {
-                return which;
-            }
-        }
-        CmdWhich::Err
+        CmdWhich::from_str(cmd)
     }
 
     // Extract either a command token or a numeric parameter token from the
     // serial line. This mirrors the split parser in the Pascal firmware.
+
+    /// Extracts one command or numeric token using the permissive character ranges accepted by the Pascal parser.
     pub(super) fn parse_extract(&self, input: &str, start: usize) -> (String, usize, bool) {
         let bytes = input.as_bytes();
         let mut idx = start;
@@ -413,6 +513,7 @@ impl FirmwareState {
         (input[begin..idx].to_string(), idx, is_param)
     }
 
+    /// Parses one addressed or implicit-channel command and routes it through request/set handling while preserving echo and checksum semantics.
     pub(super) fn parse_sub_ch<H: HardwareInterface>(&mut self, hw: &mut H) {
         if self.ser_inp_str.is_empty() {
             self.ser_prompt(hw, ErrorCode::NoErr, 0);
@@ -460,11 +561,7 @@ impl FirmwareState {
                 self.ser_prompt(hw, ErrorCode::SyntaxErr, 0);
                 return;
             }
-            let offset = CMD_TABLE
-                .iter()
-                .find(|(_, _, candidate)| *candidate == which)
-                .map(|(_, sub_ch, _)| *sub_ch)
-                .unwrap_or(0);
+            let offset = which.default_subchannel();
             let (sub_param, _, _) = self.parse_extract(&self.ser_inp_str, token_end);
             let direct = sub_param.parse::<u8>().unwrap_or(0);
             self.sub_ch = direct.saturating_add(offset);
@@ -517,6 +614,8 @@ impl FirmwareState {
 
     // Burst generation runs from the 10 ms system tick. Count 1 starts the
     // programmed waveform, count 0 forces DDS reset, then the period reloads.
+
+    /// Advances SQG burst gating and the foreground activity/display/encoder timers by one system tick.
     pub(super) fn on_systick<H: HardwareInterface>(&mut self, hw: &mut H) {
         if self.burst_mode == 0 {
             return;
@@ -537,6 +636,8 @@ impl FirmwareState {
     // Apply the relay state, then emit the AD9833 frequency words followed by
     // the waveform command. SQG kept the original float-based digit-summing
     // path instead of replacing it with new integer math.
+
+    /// Programs attenuation, offset, tuning words, and waveform in a safe order so relay transitions cannot expose an unintended level.
     pub(super) fn set_level_dds<H: HardwareInterface>(&mut self, hw: &mut H) {
         self.switch_state = 0;
         let mut offset_mv = self.offset_mv;
@@ -611,8 +712,11 @@ impl FirmwareState {
     }
 
     // Regelmaessig ausserhalb des Interrupts aus CheckSer heraus aufgerufen.
+
+    /// Runs the slower foreground maintenance work that must not lengthen the timer interrupt, including measurement filtering, protection, telemetry, and display refresh.
     pub(super) fn chores(&mut self) {}
 
+    /// Drains bounded serial input while continuing foreground service so a slow or partial command cannot starve protection work.
     pub(super) fn check_ser<H: HardwareInterface>(&mut self, hw: &mut H) {
         while let Some(ch) = hw.serial_timeout_char(2) {
             // The original loop accepted printable 7-bit ASCII only, handled
@@ -630,12 +734,14 @@ impl FirmwareState {
         }
     }
 
+    /// Implements a serviced delay: elapsed time advances while serial and protection work continue instead of busy-waiting blindly.
     pub(super) fn check_delay<H: HardwareInterface>(&mut self, hw: &mut H, delay_ticks: u8) {
         for _ in 0..delay_ticks {
             self.check_ser(hw);
         }
     }
 
+    /// Updates one relay bit in the shadow byte; the complete byte is latched later to avoid partial output states.
     pub(super) fn set_switch_bit(&mut self, bit: u8, high: bool) {
         if high {
             self.switch_state |= 1 << bit;
@@ -644,6 +750,7 @@ impl FirmwareState {
         }
     }
 
+    /// Maps the active SQG panel edit target to the numeric serial subchannel used for display and user-service requests.
     pub(super) fn modify_to_sub_ch(&self) -> u8 {
         match self.modify {
             Modify::FreqSel => 0,
@@ -654,6 +761,7 @@ impl FirmwareState {
         }
     }
 
+    /// Moves the SQG edit target forward or backward through its finite menu ring.
     pub(super) fn cycle_modify(&mut self, forward: bool) {
         self.modify = match (self.modify, forward) {
             (Modify::WaveSel, true) => Modify::FreqSel,
@@ -669,6 +777,7 @@ impl FirmwareState {
         };
     }
 
+    /// Marks the SQG busy interval and emits the panel action's user-service-request code.
     pub(super) fn report_panel_activity<H: HardwareInterface>(&mut self, hw: &mut H, status: u8) {
         self.ser_prompt(
             hw,
@@ -677,6 +786,7 @@ impl FirmwareState {
         );
     }
 
+    /// Dispatches one debounced SQG encoder, button, or timer event without polling hardware twice.
     pub(super) fn service_panel_event<H: HardwareInterface>(&mut self, hw: &mut H, event: PanelEvent) {
         match event {
             PanelEvent::None => {}
@@ -781,6 +891,8 @@ impl FirmwareState {
     }
 
     // Startup sequence after reset, before the main serial/panel loop begins.
+
+    /// Restores the Pascal startup order: clear latches, configure communication and display state, apply EEPROM defaults, then program safe outputs.
     pub(super) fn init_all<H: HardwareInterface>(&mut self, hw: &mut H) {
         if !(9..=239).contains(&self.defaults.ee_ser_baud_reg) {
             self.defaults.ee_ser_baud_reg = 51;
@@ -846,6 +958,8 @@ impl FirmwareState {
     // One best-effort outer loop step from the original `loop ... endloop`.
     // The Pascal loop serviced serial traffic first, then let the optional
     // LCD/encoder panel own the device while the UART was idle.
+
+    /// Performs one cooperative SQG foreground pass: serial service, panel event handling, output refresh, and timer-driven display work.
     pub(super) fn run_main_loop_iteration<H: HardwareInterface>(&mut self, hw: &mut H) {
         while hw.take_systick() {
             self.on_systick(hw);

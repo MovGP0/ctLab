@@ -21,81 +21,32 @@ pub use error::Error;
 mod dcg_parser;
 pub use dcg_parser::DcgParser;
 
+/// Firmware banner returned by identification requests and shown during startup for service traceability.
 pub const VERS1_STR: &str = "2.92 [DCG by CM/c't 05/2010]";
 
-pub const CMD_STR_ARR: [&str; 27] = [
-    "STR",
-    "IDN",
-    "CHN",
-    "VAL",
-    "DCV",
-    "DCA",
-    "MAH",
-    "MWH",
-    "MSV",
-    "MSA",
-    "MSW",
-    "PCV",
-    "PCA",
-    "RON",
-    "ROF",
-    "RIP",
-    "RAW",
-    "DSP",
-    "OFS",
-    "SCL",
-    "OPT",
-    "ALL",
-    "TMP",
-    "WEN",
-    "ERC",
-    "SBD",
-    "NOP",
-];
-
-pub const CMD2_SUB_CH_ARR: [u8; 27] = [
-    // Mnemonic commands address the first sub-channel in a block; the parsed
-    // numeric argument is added later so `VAL 5?` and direct `5?` land on the
-    // same final sub-channel.
-    255,
-    254,
-    253,
-    0,
-    0,
-    1,
-    7,
-    8,
-    10,
-    11,
-    18,
-    20,
-    21,
-    27,
-    28,
-    29,
-    50,
-    80,
-    100,
-    200,
-    150,
-    99,
-    233,
-    250,
-    251,
-    252,
-    0,
-];
-
+/// Parser-model DCG full-scale voltage used when no EEPROM option image is supplied.
 pub const DEFAULT_U_MAX: f32 = 30.0;
+
+/// Parser-model maximum current used when no EEPROM option image is supplied.
 pub const DEFAULT_I_MAX: f32 = 2.0;
+
+/// Parser-model 12.1-volt relay transition matching the Pascal factory calibration.
 pub const DEFAULT_SWITCHPOINT: f32 = 12.1;
+
+/// Parser-model full-scale code of the factory 12-bit voltage/current DAC.
 pub const DEFAULT_DAC_MAX: u16 = 4095;
+
+/// Factory full-scale amperage for each of the four current shunts used by parser-only tests.
+#[rustfmt::skip]
 pub const DEFAULT_I_MAX_ARRAY: [f32; 4] = [
     0.002,
     0.020,
     0.200,
     2.000,
 ];
+
+/// Complete factory DCG option image used by the parser model when real EEPROM is unavailable.
+#[rustfmt::skip]
 pub const DEFAULT_OPTION_ARRAY: [f32; 25] = [
     5.0,
     0.02,
@@ -135,6 +86,9 @@ mod tests {
             ..DcgParser::default()
         };
         assert_eq!(parser.cmd_to_index(), CmdWhich::Tmp);
+        assert_eq!(CmdWhich::Pwon.as_str(), "RON");
+        assert_eq!(CmdWhich::from_str("rof"), CmdWhich::Pwoff);
+        assert_eq!(CmdWhich::Pwoff.default_subchannel(), 28);
     }
 
     #[test]
@@ -179,7 +133,7 @@ mod tests {
 
         assert_eq!(parser.dc_volt, parser.u_max);
         assert_eq!(parser.check_limit_err, super::Error::ParamErr);
-        assert!(parser.serial_log.iter().any(|line| line == "ParamErr"));
+        assert!(parser.serial_log.iter().any(|line| line == "[PARERR]"));
     }
 
     #[test]

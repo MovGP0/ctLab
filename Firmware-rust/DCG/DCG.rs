@@ -6,37 +6,92 @@
 
 #![allow(dead_code)]
 
+/// Firmware-wide floating-point alias retained so calibrated arithmetic has the same precision choice across host and AVR builds.
 pub type Float = f32;
 
+/// CPU frequency used to derive UART and timer timing; it must match the programmed AVR clock fuse configuration.
 pub const PROC_CLOCK: u32 = 16_000_000;
+
+/// Firmware banner returned by identification requests and shown during startup for service traceability.
 pub const VERS1_STR: &str = "2.92 [DCG by CM/c't 05/2010]";
+
+/// Firmware banner returned by identification requests and shown during startup for service traceability.
 pub const VERS3_STR: &str = "DCG 2.92";
+
+/// Serial reply label placed before the instrument's configured multidrop address.
 pub const ADR_STR: &str = "Adr ";
+
+/// Subchannel sentinel returned by mnemonic lookup when no valid command mapping exists.
 pub const ERR_SUB_CH: u8 = 255;
 
+/// Persisted DCG option-slot count; it fixes EEPROM layout and bounds every option index.
 const OPTION_ARRAY_LEN: usize = 25;
+
+/// EEPROM option slot containing the startup voltage setpoint.
 const OPT_INIT_VOLT: usize = 0;
+
+/// EEPROM option slot containing the startup current-limit setpoint.
 const OPT_INIT_AMP: usize = 1;
+
+/// EEPROM option slot containing the preamplifier gain calibration.
 const OPT_INIT_GAIN_PRE: usize = 2;
+
+/// EEPROM option slot containing the output-stage voltage gain calibration.
 const OPT_INIT_GAIN_OUT: usize = 3;
+
+/// EEPROM option slot containing the current measurement gain calibration.
 const OPT_INIT_GAIN_I: usize = 4;
+
+/// EEPROM option slot containing ADC reference voltage.
 const OPT_UREF: usize = 5;
+
+/// EEPROM option slot containing DCG full-scale voltage.
 const OPT_UMAX: usize = 6;
+
+/// First of four EEPROM slots containing current-shunt resistances.
 const OPT_RSENSE_BASE: usize = 7;
+
+/// First of four EEPROM slots containing full-scale current per shunt.
 const OPT_IMAX_BASE: usize = 11;
+
+/// First of two EEPROM slots containing voltage ADC divider factors.
 const OPT_ADCUFAC_BASE: usize = 15;
+
+/// EEPROM option slot containing the installed-hardware bit field.
 const OPT_INIT_OPTIONS: usize = 17;
+
+/// EEPROM option slot containing the voltage relay transition threshold.
 const OPT_INIT_SWITCH_U: usize = 18;
+
+/// EEPROM option slot containing the lower relay hysteresis threshold.
 const OPT_INIT_HYST_LOW: usize = 19;
+
+/// EEPROM option slot containing the upper relay hysteresis threshold.
 const OPT_INIT_HYST_HIGH: usize = 20;
+
+/// EEPROM option slot containing the LM75 fan-on temperature in degrees Celsius.
 const OPT_INIT_FAN_ON_TEMP: usize = 21;
+
+/// EEPROM option slot containing startup ripple depth in percent.
 const OPT_INIT_RIPPLE_PERCENT: usize = 22;
+
+/// EEPROM option slot containing startup ripple on-time in milliseconds.
 const OPT_INIT_TON_TIME: usize = 23;
+
+/// EEPROM option slot containing startup ripple off-time in milliseconds.
 const OPT_INIT_TOFF_TIME: usize = 24;
 
+/// EEPROM option bit selecting the installed 16-bit LTC1655 instead of the 12-bit DAC path.
 const DAC16_PRESENT_BIT: u8 = 1 << 0;
+
+/// EEPROM option bit selecting LTC1864 measurements instead of the AVR ADC10 path.
 const ADC16_PRESENT_BIT: u8 = 1 << 1;
+
+/// EEPROM option bit declaring the DC power daughterboard and its relay/sense circuitry present.
 const DCP_PRESENT_BIT: u8 = 1 << 2;
+
+/// Encoder acceleration multiplier indexed by bounded detent speed, beginning with zero movement and saturating at 500x.
+#[rustfmt::skip]
 const INCR_ACC_ARRAY: [i32; 16] = [
     0,
     1,
@@ -56,84 +111,6 @@ const INCR_ACC_ARRAY: [i32; 16] = [
     25_000,
 ];
 
-pub const CMD_STR_ARR: [&str; 27] = [
-    "STR",
-    "IDN",
-    "CHN",
-    "VAL",
-    "DCV",
-    "DCA",
-    "MAH",
-    "MWH",
-    "MSV",
-    "MSA",
-    "MSW",
-    "PCV",
-    "PCA",
-    "RON",
-    "ROF",
-    "RIP",
-    "RAW",
-    "DSP",
-    "OFS",
-    "SCL",
-    "OPT",
-    "ALL",
-    "TMP",
-    "WEN",
-    "ERC",
-    "SBD",
-    "NOP",
-];
-
-pub const CMD2_SUB_CH_ARR: [u8; 27] = [
-    255,
-    254,
-    253,
-    0,
-    0,
-    1,
-    7,
-    8,
-    10,
-    11,
-    18,
-    20,
-    21,
-    27,
-    28,
-    29,
-    50,
-    80,
-    100,
-    200,
-    150,
-    99,
-    233,
-    250,
-    251,
-    252,
-    0,
-];
-
-pub const ERR_STR_ARR: [&str; 8] = [
-    "[OK]",
-    "[SRQUSR]",
-    "[BUSY]",
-    "[OVRLD]",
-    "[CMDERR]",
-    "[PARERR]",
-    "[LOCKED]",
-    "[CHKSUM]",
-];
-
-pub const FAULT_STR_ARR: [&str; 4] = [
-    "[OVRPOWR]",
-    "[FUSEBLW]",
-    "[OVRVOLT]",
-    "[OVRTEMP]",
-];
-
 #[path = "dcg/cmd_which.rs"]
 mod cmd_which;
 pub use cmd_which::CmdWhich;
@@ -145,6 +122,10 @@ pub use modify::Modify;
 #[path = "dcg/error_code.rs"]
 mod error_code;
 pub use error_code::ErrorCode;
+
+#[path = "dcg/fault_kind.rs"]
+mod fault_kind;
+pub use fault_kind::FaultKind;
 
 #[path = "dcg/current_range.rs"]
 mod current_range;

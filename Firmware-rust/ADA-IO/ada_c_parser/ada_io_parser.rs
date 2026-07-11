@@ -1,11 +1,16 @@
+//! Defines ADA command parsing and dispatch for the instrument serial protocol.
+
 #[allow(unused_imports)]
 use super::*;
 
+/// Owns ada io parser state while decoding one serial command at a time.
 pub struct AdaIoParser {
+    /// Owns the ctx object that supplies this type's hardware or parser state.
     pub ctx: ParseContext,
 }
 
 impl Default for AdaIoParser {
+    /// Creates a parser with Pascal calibration defaults and no pending serial frame.
     fn default() -> Self {
         Self {
             ctx: ParseContext::default(),
@@ -14,11 +19,12 @@ impl Default for AdaIoParser {
 }
 
 impl AdaIoParser {
+    /// Maps command to index onto the command enum so dispatch uses a bounded match instead of string comparisons.
     pub fn cmd_to_index(&mut self) -> CmdWhich {
-        self.ctx.param_str.make_ascii_uppercase();
-        CmdWhich::from_keyword(&self.ctx.param_str)
+        CmdWhich::from_str(&self.ctx.param_str)
     }
 
+    /// Parses extract and updates only the state owned by that protocol phase.
     pub fn parse_extract(&mut self) -> bool {
         self.ctx.param_str.clear();
 
@@ -60,6 +66,7 @@ impl AdaIoParser {
         is_param
     }
 
+    /// Parses get parameter and updates only the state owned by that protocol phase.
     pub fn parse_get_param(&mut self) -> Result<Vec<Reply>, ParseError> {
         let mut replies = Vec::new();
         let mut is_integer = false;
@@ -250,6 +257,7 @@ impl AdaIoParser {
         Ok(replies)
     }
 
+    /// Parses set parameter and updates only the state owned by that protocol phase.
     pub fn parse_set_param(&mut self) -> Result<Vec<Reply>, ParseError> {
         self.ctx.changed_flag = true;
 
@@ -400,6 +408,7 @@ impl AdaIoParser {
         Ok(vec![self.status_reply(ParseError::NoErr, self.ctx.status)])
     }
 
+    /// Parses sub channel and updates only the state owned by that protocol phase.
     pub fn parse_sub_ch(&mut self) -> Result<Vec<Reply>, ParseError> {
         if self.ctx.ser_inp_str.is_empty() {
             return Ok(vec![self.status_reply(ParseError::NoErr, 0)]);
@@ -513,20 +522,24 @@ impl AdaIoParser {
         }
     }
 
+    /// Advances the parser with peek char while keeping the byte cursor within the received frame.
     pub(super) fn peek_char(&self) -> Option<char> {
         self.ctx.ser_inp_str[self.ctx.ser_inp_ptr..].chars().next()
     }
 
+    /// Advances the parser with skip char while keeping the byte cursor within the received frame.
     pub(super) fn skip_char(&mut self, expected: char) {
         if self.peek_char() == Some(expected) {
             self.ctx.ser_inp_ptr += expected.len_utf8();
         }
     }
 
+    /// Parses u8 and updates only the state owned by that protocol phase.
     pub(super) fn parse_u8(&self, value: &str) -> Result<u8, ParseError> {
         value.trim().parse::<u8>().map_err(|_| ParseError::ParamErr)
     }
 
+    /// Parses u8 or wildcard and updates only the state owned by that protocol phase.
     pub(super) fn parse_u8_or_wildcard(&self, value: &str) -> Result<u8, ParseError> {
         if value.trim() == "*" {
             Ok(self.ctx.current_ch)
@@ -535,6 +548,7 @@ impl AdaIoParser {
         }
     }
 
+    /// Parses f32 and updates only the state owned by that protocol phase.
     pub(super) fn parse_f32(&self, value: &str) -> Result<f32, ParseError> {
         value
             .trim()
@@ -542,6 +556,7 @@ impl AdaIoParser {
             .map_err(|_| ParseError::ParamErr)
     }
 
+    /// Consumes bracket text once so it is not emitted or processed twice.
     pub(super) fn extract_bracket_text(&self) -> String {
         let start = self.ctx.ser_inp_str.find('[').map(|idx| idx + 1);
         let end = self.ctx.ser_inp_str[self.ctx.ser_inp_ptr..]
@@ -556,6 +571,7 @@ impl AdaIoParser {
         }
     }
 
+    /// Packages the active subchannel and calibrated floating value as a transport-neutral parser reply.
     pub(super) fn write_param(&self) -> Reply {
         Reply::Float {
             sub_ch: self.ctx.sub_ch,
@@ -563,6 +579,7 @@ impl AdaIoParser {
         }
     }
 
+    /// Packages the active subchannel and raw integer value as a transport-neutral parser reply.
     pub(super) fn write_param_int(&self) -> Reply {
         Reply::Int {
             sub_ch: self.ctx.sub_ch,
@@ -570,16 +587,19 @@ impl AdaIoParser {
         }
     }
 
+    /// Writes the addressed channel prefix before a payload so every response keeps the Pascal wire framing.
     pub(super) fn write_ch_prefix(&self) -> String {
         format!("{}:", self.ctx.slave_ch)
     }
 
+    /// Writes channel prefix text to the serial, display, or peripheral destination selected by the implementation.
     pub(super) fn write_ch_prefix_text(&self, text: &str) -> Reply {
         let mut out = self.write_ch_prefix();
         out.push_str(text);
         Reply::Text(out)
     }
 
+    /// Writes features to the serial, display, or peripheral destination selected by the implementation.
     pub(super) fn write_features(&self) -> String {
         let mut features = String::new();
 
@@ -603,10 +623,12 @@ impl AdaIoParser {
         features
     }
 
+    /// Derives status reply from the current flags for protocol and protection decisions.
     pub(super) fn status_reply(&self, error: ParseError, status: u8) -> Reply {
         Reply::Status { error, status }
     }
 
+    /// Extracts the setter value following '=' and converts it according to the active command's parameter type.
     pub(super) fn get_new_value(&mut self, sub_ch: u8) -> bool {
         self.ctx.param_int = 0;
         self.ctx.param = 0.0;
@@ -645,6 +667,7 @@ impl AdaIoParser {
         }
     }
 
+    /// Calibrates DAC subchannel 20..27 and encodes it for the detected DAC714, LTC1655, or LTC1257.
     pub(super) fn set_dac(&mut self, sub_ch: u8) {
         if !(20..=27).contains(&sub_ch) {
             return;
@@ -671,6 +694,7 @@ impl AdaIoParser {
         }
     }
 
+    /// Returns port from the selected local port or I2C expander cache.
     pub(super) fn get_port(&mut self, index: u8) -> u8 {
         if self.ctx.io_present {
             self.ctx.io_pin_array[index as usize]
@@ -679,6 +703,7 @@ impl AdaIoParser {
         }
     }
 
+    /// Updates one live output byte and records the corresponding I2C-expander or complete 4094-chain write.
     pub(super) fn set_port(&mut self, index: u8, value: u8) {
         self.ctx.port_array[index as usize] = value;
 
@@ -691,12 +716,14 @@ impl AdaIoParser {
         }
     }
 
+    /// Records one direction byte for detected I2C-expander hardware; local 4094 outputs have no direction register.
     pub(super) fn set_dir(&mut self, index: u8, value: u8) {
         if self.ctx.io_present {
             self.ctx.dir_output_array[index as usize] = value;
         }
     }
 
+    /// Loads converter full-scale divisors from calibration slots 9, 19, 28, and 29.
     pub(super) fn set_base_scales(&mut self) {
         self.ctx.base_scale_ad10 = self.ctx.scale_array[9];
         self.ctx.base_scale_ad16 = self.ctx.scale_array[19];
@@ -704,34 +731,42 @@ impl AdaIoParser {
         self.ctx.base_scale_da16 = self.ctx.scale_array[29];
     }
 
+    /// Records whether ADC10 commands select the AVR internal 2.56 V reference.
     pub(super) fn set_reference_mode(&mut self, internal_reference: bool) {
         self.ctx.internal_reference = internal_reference;
     }
 
+    /// Records the `TRL` external-trigger polarity: false for falling, true for rising.
     pub(super) fn set_trigger_edge(&mut self, positive_edge: bool) {
         self.ctx.trigger_positive_edge = positive_edge;
     }
 
+    /// Reloads the command-activity indicator to the Pascal hold time of 125 systicks.
     pub(super) fn set_sys_timer_activity(&mut self) {
         self.ctx.activity_timer_ticks = 125;
     }
 
+    /// Encodes TWI inp byte in the compact representation consumed by registers or the serial protocol.
     pub(super) fn twi_inp_byte(&mut self, _slave: u8) -> u8 {
         self.ctx.i2c_byte_reads.pop_front().unwrap_or_default()
     }
 
+    /// Transfers TWI inp word using the byte order expected by the attached peripheral.
     pub(super) fn twi_inp_word(&mut self, _slave: u8) -> u16 {
         self.ctx.i2c_word_reads.pop_front().unwrap_or_default()
     }
 
+    /// Encodes TWI out byte in the compact representation consumed by registers or the serial protocol.
     pub(super) fn twi_out_byte(&mut self, slave: u8, value: u8) {
         self.ctx.i2c_writes.push((slave, u16::from(value)));
     }
 
+    /// Transfers TWI out word using the byte order expected by the attached peripheral.
     pub(super) fn twi_out_word(&mut self, slave: u8, value: u16) {
         self.ctx.i2c_writes.push((slave, value));
     }
 
+    /// Consumes context once so it is not emitted or processed twice.
     pub fn take_context(&mut self) -> ParseContext {
         mem::take(&mut self.ctx)
     }

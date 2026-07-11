@@ -1,61 +1,164 @@
+//! Defines ACV state retained across parser, polling-loop, or interrupt operations.
+
 #[allow(unused_imports)]
 use super::*;
 
+/// Collects acv state that must survive across polling-loop or interrupt updates.
 #[derive(Debug, Clone)]
 pub struct AcvState {
+    /// Owns the hardware boundary through which this state performs all converter, relay, serial, and LCD access.
     pub(super) hw: MockHardware,
+
+    /// Keeps EEPROM values together so reset and write-enable handling use one source of truth.
     pub(super) eeprom: EepromImage,
+
+    /// Stores the address read from board straps and used to accept or prefix serial frames.
     pub(super) slave_ch: u8,
+
+    /// Caches the eight output-switch bits shifted to the ACV relay and routing register.
     pub(super) switch_state: u8,
+
+    /// Holds the auxiliary-function command byte edited on the panel and transmitted by the bit-banged UART.
     pub(super) aux_cmd: u8,
+
+    /// Selects the consumer/professional S/PDIF mode and 48/96/192 kHz converter setup.
     pub(super) spdif_rate: Spdif,
+
+    /// Keeps the ACV activity LED asserted for 125 systicks after serial or panel input.
     pub(super) activity_timer: Timer8,
+
+    /// Delays restoration of the normal ACV display after a temporary edit view.
     pub(super) display_timer: Timer8,
+
+    /// Sets the interval between ACV bar-graph refreshes to avoid unnecessary LCD traffic.
     pub(super) bar_graph_delay_timer: Timer8,
+
+    /// Detects the pause that ends one encoder gesture and resets first-turn acceleration behavior.
     pub(super) incr_timer: Timer8,
+
+    /// Stores the active ACV relay-gain index used for switch-table lookup and level scaling.
     pub(super) gain: u8,
+
+    /// Remembers the last applied ACV gain so unchanged selections do not rewrite relays.
     pub(super) old_gain: u8,
+
+    /// Contains the raw left-channel level register before gain and millivolt conversion.
     pub(super) left_level: u16,
+
+    /// Contains the raw right-channel level register before gain and millivolt conversion.
     pub(super) right_level: u16,
+
+    /// Contains the calibrated left-channel level in the integer domain used by display and serial output.
     pub(super) left_level_scaled: i32,
+
+    /// Contains the calibrated right-channel level in the integer domain used by display and serial output.
     pub(super) right_level_scaled: i32,
+
+    /// Contains the left-channel level compressed to the 0..255 bar-graph domain.
     pub(super) left_level_byte: u8,
+
+    /// Contains the right-channel level compressed to the 0..255 bar-graph domain.
     pub(super) right_level_byte: u8,
+
+    /// Caches the selected gain's display text, such as the signed decibel value shown on the LCD.
     pub(super) gain_str: String,
+
+    /// Stores the integer numerator used to scale ACV ADC-board level counts.
     pub(super) scale_mult: u16,
+
+    /// Stores the integer denominator paired with `scale_mult` for ACV level conversion.
     pub(super) scale_div: u16,
+
+    /// Stores the enum produced by mnemonic lookup and consumed by command dispatch.
     pub(super) cmd_which: CmdWhich,
+
+    /// Stores command string in the wire or LCD representation expected by the original firmware.
     pub(super) cmd_str: String,
+
+    /// Holds the protocol subchannel selected by the current frame; 255 is the status channel.
     pub(super) sub_ch: u8,
+
+    /// Tracks the most recently addressed channel so short-form commands can omit the address.
     pub(super) current_ch: u8,
+
+    /// Records whether `?` or `!` requested a verbose status response for the active frame.
     pub(super) verbose: bool,
+
+    /// Contains the parsed integer operand until range checking and command execution complete.
     pub(super) param_int: i32,
+
+    /// Contains the parsed byte operand until range checking and command execution complete.
     pub(super) param_byte: u8,
+
+    /// Contains the current CR-terminated command frame without its trailing carriage return.
     pub(super) ser_inp_str: String,
+
+    /// Indexes the next unconsumed byte in the current command frame during token extraction.
     pub(super) ser_inp_ptr: usize,
+
+    /// Selects the front-panel value or visualization currently being edited.
     pub(super) modify: Modify,
+
+    /// Holds the current absolute rotary-encoder counter sampled from hardware.
     pub(super) incr_value: i32,
+
+    /// Holds the previous encoder counter so the polling loop can accumulate signed movement.
     pub(super) old_incr_value: i32,
+
+    /// Marks the encoder's fine-adjust mode selected by the Enter button.
     pub(super) incr_enter: bool,
+
+    /// Suppresses acceleration and coarse rounding on the first encoder movement after a pause.
     pub(super) first_turn: bool,
+
+    /// Accumulates signed raw encoder movement until it reaches the configured detent threshold.
     pub(super) incr_diff: i32,
+
+    /// Stores accelerated encoder movement in tenths for ACV integer parameter updates.
     pub(super) incr_acc_int10: i32,
+
+    /// Sets the number of raw encoder increments required for one accepted detent.
     pub(super) inc_rast: i32,
+
+    /// Keeps the unaccelerated signed encoder step used by menu fields that must change one unit at a time.
     pub(super) incr_diff_byte: u8,
+
+    /// Sets the field width used by the active serial or LCD formatter.
     pub(super) digits: u8,
+
+    /// Sets the number of fractional digits emitted for the active parameter.
     pub(super) nachkomma: u8,
+
+    /// Requests a display refresh after a setter or front-panel edit changes visible state.
     pub(super) changed_flag: bool,
+
+    /// Stores parameter string in the wire or LCD representation expected by the original firmware.
     pub(super) param_str: String,
+
+    /// Caches the packed protocol status byte: error in the low nibble, then unlock, overload, user-request, and busy bits.
     pub(super) status: u8,
+
+    /// Counts protocol errors returned by `ERC` until that command clears the counter.
     pub(super) err_count: i32,
+
+    /// Marks a parser failure so the next status response reports it once.
     pub(super) err_flag: bool,
+
+    /// Selects the upper display/serial channel after optional left-right swapping.
     pub(super) upper_channel: char,
+
+    /// Selects the lower display/serial channel after optional left-right swapping.
     pub(super) lower_channel: char,
+
+    /// Latches left-channel ADC overload so serial and LCD output substitute the overload marker.
     pub(super) left_overload: bool,
+
+    /// Latches right-channel ADC overload so serial and LCD output substitute the overload marker.
     pub(super) right_overload: bool,
 }
 
 impl Default for AcvState {
+    /// Builds the pre-initialization ACV state before EEPROM values and board address are restored.
     fn default() -> Self {
         Self {
             hw: MockHardware::default(),
@@ -113,16 +216,19 @@ impl Default for AcvState {
 }
 
 impl AcvState {
+    /// Creates the ACV power-on state and runs the Pascal initialization sequence to restore EEPROM and configure S/PDIF.
     pub fn new() -> Self {
         let mut state = Self::default();
         state.init_all();
         state
     }
 
+    /// Returns busy flag so the caller can gate the next protocol or conversion step.
     pub(super) fn busy_flag(&self) -> bool {
         self.status & 0x80 != 0
     }
 
+    /// Updates status bit 7, which is reported as `[BUSY]` in the status response.
     pub(super) fn set_busy_flag(&mut self, value: bool) {
         if value {
             self.status |= 0x80;
@@ -131,6 +237,7 @@ impl AcvState {
         }
     }
 
+    /// Updates status bit 6, which is reported as `[SRQUSR]` in the status response.
     pub(super) fn set_user_srq_flag(&mut self, value: bool) {
         if value {
             self.status |= 0x40;
@@ -139,10 +246,12 @@ impl AcvState {
         }
     }
 
+    /// Returns ee unlocked so the caller can gate the next protocol or conversion step.
     pub(super) fn ee_unlocked(&self) -> bool {
         self.status & 0x10 != 0
     }
 
+    /// Updates status bit 4, allowing EEPROM-changing commands only while the write-enable latch is set.
     pub(super) fn set_ee_unlocked(&mut self, value: bool) {
         if value {
             self.status |= 0x10;
@@ -151,10 +260,12 @@ impl AcvState {
         }
     }
 
+    /// Appends text to the active serial frame without changing parser state.
     pub(super) fn ser_out(&mut self, text: &str) {
         self.hw.serial_output.push_str(text);
     }
 
+    /// Bit-bangs one auxiliary serial byte with the edge order expected by the attached device.
     pub(super) fn ser_aux(&mut self, my_byte: u8) {
         // Original code bit-bangs 19200 baud on PB4: start bit, 8 data bits LSB first, stop bit.
         self.hw.aux_serial_log.push(my_byte);
@@ -165,6 +276,7 @@ impl AcvState {
         self.hw.set_aux_serial_line(true);
     }
 
+    /// Uses multiply-before-divide integer scaling so level conversion keeps precision without pulling floating-point code into ACV.
     pub(super) fn mul_div_int(value: u16, mult: u16, div: u16) -> u16 {
         if div == 0 {
             return 0;
@@ -172,6 +284,7 @@ impl AcvState {
         ((u32::from(value) * u32::from(mult)) / u32::from(div)) as u16
     }
 
+    /// Reads both audio level registers, applies channel swapping, and updates overload flags before display or serial output.
     pub(super) fn get_levels(&mut self) {
         // Read both TRMS channels and derive the raw bargraph bytes plus the
         // gain-dependent millivolt values used by the LCD and remote commands.
@@ -211,6 +324,7 @@ impl AcvState {
         }
     }
 
+    /// Copies persisted startup choices into live state so initialization and later commands observe the same configuration.
     pub(super) fn patch_copy_from_ee(&mut self) {
         // Load the persisted startup settings into the live state.
         self.inc_rast = self.eeprom.init_inc_rast;
@@ -218,10 +332,12 @@ impl AcvState {
         self.spdif_rate = self.eeprom.init_rate;
     }
 
+    /// Terminates the current serial response with CRLF because existing clients parse line-delimited frames.
     pub(super) fn ser_crlf(&mut self) {
         self.ser_out("\r\n");
     }
 
+    /// Writes the addressed channel prefix before a payload so every response keeps the Pascal wire framing.
     pub(super) fn write_ch_prefix(&mut self) {
         let mut prefix = String::new();
         let _ = write!(
@@ -233,12 +349,14 @@ impl AcvState {
         self.ser_out(&prefix);
     }
 
+    /// Writes serial inp to the serial, display, or peripheral destination selected by the implementation.
     pub(super) fn write_ser_inp(&mut self) {
         let line = self.ser_inp_str.clone();
         self.ser_out(&line);
         self.ser_crlf();
     }
 
+    /// Encodes the current status and error flags into the Pascal prompt frame returned after commands.
     pub(super) fn ser_prompt(&mut self, my_err: Error, my_status: u8) {
         // Serial replies carry live status bits in the upper part and the current
         // error code in the low bits, matching the original ACV wire protocol.
@@ -248,7 +366,7 @@ impl AcvState {
             let value = (my_err as u8).wrapping_add(my_status);
             self.ser_out(&value.to_string());
             self.ser_out(" ");
-            self.ser_out(ERR_STR_ARR[my_err as usize]);
+            self.ser_out(my_err.as_str());
             self.ser_crlf();
         }
         if my_err != Error::NoErr {
@@ -257,15 +375,18 @@ impl AcvState {
         }
     }
 
+    /// Transfers I2C out adr10 using the byte order expected by the attached peripheral.
     pub(super) fn i2c_out_adr10(&mut self, register: u8, data: u8) {
         // The Pascal code uses TWI address 0x10 to reach the CS8406 control path.
         self.hw.twi_out_10(register, data);
     }
 
+    /// Transfers I2C in adr10 using the byte order expected by the attached peripheral.
     pub(super) fn i2c_in_adr10(&self, register: u8) -> u8 {
         self.hw.twi_in_10(register)
     }
 
+    /// Initializes spdif in the same order as the original startup routine.
     pub(super) fn init_spdif(&mut self) {
         // Program the SPDIF transmitter for the selected 48/96/192 kHz clock mode.
         self.i2c_out_adr10(0x04, 0b0000_0000);
@@ -301,6 +422,7 @@ impl AcvState {
         self.i2c_out_adr10(0x29, 0b0010_1110);
     }
 
+    /// Applies gain as one coherent state and hardware transition.
     pub(super) fn switch_gain(&mut self) {
         // Map the logical gain to the relay/multiplexer pattern on Port B.
         if self.gain == self.old_gain {
@@ -311,6 +433,7 @@ impl AcvState {
         self.hw.port_b = self.switch_state;
     }
 
+    /// Appends the prepared parameter text after the channel prefix and terminates the response with CRLF.
     pub(super) fn write_param_str_ser(&mut self) {
         self.write_ch_prefix();
         let param = self.param_str.clone();
@@ -318,10 +441,12 @@ impl AcvState {
         self.ser_crlf();
     }
 
+    /// Converts to string into the representation used on the wire or display.
     pub(super) fn param_to_str(&mut self) {
         self.param_str = self.param_int.to_string();
     }
 
+    /// Converts to string scaled into the representation used on the wire or display.
     pub(super) fn param_to_str_scaled(&mut self) {
         if self.gain > 4 {
             let value = format!("{:>3}", self.param_int);
@@ -335,16 +460,19 @@ impl AcvState {
         }
     }
 
+    /// Converts the active integer parameter to decimal text and emits it as a framed serial response.
     pub(super) fn write_param_ser(&mut self) {
         self.param_to_str();
         self.write_param_str_ser();
     }
 
+    /// Converts the active byte parameter without sign extension and emits it as a framed serial response.
     pub(super) fn write_param_byte_ser(&mut self) {
         self.param_str = self.param_byte.to_string();
         self.write_param_str_ser();
     }
 
+    /// Renders soll werte on LCD into the fixed LCD cells used by the front panel.
     pub(super) fn soll_werte_on_lcd(&mut self) {
         self.digits = 2;
         self.nachkomma = 1;
@@ -433,6 +561,7 @@ impl AcvState {
         self.incr_enter = false;
     }
 
+    /// Validates limits before dependent hardware state is changed.
     pub(super) fn check_limits(&mut self) -> bool {
         // Report whether a caller tried to step beyond the legal gain/rate range.
         let mut out_of_range = false;
@@ -453,6 +582,7 @@ impl AcvState {
         out_of_range
     }
 
+    /// Parses get parameter and updates only the state owned by that protocol phase.
     pub(super) fn parse_get_param(&mut self) {
         // Subchannels expose sample-rate, gain, live levels, calibration tables,
         // status, and identity values from the original command set.
@@ -580,6 +710,7 @@ impl AcvState {
         }
     }
 
+    /// Parses set parameter and updates only the state owned by that protocol phase.
     pub(super) fn parse_set_param(&mut self) {
         let my_index = self.sub_ch % 10;
 
@@ -671,32 +802,12 @@ impl AcvState {
         self.switch_gain();
     }
 
+    /// Parses the current command token into its case-insensitive semantic command enum.
     pub(super) fn cmd_to_index(&mut self) -> CmdWhich {
-        // Translate the textual command token into a command-table entry.
-        self.param_str = self.param_str.to_uppercase();
-        for (idx, cmd) in CMD_STR_ARR.iter().enumerate() {
-            if self.param_str == *cmd {
-                return match idx {
-                    0 => CmdWhich::Str,
-                    1 => CmdWhich::Idn,
-                    2 => CmdWhich::Val,
-                    3 => CmdWhich::Smp,
-                    4 => CmdWhich::Inl,
-                    5 => CmdWhich::Rng,
-                    6 => CmdWhich::Dsp,
-                    7 => CmdWhich::All,
-                    8 => CmdWhich::Scl,
-                    9 => CmdWhich::Wen,
-                    10 => CmdWhich::Erc,
-                    11 => CmdWhich::Sbd,
-                    12 => CmdWhich::Nop,
-                    _ => CmdWhich::Err,
-                };
-            }
-        }
-        CmdWhich::Err
+        CmdWhich::from_str(&self.param_str)
     }
 
+    /// Parses extract and updates only the state owned by that protocol phase.
     pub(super) fn parse_extract(&mut self) -> bool {
         // Integer-only token extraction: digits form parameters, letters form commands.
         self.param_str.clear();
@@ -739,6 +850,7 @@ impl AcvState {
         is_param
     }
 
+    /// Parses sub channel and updates only the state owned by that protocol phase.
     pub(super) fn parse_sub_ch(&mut self) {
         // Pre-parse the incoming line, reject traffic for other channels, and then
         // dispatch either a direct subchannel access or a named command.
@@ -802,7 +914,10 @@ impl AcvState {
                 self.ser_prompt(Error::SyntaxErr, 0);
                 return;
             }
-            let offset = CMD2_SUB_CH_ARR[self.cmd_which as usize];
+            let Some(offset) = self.cmd_which.sub_channel_offset() else {
+                self.ser_prompt(Error::SyntaxErr, 0);
+                return;
+            };
             let _ = self.parse_extract();
             offset
         };
@@ -841,8 +956,10 @@ impl AcvState {
         }
     }
 
+    /// Executes chores to service pending serial, trigger, measurement, and panel work without reordering them.
     pub(super) fn chores(&mut self) {}
 
+    /// Handles serial char as one bounded polling-loop or interrupt service step.
     pub(super) fn process_serial_char(&mut self, my_char: char) {
         // Keep only printable 7-bit ASCII and treat carriage return as end-of-command.
         if (' '..='\u{7f}').contains(&my_char) {
@@ -857,16 +974,19 @@ impl AcvState {
         }
     }
 
+    /// Queues serial char for the next bounded consumer without changing unrelated state.
     pub fn push_serial_char(&mut self, my_char: char) {
         self.hw.serial_input.push_back(my_char);
     }
 
+    /// Validates serial before dependent hardware state is changed.
     pub fn check_ser(&mut self) {
         while let Some(my_char) = self.hw.serial_read_timeout(2) {
             self.process_serial_char(my_char);
         }
     }
 
+    /// Validates delay before dependent hardware state is changed.
     pub(super) fn check_delay(&mut self, my_delay: u8) {
         // The Pascal firmware services serial input during UI delays.
         for _ in 0..my_delay {
@@ -875,10 +995,12 @@ impl AcvState {
         }
     }
 
+    /// Debounces and decodes masked button sample before changing front-panel state or emitting a user request.
     pub(super) fn masked_button_sample(button_temp: u8) -> u8 {
         button_temp | BUTTON_UNUSED_BITS_MASK
     }
 
+    /// Debounces and decodes front panel button event before changing front-panel state or emitting a user request.
     pub(super) fn front_panel_button_event(&mut self, button_temp: Option<u8>) -> Option<u8> {
         let button_temp = Self::masked_button_sample(button_temp?);
         self.hw.button_temp = button_temp;
@@ -903,6 +1025,7 @@ impl AcvState {
         }
     }
 
+    /// Initializes all in the same order as the original startup routine.
     pub(super) fn init_all(&mut self) {
         self.hw.port_b = PORTB_INIT;
         self.hw.port_c = PORTC_INIT;
@@ -966,6 +1089,7 @@ impl AcvState {
         }
     }
 
+    /// Executes main loop step to service pending serial, trigger, measurement, and panel work without reordering them.
     pub fn main_loop_step(&mut self, new_rotary_value: i32, button_temp: Option<u8>) {
         self.check_ser();
         self.hw.rotary_value = new_rotary_value;
@@ -1091,6 +1215,7 @@ impl AcvState {
         self.incr_timer.tick();
     }
 
+    /// Maps spdif from byte into the typed state used internally, rejecting or defaulting unsupported wire values as the implementation specifies.
     pub(super) fn spdif_from_byte(value: u8) -> Spdif {
         match value {
             1 => Spdif::C96Khz,
@@ -1102,6 +1227,7 @@ impl AcvState {
         }
     }
 
+    /// Maps modify from byte into the typed state used internally, rejecting or defaulting unsupported wire values as the implementation specifies.
     pub(super) fn modify_from_byte(value: u8) -> Modify {
         match value {
             0 => Modify::AuxCmdSel,
@@ -1113,6 +1239,7 @@ impl AcvState {
         }
     }
 
+    /// Moves the front-panel selection by one valid menu item while skipping values that have no editable display.
     pub(super) fn next_modify(value: Modify) -> Modify {
         match value {
             Modify::AuxCmdSel => Modify::RateSel,
@@ -1123,6 +1250,7 @@ impl AcvState {
         }
     }
 
+    /// Moves the front-panel selection by one valid menu item while skipping values that have no editable display.
     pub(super) fn prev_modify(value: Modify) -> Modify {
         match value {
             Modify::AuxCmdSel => Modify::MvDispl,

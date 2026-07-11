@@ -1,40 +1,97 @@
+//! Defines DIV state retained across parser, polling-loop, or interrupt operations.
+
 #[allow(unused_imports)]
 use super::*;
 
+/// Collects device state that must survive across polling-loop or interrupt updates.
 #[derive(Debug, Clone)]
 pub struct DeviceState<H> {
+    /// Owns the hardware boundary through which this state performs all converter, relay, serial, and LCD access.
     pub hw: H,
+
+    /// Keeps EEPROM values together so reset and write-enable handling use one source of truth.
     pub eeprom: EepromData,
+
+    /// Stores the address read from board straps and used to accept or prefix serial frames.
     pub slave_ch: u8,
+
+    /// Holds the protocol subchannel selected by the current frame; 255 is the status channel.
     pub sub_ch: u8,
+
+    /// Tracks the most recently addressed channel so short-form commands can omit the address.
     pub current_ch: u8,
+
+    /// Tracks range so conversion, relay, and formatting decisions agree.
     pub range: DivRange,
+
+    /// Selects direct, fast, or slow AD24 data for the live DIV display.
     pub lcd_integrate: u8,
+
+    /// Sets the number of raw encoder increments required for one accepted detent.
     pub inc_rast: i16,
+
+    /// Holds the calibrated LTC2400 result used for the primary display and serial response.
     pub measured_value: Float,
+
+    /// Holds the calibrated ADC10 result used by RMS, peak, and auxiliary subchannels.
     pub measured_aux: Float,
     // Raised by either the external INT2 edge or the periodic auto-trigger timer.
+
+    /// Latches a DIV trigger until the selected measurement responses have been emitted.
     pub trigger_pending: bool,
+
+    /// Counts auto trigger elapsed ms in systicks until the corresponding nonblocking action is due.
     pub auto_trigger_elapsed_ms: u16,
+
+    /// Contains trigger outputs in protocol order until the serial or hardware sink accepts it.
     pub trigger_outputs: [u8; 3],
+
+    /// Tracks trigger output count within the fixed-capacity sequence used by this routine.
     pub trigger_output_count: u8,
+
+    /// Tracks current range config so conversion, relay, and formatting decisions agree.
     pub current_range_config: RangeRelayConfig,
     // Pascal kept separate fast/slow integrated AD24 accumulators for quieter display reads.
+
+    /// Holds the previous two-sample LTC2400 average in the converter's midscale-biased count domain.
     pub integrate_24_fast: i64,
+
+    /// Holds the slower LTC2400 integration accumulator used for the quiet display mode.
     pub integrate_24_slow: i64,
+
+    /// Latches the LTC2400 negative/clipping status associated with the current sample.
     pub overload_negative: bool,
+
+    /// Latches positive overrange from the LTC2400 status bits or ADC10 full-scale test.
     pub overload_positive: bool,
+
+    /// Rejects state-changing commands while initialization, calibration, or a panel operation owns the device.
     pub busy_flag: bool,
+
+    /// Adds the user-service-request bit to the next status response after a panel action.
     pub user_srq_flag: bool,
+
+    /// Arms EEPROM and calibration changes after `WEN` until the firmware clears the latch.
     pub ee_unlocked: bool,
+
+    /// Carries the exact validation result into the next serial status response.
     pub check_limit_err: ErrorCode,
+
+    /// Holds the decoded front-panel key number, with zero meaning no accepted press.
     pub button_number: u8,
+
+    /// Counts protocol errors returned by `ERC` until that command clears the counter.
     pub err_count: i16,
+
+    /// Counts fault timer ticks in systicks until the corresponding nonblocking action is due.
     pub fault_timer_ticks: u8,
+
+    /// Buffers the current CR-terminated host command before parser dispatch.
     pub ser_input: String,
 }
 
 impl<H: DivHardware> DeviceState<H> {
+    /// Creates DIV runtime state at the Pascal power-on range (2.5 V DC), with empty integrations and no pending trigger.
     pub fn new(hw: H) -> Self {
         Self {
             hw,
@@ -67,6 +124,7 @@ impl<H: DivHardware> DeviceState<H> {
         }
     }
 
+    /// Copies persisted startup choices into live state so initialization and later commands observe the same configuration.
     pub fn patch_copy_from_ee(&mut self) {
         self.inc_rast = self.eeprom.init_inc_rast;
         self.lcd_integrate = self.eeprom.init_lcd_integrate;
@@ -74,6 +132,7 @@ impl<H: DivHardware> DeviceState<H> {
         self.hw.set_trigger_edge(self.eeprom.trigger_edge_level);
     }
 
+    /// Reports whether ac range without mutating device state.
     pub fn is_ac_range(&self) -> bool {
         matches!(
             self.range,
@@ -88,6 +147,7 @@ impl<H: DivHardware> DeviceState<H> {
         )
     }
 
+    /// Applies the active range offset and scale while producing parameter scale 10.
     pub fn param_scale_10(&self, raw: i16) -> Float {
         // The original path applied offset first, then the per-range full-scale factor,
         // then the stored calibration scale factor for the 10-bit ADC path.
@@ -102,6 +162,7 @@ impl<H: DivHardware> DeviceState<H> {
         }
     }
 
+    /// Applies the active range offset and scale while producing parameter scale 24.
     pub fn param_scale_24(&self, raw: i32) -> Float {
         // Same scaling order as Pascal, but for the LTC2400 measurement path.
         let offset_raw = raw + self.eeprom.ad24_offsets[self.range as usize];
@@ -115,6 +176,7 @@ impl<H: DivHardware> DeviceState<H> {
         }
     }
 
+    /// Obtains ad10 from the owning state or hardware register for the caller that consumes it.
     pub fn get_ad10(&mut self, channel: u8) {
         let mut raw = self.hw.read_adc10(channel);
         self.overload_positive = raw >= 1022;
@@ -126,6 +188,7 @@ impl<H: DivHardware> DeviceState<H> {
         self.measured_aux = self.param_scale_10(raw);
     }
 
+    /// Returns the latest LTC2400 sample so callers use the intended display or trigger integration mode.
     pub fn get_ad24(&mut self, int_mode: u8) {
         self.overload_negative = self.hw.adc24_overload_negative();
         self.overload_positive = self.hw.adc24_overload_positive();
@@ -141,10 +204,12 @@ impl<H: DivHardware> DeviceState<H> {
         self.measured_value = self.param_scale_24(raw);
     }
 
+    /// Derives overload flag from the current flags for protocol and protection decisions.
     pub fn overload_flag(&self) -> bool {
         self.overload_negative || self.overload_positive
     }
 
+    /// Derives fault flags from the current flags for protocol and protection decisions.
     pub fn fault_flags(&self) -> u8 {
         u8::from(self.overload_negative) | (u8::from(self.overload_positive) << 1)
     }
@@ -167,6 +232,7 @@ impl<H: DivHardware> DeviceState<H> {
         }
     }
 
+    /// Resets integrate reset so samples from an earlier range or operation cannot leak into the next result.
     pub fn integrate_reset(&mut self) {
         // Clear the integration history whenever the range relays move so the next
         // reading is not blended with samples from the previous attenuation path.
@@ -174,6 +240,7 @@ impl<H: DivHardware> DeviceState<H> {
         self.integrate_24_slow = i64::from(ADC24_MID_SCALE);
     }
 
+    /// Applies range as one coherent state and hardware transition.
     pub fn switch_range(&mut self, range: DivRange) {
         // In Pascal this selected relay and gain bit patterns from lookup tables on
         // PortA/PortC, updated display formatting, and reset the running integrators.
@@ -183,17 +250,20 @@ impl<H: DivHardware> DeviceState<H> {
         self.integrate_reset();
     }
 
+    /// Persists the `TRL` polarity and immediately reconfigures the hardware INT2 edge selector.
     pub fn set_trigger_edge_level(&mut self, positive_edge: bool) {
         self.eeprom.trigger_edge_level = positive_edge;
         self.hw.set_trigger_edge(positive_edge);
     }
 
+    /// Latches int2 trigger edge for deferred processing outside the interrupt-sensitive edge handler.
     pub fn int2_trigger_edge(&mut self, positive_edge: bool) {
         if positive_edge == self.eeprom.trigger_edge_level {
             self.trigger_pending = true;
         }
     }
 
+    /// Advances auto trigger using elapsed time supplied by the caller.
     pub fn tick_auto_trigger(&mut self, elapsed_ms: u16) {
         let timer = self.eeprom.trigger_timer_ms;
         if timer == 0 {
@@ -208,6 +278,7 @@ impl<H: DivHardware> DeviceState<H> {
         }
     }
 
+    /// Handles trigger as one bounded polling-loop or interrupt service step.
     pub fn service_trigger(&mut self) -> &[u8] {
         self.trigger_output_count = 0;
         if !self.trigger_pending {
@@ -228,16 +299,19 @@ impl<H: DivHardware> DeviceState<H> {
         &self.trigger_outputs[..usize::from(self.trigger_output_count)]
     }
 
+    /// Queues trigger output for the next bounded consumer without changing unrelated state.
     pub(super) fn push_trigger_output(&mut self, sub_channel: u8) {
         let index = usize::from(self.trigger_output_count);
         self.trigger_outputs[index] = sub_channel;
         self.trigger_output_count += 1;
     }
 
+    /// Terminates the current serial response with CRLF because existing clients parse line-delimited frames.
     pub fn ser_crlf(&mut self) {
         self.hw.serial_write("\r\n");
     }
 
+    /// Writes the addressed channel prefix before a payload so every response keeps the Pascal wire framing.
     pub fn write_ch_prefix(&mut self) {
         self.hw.serial_write("#");
         self.hw.serial_write(&self.slave_ch.to_string());
@@ -246,11 +320,13 @@ impl<H: DivHardware> DeviceState<H> {
         self.hw.serial_write("=");
     }
 
+    /// Writes serial inp to the serial, display, or peripheral destination selected by the implementation.
     pub fn write_ser_inp(&mut self) {
         self.hw.serial_write(&self.ser_input);
         self.ser_crlf();
     }
 
+    /// Encodes the current status and error flags into the Pascal prompt frame returned after commands.
     pub fn ser_prompt(&mut self, err: ErrorCode) {
         self.sub_ch = ERR_SUB_CH;
         self.write_ch_prefix();
@@ -287,20 +363,22 @@ impl<H: DivHardware> DeviceState<H> {
 
         self.hw.serial_write(&status.to_string());
         if fault_flags != 0 {
-            for (index, label) in FAULT_STR_ARR.iter().enumerate() {
-                if (fault_flags & (1 << index)) != 0 {
-                    self.hw.serial_write(" ");
-                    self.hw.serial_write(label);
-                }
+            if (fault_flags & DivFault::NegativeOverload.mask()) != 0 {
+                self.hw.serial_write(" ");
+                self.hw.serial_write(DivFault::NegativeOverload.as_str());
+            }
+            if (fault_flags & DivFault::PositiveOverload.mask()) != 0 {
+                self.hw.serial_write(" ");
+                self.hw.serial_write(DivFault::PositiveOverload.as_str());
             }
         } else {
             self.hw.serial_write(" ");
-            self.hw
-                .serial_write(ERR_STR_ARR[(err as usize).min(ERR_STR_ARR.len() - 1)]);
+            self.hw.serial_write(err.as_str());
         }
         self.ser_crlf();
     }
 
+    /// Converts to string into the representation used on the wire or display.
     pub fn param_to_str(&self, to_lcd: bool) -> String {
         let decimals = NACHKOMMA_ARR[self.range as usize] as usize;
         if to_lcd {
@@ -326,15 +404,18 @@ impl<H: DivHardware> DeviceState<H> {
         }
     }
 
+    /// Emits show range using the exact channel and status framing expected by existing clients.
     pub fn show_range(&mut self) {
         self.hw
             .lcd_write_line(1, RANGE_STR_ARR[self.range as usize]);
     }
 
+    /// Formats the current measurement as the fixed eight-character value row and writes LCD row zero.
     pub fn write_param_lcd(&mut self) {
         self.hw.lcd_write_line(0, &self.param_to_str(true));
     }
 
+    /// Writes the primary measurement, substituting `-9999 [OVERLD]` for overloaded measurement subchannels.
     pub fn write_param_ser(&mut self, ovl: bool) {
         self.write_ch_prefix();
         if ovl && self.sub_ch < 20 {
@@ -350,6 +431,7 @@ impl<H: DivHardware> DeviceState<H> {
         self.ser_crlf();
     }
 
+    /// Writes the ADC10 auxiliary measurement with the same overload and range-suffix framing as the primary value.
     pub fn write_param_aux_ser(&mut self, ovl: bool) {
         self.write_ch_prefix();
         if ovl && self.sub_ch < 20 {
@@ -366,6 +448,7 @@ impl<H: DivHardware> DeviceState<H> {
         self.ser_crlf();
     }
 
+    /// Converts to string value into the representation used on the wire or display.
     pub(super) fn param_to_str_value(&self, value: Float, to_lcd: bool) -> String {
         let decimals = NACHKOMMA_ARR[self.range as usize] as usize;
         if to_lcd {
@@ -391,17 +474,20 @@ impl<H: DivHardware> DeviceState<H> {
         }
     }
 
+    /// Contains value in converter counts until the owning conversion or output routine consumes it.
     pub fn write_param_long_int_ser(&mut self, value: i64) {
         self.write_ch_prefix();
         self.hw.serial_write(&value.to_string());
         self.ser_crlf();
     }
 
+    /// Validates limits before dependent hardware state is changed.
     pub fn check_limits(&mut self) -> bool {
         self.check_limit_err = ErrorCode::NoErr;
         false
     }
 
+    /// Validates limits raw range before dependent hardware state is changed.
     pub fn check_limits_raw_range(&mut self, raw_range: u8) -> bool {
         let (range, limited) = limit_raw_range(raw_range);
         self.range = range;
@@ -413,6 +499,7 @@ impl<H: DivHardware> DeviceState<H> {
         limited
     }
 
+    /// Validates serial before dependent hardware state is changed.
     pub fn check_ser(&mut self) {
         while let Some(byte) = self.hw.poll_serial_byte() {
             match byte {
@@ -442,6 +529,7 @@ impl<H: DivHardware> DeviceState<H> {
         }
     }
 
+    /// Parses serial frame and updates only the state owned by that protocol phase.
     pub(super) fn parse_serial_frame(&mut self) {
         if self.ser_input.is_empty() {
             self.ser_prompt(ErrorCode::NoErr);
@@ -490,6 +578,7 @@ impl<H: DivHardware> DeviceState<H> {
         }
     }
 
+    /// Parses get command and updates only the state owned by that protocol phase.
     pub(super) fn parse_get_command(&mut self, command: &str) {
         let upper = command.trim().to_ascii_uppercase();
         match upper.as_str() {
@@ -525,6 +614,7 @@ impl<H: DivHardware> DeviceState<H> {
         }
     }
 
+    /// Parses get sub channel and updates only the state owned by that protocol phase.
     pub(super) fn parse_get_sub_ch(&mut self, sub_ch: u8) {
         match sub_ch {
             0..=2 => {
@@ -558,6 +648,7 @@ impl<H: DivHardware> DeviceState<H> {
         }
     }
 
+    /// Parses set command and updates only the state owned by that protocol phase.
     pub(super) fn parse_set_command(&mut self, left: &str, right: &str) {
         let value = right.parse::<i32>().unwrap_or(0);
         match left.to_ascii_uppercase().as_str() {
@@ -577,6 +668,7 @@ impl<H: DivHardware> DeviceState<H> {
         }
     }
 
+    /// Initializes zero offsets in the same order as the original startup routine.
     pub fn initialise_zero_offsets(&mut self, sample: i32) {
         let offset = ADC24_MID_SCALE - sample;
         for offset_slot in self.eeprom.ad24_offsets.iter_mut() {
@@ -585,20 +677,24 @@ impl<H: DivHardware> DeviceState<H> {
         self.eeprom.offset_initialised = OFFSET_INITIALISED_MAGIC;
     }
 
+    /// Reports whether zero offset initialisation without mutating device state.
     pub fn needs_zero_offset_initialisation(&self) -> bool {
         self.eeprom.offset_initialised != OFFSET_INITIALISED_MAGIC
     }
 
+    /// Validates delay before dependent hardware state is changed.
     pub fn check_delay(&mut self, delay_ticks: u8) {
         for _ in 0..delay_ticks {
             self.check_ser();
         }
     }
 
+    /// Services serial input during a front-panel delay so startup blinking does not make the instrument unresponsive.
     pub fn blink_delay(&mut self, delay_ticks: u8) {
         self.check_delay(delay_ticks);
     }
 
+    /// Initializes all in the same order as the original startup routine.
     pub fn init_all(&mut self) {
         self.patch_copy_from_ee();
         self.switch_range(self.range);
@@ -623,6 +719,7 @@ impl<H: DivHardware> DeviceState<H> {
         self.current_ch = 255;
     }
 
+    /// Handles once as one bounded polling-loop or interrupt service step.
     pub fn service_once(&mut self, elapsed_ms: u16) {
         self.check_ser();
         self.tick_auto_trigger(elapsed_ms);

@@ -1,5 +1,9 @@
 use super::*;
 
+/// Compile-time register map for the ATmega32 used by most firmware families.
+///
+/// The uninhabited marker carries no run-time state; selecting it specializes
+/// [`AvrdPortIo`] calls directly to the ATmega32 addresses and masks.
 pub enum Atmega32 {}
 impl Mcu for Atmega32 {
     const PINA: *mut u8 = avrd::atmega32::PINA;

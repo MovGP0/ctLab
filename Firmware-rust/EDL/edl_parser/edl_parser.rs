@@ -1,88 +1,240 @@
 ﻿use super::*;
 
 #[derive(Debug, Clone)]
+/// Source-faithful serial command state used to validate parser behavior independently of hardware.
 pub struct EdlParser {
+    /// Complete serial line being decoded; command lookup and checksum operate on this exact text.
     pub ser_inp_str: String,
+
+    /// Byte cursor advanced by token extraction so later parser stages resume at the correct delimiter.
     pub ser_inp_ptr: usize,
+
+    /// Raw right-hand-side token retained for numeric conversion, echo, and text commands.
     pub param_str: String,
+
+    /// Transport-neutral replies accumulated in the same order the Pascal serial writes occurred.
     pub output_lines: Vec<String>,
+
+    /// Minimum integer width selected by each getter before formatting.
     pub digits: u8,
+
+    /// Decimal-place count selected from command, unit, and shunt resolution.
     pub nachkomma: u8,
+
+    /// Controller channel used when a frame omits an explicit address.
     pub current_ch: i32,
+
+    /// Address parsed from the current frame and reused in response prefixes.
     pub slave_ch: i32,
+
+    /// Concrete operation after mnemonic offset and argument resolution.
     pub sub_ch: i32,
+
+    /// Floating-point view of the active parameter or getter result.
     pub param: f64,
+
+    /// Signed-integer view used by timing, masks, options, and raw calibration commands.
     pub param_int: i32,
+
+    /// Range-checked byte view used by small EEPROM and hardware selections.
     pub param_byte: u8,
+
+    /// Requests explicit success/error prompts rather than silent setter completion.
     pub verbose: bool,
+
+    /// Rejects commands that would collide with timing-sensitive firmware work.
     pub busy_flag: bool,
+
+    /// Signals that a setter changed display-visible state and requires an LCD refresh.
     pub changed_flag: bool,
+
+    /// Specific limit result reported after a setter is clamped.
     pub check_limit_err: PromptCode,
+
+    /// Requested load state reflected by the ENA protocol subchannel.
     pub output_enable: bool,
+
+    /// Current multiplexer enable derived from mode and output state.
     pub mpxena: bool,
+
+    /// Voltage-range multiplexer selection associated with the active mode.
     pub mode_mpx: bool,
+
+    /// Latched low-input condition exposed through status commands.
     pub low_volt: bool,
+
+    /// Disables on/off ripple phase alternation for continuous operation.
     pub no_toggle: bool,
+
+    /// Current shunt used for live ADC and DAC scale lookup.
     pub shunt_select: u8,
+
+    /// Previously applied shunt used to avoid redundant relay operations.
     pub old_shunt_select: u8,
+
+    /// Manual shunt request or automatic-range sentinel.
     pub shunt_range: u8,
+
+    /// Regulation law and voltage range encoded by protocol mode numbers.
     pub mode_select: Mode,
+
+    /// Front-panel menu target returned and set through display subchannels.
     pub modify: Modify,
+
+    /// Constant-current setpoint in amperes.
     pub dc_amp: f64,
+
+    /// Constant-power setpoint in watts.
     pub dc_watt: f64,
+
+    /// Low-voltage cutoff setpoint in volts.
     pub dc_volt: f64,
+
+    /// Constant-resistance setpoint in ohms.
     pub dc_ohm: f64,
+
+    /// Ripple/off-phase current multiplier derived from percentage settings.
     pub dc_amp_mod: f64,
+
+    /// Integrated charge reported by MAH after conversion to milliamp-hours.
     pub ah: f64,
+
+    /// Integrated energy reported by MWH after conversion to milliwatt-hours.
     pub wh: f64,
+
+    /// Duty-cycle-weighted measured power used by the live-value getter.
     pub ptot: f64,
+
+    /// Scaled voltage captured during the active ripple phase.
     pub voltage_on: f64,
+
+    /// Scaled current captured during the active ripple phase.
     pub current_on: f64,
+
+    /// Scaled voltage captured during the inactive ripple phase.
     pub voltage_off: f64,
+
+    /// Scaled current captured during the inactive ripple phase.
     pub current_off: f64,
+
+    /// Configured active ripple duration.
     pub pw_on_time: i32,
+
+    /// Configured inactive ripple duration.
     pub pw_off_time: i32,
+
+    /// Active current percentage used to derive ripple amplitude.
     pub i_percent: i32,
+
+    /// Raw 16-bit active-phase voltage sample exposed for diagnostics.
     pub ad16_temp_u_on: u16,
+
+    /// Raw 16-bit active-phase current sample exposed for diagnostics.
     pub ad16_temp_i_on: u16,
+
+    /// Quantized DAC code for the active phase.
     pub dac_temp_on: u16,
+
+    /// Quantized DAC code for the inactive phase.
     pub dac_temp_off: u16,
+
+    /// DAC code currently selected for hardware output.
     pub dac_temp: u16,
+
+    /// Raw AVR ADC channels backing RAW diagnostic subchannels.
     pub adc10: [u16; ADC10_COUNT],
+
+    /// Per-shunt current-DAC zero corrections editable only while EEPROM is unlocked.
     pub daci_offsets: [i32; DACI_COUNT],
+
+    /// Low/high voltage ADC zero corrections.
     pub adcu_offsets: [i32; ADCU_COUNT],
+
+    /// Per-shunt current ADC zero corrections.
     pub adci_offsets: [i32; ADCI_COUNT],
+
+    /// Indexed hardware and boot options retained in Pascal EEPROM order.
     pub option_array: [f64; OPTION_ARRAY_LEN],
+
+    /// Per-shunt current-DAC gain calibration factors.
     pub daci_scales: [f64; DACI_COUNT],
+
+    /// Derived amperes represented by one DAC code for each shunt.
     pub dac_lsb_i: [f64; DACI_COUNT],
+
+    /// Derived resistance-mode numerator represented by one DAC code for each shunt.
     pub dac_lsb_r: [f64; DACI_COUNT],
+
+    /// Maximum raw code selected from the installed DAC type.
     pub dac_max: u16,
+
+    /// Calibrated lower resistance clamp preventing excessive current.
     pub dc_ohm_min: f64,
+
+    /// Calibrated upper resistance clamp retaining useful DAC resolution.
     pub dc_ohm_max: f64,
+
+    /// Active high/low voltage divider ratio.
     pub divider_u: f64,
+
+    /// Low-range voltage ADC calibration multiplier.
     pub adc16_u_scale_low: f64,
+
+    /// High-range voltage ADC calibration multiplier.
     pub adc16_u_scale_high: f64,
+
+    /// Per-shunt amperes represented by one 16-bit ADC code.
     pub adc16_lsb_i: [f64; ADCI_COUNT],
+
+    /// Per-shunt amperes represented by one AVR ADC code.
     pub adc10_lsb_i: [f64; ADCI_COUNT],
+
+    /// Per-shunt current ADC gain calibration factors.
     pub adci_scales: [f64; ADCI_COUNT],
+
+    /// Internal LM75 reading returned by temperature subchannels.
     pub temperature: f64,
+
+    /// External LM75 reading retained separately for board diagnostics.
     pub temperature_extern: f64,
+
+    /// Live trigger and temperature-device option bits.
     pub trig_mask: u8,
+
+    /// EEPROM mirror updated by trigger option setters.
     pub ee_trig_mask: u8,
+
+    /// Protocol error count returned and cleared through ERC.
     pub err_count: i32,
+
+    /// EEPROM UART divisor selected by the SBD command.
     pub ee_ser_baud_reg: u8,
+
+    /// Authorization latch guarding calibration and option writes.
     pub ee_unlocked: bool,
+
+    /// Live encoder detent/raster setting used by front-panel movement.
     pub inc_rast: i32,
+
+    /// EEPROM-backed encoder raster restored on startup.
     pub init_inc_rast: f64,
+
+    /// Identification payload returned by IDN.
     pub vers1_str: &'static str,
+
+    /// Countdown keeping the activity LED asserted after valid traffic.
     pub activity_timer: u8,
+
+    /// Current activity LED state exposed to the runtime adapter.
     pub led_activity: bool,
+
+    /// Observable count of parser-triggered display refreshes.
     pub display_refresh_count: u32,
-    pub cmd_str_arr: [&'static str; 31],
-    pub cmd2_sub_ch_arr: [u8; 31],
+
 }
 
 impl Default for EdlParser {
+    /// Constructs parser state matching the Pascal globals before EEPROM and live hardware values are loaded.
     fn default() -> Self {
         Self {
             ser_inp_str: String::new(),
@@ -165,13 +317,12 @@ impl Default for EdlParser {
             activity_timer: 0,
             led_activity: false,
             display_refresh_count: 0,
-            cmd_str_arr: DEFAULT_CMD_STR_ARR,
-            cmd2_sub_ch_arr: DEFAULT_CMD2_SUB_CH_ARR,
         }
     }
 }
 
 impl EdlParser {
+    /// Maps the resolved subchannel to a live value and formats it with the Pascal precision rules.
     pub fn parse_get_param(&mut self) {
         self.digits = 1;
         self.nachkomma = 4;
@@ -417,6 +568,7 @@ impl EdlParser {
         }
     }
 
+    /// Validates and applies setters, including calibration locks, limits, DAC refresh, and EEPROM mirrors.
     pub fn parse_set_param(&mut self) {
         if self.busy_flag {
             // Writes are rejected while the load is in a protected busy phase.
@@ -602,19 +754,12 @@ impl EdlParser {
         }
     }
 
+    /// Resolves the mnemonic through the compiler-checked command enum without allocation.
     pub fn cmd_to_index(&mut self) -> CmdWhich {
-        // Command keywords are matched case-insensitively against the static command table.
-        self.param_str.make_ascii_uppercase();
-
-        for (index, cmd) in self.cmd_str_arr.iter().enumerate() {
-            if self.param_str == *cmd {
-                return CmdWhich::Index(index);
-            }
-        }
-
-        CmdWhich::Err
+        CmdWhich::from_str(&self.param_str)
     }
 
+    /// Consumes one numeric or quoted token from the serial cursor and records whether conversion succeeded.
     pub fn parse_extract(&mut self) -> bool {
         self.param_str.clear();
 
@@ -655,6 +800,7 @@ impl EdlParser {
         is_param
     }
 
+    /// Parses channel, command, argument, checksum, and value before dispatching one complete protocol line.
     pub fn parse_sub_ch(&mut self) -> Vec<String> {
         self.output_lines.clear();
 
@@ -736,12 +882,7 @@ impl EdlParser {
             // Otherwise parse a textual command and translate it through the command table.
             used_command = true;
             let cmd_which = self.cmd_to_index();
-            let CmdWhich::Index(index) = cmd_which else {
-                self.serprompt(PromptCode::SyntaxErr);
-                return self.output_lines.clone();
-            };
-
-            let Some(offset) = self.cmd2_sub_ch_arr.get(index).copied() else {
+            let Some(offset) = cmd_which.sub_channel_offset() else {
                 self.serprompt(PromptCode::SyntaxErr);
                 return self.output_lines.clone();
             };
@@ -796,6 +937,7 @@ impl EdlParser {
         self.output_lines.clone()
     }
 
+    /// Formats the floating-point working parameter using selected width and decimal precision.
     fn write_param_ser(&mut self) {
         self.output_lines.push(format!(
             "{}={:.*}",
@@ -803,31 +945,38 @@ impl EdlParser {
         ));
     }
 
+    /// Formats integer working values without floating-point conversion.
     fn write_param_int_ser(&mut self) {
         self.output_lines
             .push(format!("{}={}", self.sub_ch, self.param_int));
     }
 
+    /// Appends a verbose prompt label only when the current frame requested one.
     fn serprompt(&mut self, code: PromptCode) {
         self.output_lines.push(code.as_str().to_owned());
     }
 
+    /// Echoes the original input for the protocol echo subchannel.
     fn write_ser_inp(&mut self) {
         self.output_lines.push(self.ser_inp_str.clone());
     }
 
+    /// Builds the addressed result prefix from parsed main and subchannels.
     fn write_ch_prefix(&self) -> String {
         format!("{}:", self.current_ch)
     }
 
+    /// Converts base units to milli-units for legacy MAH/MWH/current replies.
     fn param_mul_1000(&mut self) {
         self.param *= 1000.0;
     }
 
+    /// Converts milli-unit setter values back to base units.
     fn param_div_1000(&mut self) {
         self.param /= 1000.0;
     }
 
+    /// Scales the stored raw phase sample through the active voltage divider calibration.
     fn get_voltage(&mut self, on_time: bool) {
         self.param = if on_time {
             self.voltage_on
@@ -836,6 +985,7 @@ impl EdlParser {
         };
     }
 
+    /// Scales the stored raw phase sample through shunt-specific current calibration.
     fn get_current(&mut self, on_time: bool) {
         self.param = if on_time {
             self.current_on
@@ -844,18 +994,23 @@ impl EdlParser {
         };
     }
 
+    /// Returns a bounded raw diagnostic channel, using zero for unsupported indices.
     fn get_adc10(&self, channel: u8) -> u16 {
         self.adc10.get(usize::from(channel)).copied().unwrap_or(0)
     }
 
+    /// Marks the Pascal critical-section boundary in the hardware-independent parser model.
     fn disable_ints(&mut self) {}
 
+    /// Marks restoration of interrupts after parser-side calibration updates.
     fn enable_ints(&mut self) {}
 
+    /// Records display invalidation caused by a setter without depending on an LCD backend.
     fn werte_on_lcd(&mut self) {
         self.display_refresh_count = self.display_refresh_count.saturating_add(1);
     }
 
+    /// Recomputes current, voltage, resistance, and DAC factors immediately after calibration or option changes.
     pub(super) fn init_scales(&mut self) {
         let gain_i = self.option_array[OPT_GAIN_I];
         let u_ref = self.option_array[OPT_U_REF];
@@ -888,8 +1043,10 @@ impl EdlParser {
         self.dc_ohm_max = self.option_array[OPT_RSENSE_BASE] * self.divider_u * gain_i * 100.0;
     }
 
+    /// Represents the three-millisecond analog settling interval after calibration changes; this parser-only model has no clock to advance.
     fn mdelay(&mut self, _ms: u16) {}
 
+    /// Clamps setpoints and timing and records the exact verbose limit outcome.
     fn check_limits(&mut self) {
         self.check_limit_err = PromptCode::NoErr;
         self.no_toggle = false;
@@ -973,6 +1130,7 @@ impl EdlParser {
         }
     }
 
+    /// Derives and quantizes resistance-mode current using the latest voltage and selected shunt.
     fn set_level_dac_r(&mut self) {
         self.init_scales();
         self.shunt_select = self.calc_range_r();
@@ -988,6 +1146,7 @@ impl EdlParser {
         self.update_mpxena();
     }
 
+    /// Quantizes current-mode on/off DAC codes from setpoint and ripple percentage.
     fn set_level_dac_i(&mut self) {
         self.init_scales();
         let mut shunt = self.calc_range_i();
@@ -1012,6 +1171,7 @@ impl EdlParser {
         self.update_mpxena();
     }
 
+    /// Derives current from requested power and measured voltage before DAC quantization.
     fn set_level_dac_p(&mut self) {
         self.get_voltage(true);
         if self.param > 0.0 {
@@ -1020,6 +1180,7 @@ impl EdlParser {
         self.set_level_dac_i();
     }
 
+    /// Selects the most sensitive shunt that still covers the current setpoint.
     fn calc_range_i(&self) -> u8 {
         let mut shunt = 0_u8;
         for index in 0..DACI_COUNT {
@@ -1030,6 +1191,7 @@ impl EdlParser {
         shunt
     }
 
+    /// Selects a shunt that keeps resistance-derived current in range.
     fn calc_range_r(&self) -> u8 {
         for index in 0..DACI_COUNT {
             let threshold = self.option_array[OPT_RSENSE_BASE + index] * self.divider_u;
@@ -1040,11 +1202,13 @@ impl EdlParser {
         SHUNT_D
     }
 
+    /// Applies calibration offset and clamps the result to installed DAC resolution.
     fn quantize_dac(&self, raw: f64, offset: i32) -> u16 {
         let value = (raw + 0.5) as i32 + offset;
         value.clamp(0, i32::from(self.dac_max)) as u16
     }
 
+    /// Updates output multiplexer enable from mode, output state, and protection state.
     fn update_mpxena(&mut self) {
         self.mpxena = if self.mode_select == Mode::OutputOff {
             false
@@ -1053,14 +1217,17 @@ impl EdlParser {
         };
     }
 
+    /// Returns the calibrated maximum current for the selected shunt.
     fn imax(&self) -> f64 {
         self.option_array[OPT_IMAX_BASE + 3]
     }
 
+    /// Returns the option-backed maximum safe power.
     fn pmax(&self) -> f64 {
         self.option_array[OPT_PMAX]
     }
 
+    /// Chooses the low/high voltage clamp paired with the selected mode.
     fn active_voltage_limit(&self) -> f64 {
         match self.mode_select {
             Mode::IhiVolt | Mode::RhiVolt | Mode::PhiVolt => self.option_array[OPT_UMAX_HI],
@@ -1070,22 +1237,27 @@ impl EdlParser {
         }
     }
 
+    /// Reloads the activity countdown to 255 after a valid local frame so LED decay follows traffic.
     fn set_systimer(&mut self, value: u8) {
         self.activity_timer = value;
     }
 
+    /// Parses signed integer syntax without accepting partial tokens.
     fn parse_i32(&self, text: &str) -> Option<i32> {
         text.trim().parse().ok()
     }
 
+    /// Parses decimal protocol syntax without accepting partial tokens.
     fn parse_f64(&self, text: &str) -> Option<f64> {
         text.trim().parse().ok()
     }
 
+    /// Decodes exactly the hexadecimal byte format used by checksum and raw setters.
     fn hex_to_u8(&self, text: &str) -> Option<u8> {
         u8::from_str_radix(text.trim(), 16).ok()
     }
 
+    /// Encodes parser mode variants using Pascal wire discriminants.
     fn mode_to_i32(&self) -> i32 {
         match self.mode_select {
             Mode::OutputOff => 0,
@@ -1099,6 +1271,7 @@ impl EdlParser {
         }
     }
 
+    /// Encodes menu variants using Pascal DSP subchannel values.
     fn modify_to_i32(&self) -> i32 {
         match self.modify {
             Modify::LowerMainMenu => 0,

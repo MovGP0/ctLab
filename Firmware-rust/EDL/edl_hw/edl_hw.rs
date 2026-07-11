@@ -1,11 +1,16 @@
 ﻿use super::*;
 
+/// Cycle-ordered implementation of the EDL bit-banged ADC/DAC routines.
 pub struct EdlHw<H> {
+    /// Pin/register backend used for every observable hardware transition.
     pub io: H,
+
+    /// ISR pipeline and raw converter state kept alongside the backend.
     pub state: EdlState,
 }
 
 impl<H: EdlHardware> EdlHw<H> {
+    /// Creates an idle converter pipeline without touching hardware pins.
     pub fn new(io: H) -> Self {
         Self {
             io,
@@ -13,6 +18,7 @@ impl<H: EdlHardware> EdlHw<H> {
         }
     }
 
+    /// Sends the DAC8501/LTC1655 control padding and 16-bit value before latching it.
     pub fn shift_out_8501(&mut self) {
         self.set(ControlBit::Sclk, true);
         self.set(ControlBit::SDataOut, false);
@@ -33,6 +39,7 @@ impl<H: EdlHardware> EdlHw<H> {
         self.set(ControlBit::StrDac, true);
     }
 
+    /// Sends the AD5452 two-bit command prefix, 12-bit value, and required filler clocks.
     pub fn shift_out_5452(&mut self) {
         self.set(ControlBit::SDataOut, false);
         self.set(ControlBit::Sclk, false);
@@ -57,6 +64,7 @@ impl<H: EdlHardware> EdlHw<H> {
         self.set(ControlBit::StrDac, true);
     }
 
+    /// Clocks the LTC8043-compatible 12-bit word and combines its final bit with the latch edge.
     pub fn shift_out_8043(&mut self) {
         self.set(ControlBit::SDataOut, false);
         self.set(ControlBit::Sclk, false);
@@ -75,6 +83,7 @@ impl<H: EdlHardware> EdlHw<H> {
         self.set(ControlBit::StrDac, true);
     }
 
+    /// Keeps the DAC8811 latch active across its full 16-bit MSB-first frame.
     pub fn shift_out_8811(&mut self) {
         self.set(ControlBit::SDataOut, false);
         self.set(ControlBit::Sclk, false);
@@ -87,6 +96,7 @@ impl<H: EdlHardware> EdlHw<H> {
         self.set(ControlBit::StrDac, true);
     }
 
+    /// Writes the fallback 4094 shift-register chain and pulses its output latch.
     pub fn shift_out_sr(&mut self) {
         self.set(ControlBit::Sclk, false);
         self.set(ControlBit::SDataOut, false);
@@ -105,6 +115,7 @@ impl<H: EdlHardware> EdlHw<H> {
         self.set(ControlBit::Sclk, true);
     }
 
+    /// Reads one LTC1864 conversion with interrupts excluded across the complete clock train.
     pub fn shift_in_1864(&mut self) {
         let saved_status = self.io.begin_interrupt_exclusion();
 
@@ -130,6 +141,7 @@ impl<H: EdlHardware> EdlHw<H> {
         self.io.end_interrupt_exclusion(saved_status);
     }
 
+    /// Advances PWM, converter pipelining, overload blanking, and phase-specific smoothing.
     pub fn on_sys_tick(&mut self) {
         // Read the finished ADC16 conversion first; the Pascal code treats the
         // converter as pipelined, so this belongs to an earlier PWM phase.
@@ -213,6 +225,7 @@ impl<H: EdlHardware> EdlHw<H> {
         self.state.this_meas = self.state.next_meas;
     }
 
+    /// Performs one blocking AVR ADC conversion after channel wrapping and mux settling.
     pub fn get_adc10(&mut self, my_channel: u8) -> u16 {
         // Hand-coded equivalent of the old getadc() helper: select the mux input
         // explicitly instead of depending on compiler-provided runtime support.
@@ -231,6 +244,7 @@ impl<H: EdlHardware> EdlHw<H> {
         u16::from(self.io.read_adcl()) | (u16::from(self.io.read_adch()) << 8)
     }
 
+    /// Selects the precise wire sequence required by the installed DAC option.
     fn shift_out_active_dac(&mut self) {
         match self.state.dac_type {
             DacType::Ltc8043 => self.shift_out_8043(),
@@ -240,6 +254,7 @@ impl<H: EdlHardware> EdlHw<H> {
         }
     }
 
+    /// Sends one DAC8501 byte with data cleared again before each rising idle edge.
     fn shift_out_8501_byte(&mut self, mut value: u8) {
         for _ in 0..8 {
             let high = (value & 0x80) != 0;
@@ -251,6 +266,12 @@ impl<H: EdlHardware> EdlHw<H> {
         }
     }
 
+    /// Emits the requested high-order bits most-significant first on ordinary SPI-style edges.
+    ///
+    /// # Panics
+    ///
+    /// Panics in debug builds if `bit_count` exceeds eight because the shift
+    /// amount would exceed the width of `u8`; all internal callers use 4 or 8.
     fn shift_bits_msb(&mut self, value: u8, bit_count: usize) {
         for bit_index in (0..bit_count).rev() {
             let mask = 1u8 << bit_index;
@@ -260,6 +281,7 @@ impl<H: EdlHardware> EdlHw<H> {
         }
     }
 
+    /// Sends one 4094 byte with the clock polarity expected by the shift-register path.
     fn shift_sr_byte(&mut self, mut value: u8) {
         for _ in 0..8 {
             self.set(ControlBit::SDataOut, (value & 0x80) != 0);
@@ -270,6 +292,7 @@ impl<H: EdlHardware> EdlHw<H> {
         }
     }
 
+    /// Samples eight serial ADC bits on high clock levels and assembles them MSB first.
     fn shift_in_byte(&mut self) -> u8 {
         let mut value = 0u8;
         for _ in 0..8 {
@@ -281,6 +304,7 @@ impl<H: EdlHardware> EdlHw<H> {
         value
     }
 
+    /// Centralizes pin writes so every bit-banged routine uses the same backend contract.
     fn set(&mut self, bit: ControlBit, high: bool) {
         self.io.set_control_bit(bit, high);
     }

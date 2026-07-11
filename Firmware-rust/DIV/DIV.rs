@@ -6,19 +6,41 @@
 
 #![allow(dead_code)]
 
+/// Uses 32-bit floating point to match the precision and storage cost of the Pascal firmware.
 pub type Float = f32;
 
+/// Declares the 16 MHz AVR clock used to derive UART, TWI, ADC, and systick timing.
 pub const PROC_CLOCK: u32 = 16_000_000;
+
+/// Provides the full identification string returned by the `IDN` command.
 pub const VERS1_STR: &str = "3.10 [DIV by CM/c't 03/2007]";
+
+/// Provides the compact firmware name shown on the front-panel startup screen.
 pub const VERS3_STR: &str = "DIV 3.10";
 
+/// Sets `PORT_A_INIT` pull-ups and idle output levels before peripherals are accessed.
 pub const PORT_A_INIT: u8 = 0b0000_0011;
+
+/// Sets `PORT_C_INIT` pull-ups and idle output levels before peripherals are accessed.
 pub const PORT_C_INIT: u8 = 0b0000_0011;
+
+/// Defines LTC2400 bipolar zero at code 0x800000, which is subtracted before DC scaling.
 pub const ADC24_MID_SCALE: i32 = 0x800000;
+
+/// Marks a DIV EEPROM image as initialized with the 0xAA55 sentinel.
 pub const EE_INITIALISED_MAGIC: u16 = 0xAA55;
+
+/// Marks DIV zero-offset calibration as captured with the 0xAA55 sentinel.
 pub const OFFSET_INITIALISED_MAGIC: u16 = 0xAA55;
+
+/// Reserves err sub ch as the wire-level subchannel used by existing ctLab clients.
 pub const ERR_SUB_CH: u8 = 255;
 
+/// Provides the fixed-width range labels shown on the LCD and returned by range queries.
+///
+/// Each entry uses the discriminant of the corresponding [`DivRange`], so its
+/// spacing and electrical unit are part of the user-visible firmware protocol.
+#[rustfmt::skip]
 pub const RANGE_STR_ARR: [&str; 16] = [
     "DC 250mV",
     "DC  2.5V",
@@ -38,9 +60,56 @@ pub const RANGE_STR_ARR: [&str; 16] = [
     "AC   10A",
 ];
 
-pub const DIGITS_ARR: [u8; 16] = [3, 1, 2, 3, 3, 1, 2, 3, 3, 2, 1, 1, 3, 2, 1, 1];
-pub const NACHKOMMA_ARR: [u8; 16] = [3, 5, 4, 3, 3, 5, 4, 3, 3, 4, 5, 5, 3, 4, 5, 5];
+/// Gives the number of digits before the decimal separator for every DIV range.
+///
+/// The formatter uses the range discriminant as the index so values retain a
+/// stable width when the selected voltage or current unit changes.
+#[rustfmt::skip]
+pub const DIGITS_ARR: [u8; 16] = [
+    3,
+    1,
+    2,
+    3,
+    3,
+    1,
+    2,
+    3,
+    3,
+    2,
+    1,
+    1,
+    3,
+    2,
+    1,
+    1,
+];
 
+/// Gives the number of digits after the decimal separator for every DIV range.
+///
+/// These values preserve the Pascal firmware's range-dependent resolution in
+/// serial replies and on the front-panel display.
+#[rustfmt::skip]
+pub const NACHKOMMA_ARR: [u8; 16] = [
+    3,
+    5,
+    4,
+    3,
+    3,
+    5,
+    4,
+    3,
+    3,
+    4,
+    5,
+    5,
+    3,
+    4,
+    5,
+    5,
+];
+
+/// Maps each DIV range index to its Port A relay and gain bit pattern.
+#[rustfmt::skip]
 pub const RANGE_ARR_PORT_A: [u8; 16] = [
     0b0000_0000 | PORT_A_INIT,
     0b0000_0000 | PORT_A_INIT,
@@ -60,6 +129,8 @@ pub const RANGE_ARR_PORT_A: [u8; 16] = [
     0b1000_0000 | PORT_A_INIT,
 ];
 
+/// Maps each DIV range index to its Port C AC/DC and attenuation relay pattern.
+#[rustfmt::skip]
 pub const RANGE_ARR_PORT_C: [u8; 16] = [
     0b0000_0000 | PORT_C_INIT,
     0b0000_0000 | PORT_C_INIT,
@@ -79,6 +150,8 @@ pub const RANGE_ARR_PORT_C: [u8; 16] = [
     0b1100_0100 | PORT_C_INIT,
 ];
 
+/// Converts signed LTC2400 counts to engineering units for each DIV range before calibration scale is applied.
+#[rustfmt::skip]
 pub const RANGE_ARRAY_24: [Float; 16] = [
     250.0 / 8_388_608.0,
     2.5 / 8_388_608.0,
@@ -98,6 +171,8 @@ pub const RANGE_ARRAY_24: [Float; 16] = [
     2.5 / 8_388_608.0,
 ];
 
+/// Converts internal ADC counts to engineering units for each DIV auxiliary range.
+#[rustfmt::skip]
 pub const RANGE_ARRAY_10: [Float; 16] = [
     250.0 / 512.0,
     2.5 / 512.0,
@@ -117,49 +192,15 @@ pub const RANGE_ARRAY_10: [Float; 16] = [
     2.5 / 1024.0,
 ];
 
-pub const CMD_STR_ARR: [&str; 16] = [
-    "STR",
-    "IDN",
-    "TRG",
-    "VAL",
-    "RNG",
-    "DSP",
-    "OFS",
-    "SCL",
-    "ALL",
-    "TRM",
-    "TRT",
-    "TRL",
-    "ERC",
-    "SBD",
-    "WEN",
-    "NOP",
-];
-
-pub const ERR_STR_ARR: [&str; 8] = [
-    "[OK]",
-    "[SRQUSR]",
-    "[BUSY]",
-    "[OVRLD]",
-    "[CMDERR]",
-    "[PARERR]",
-    "[LOCKED]",
-    "[CHKSUM]",
-];
-
-pub const FAULT_STR_ARR: [&str; 4] = [
-    "[OVRNEG]",
-    "[OVRPOS]",
-    "[]",
-    "[]"
-];
-
 #[path = "div/cmd_which.rs"]
 mod cmd_which;
 pub use cmd_which::CmdWhich;
 #[path = "div/error_code.rs"]
 mod error_code;
 pub use error_code::ErrorCode;
+#[path = "div/div_fault.rs"]
+mod div_fault;
+pub use div_fault::DivFault;
 #[path = "div/div_range.rs"]
 mod div_range;
 pub use div_range::DivRange;
@@ -176,10 +217,12 @@ pub use div_hardware::DivHardware;
 mod device_state;
 pub use device_state::DeviceState;
 
+/// Maps div range from u8 into the typed state used internally, rejecting or defaulting unsupported wire values as the implementation specifies.
 fn div_range_from_u8(value: u8) -> DivRange {
     limit_raw_range(value).0
 }
 
+/// Clamps an untrusted range byte to the 16-entry table while reporting whether protocol status must flag a parameter error.
 fn limit_raw_range(value: u8) -> (DivRange, bool) {
     let limited = value > 15;
     let value = if value > 127 {
@@ -210,6 +253,7 @@ fn limit_raw_range(value: u8) -> (DivRange, bool) {
     }
 }
 
+/// Chooses the engineering exponent appended to serial values so milli- and micro-ranges keep the original wire units.
 pub fn range_exponent_suffix(range: DivRange) -> Option<&'static str> {
     match range {
         DivRange::Dc250mV | DivRange::Ac250mV | DivRange::Dc25mA | DivRange::Ac25mA => Some("E-3"),
@@ -223,23 +267,55 @@ mod tests {
     use super::*;
     use std::collections::VecDeque;
 
+    /// Captures converted samples, readiness handshakes, and emitted I/O for deterministic end-to-end DIV state-machine tests.
     #[derive(Debug, Clone, Default)]
     struct MockHardware {
+        /// Contains ad10 in converter counts until the owning conversion or output routine consumes it.
         ad10: i16,
+
+        /// Contains ad24 in converter counts until the owning conversion or output routine consumes it.
         ad24: i32,
+
+        /// Contains ad24 fast in converter counts until the owning conversion or output routine consumes it.
         ad24_fast: i32,
+
+        /// Contains ad24 slow in converter counts until the owning conversion or output routine consumes it.
         ad24_slow: i32,
+
+        /// Indicates whether adc24 overload negative; the producer updates it before consumers choose their next action.
         adc24_overload_negative: bool,
+
+        /// Indicates whether adc24 overload positive; the producer updates it before consumers choose their next action.
         adc24_overload_positive: bool,
+
+        /// Queues rx in UART order for the host-side hardware model.
         rx: VecDeque<u8>,
+
+        /// Tracks range configs so conversion, relay, and formatting decisions agree.
         range_configs: Vec<RangeRelayConfig>,
+
+        /// Records configured trigger polarities in tests so EEPROM restoration and `TRL` writes are observable.
         trigger_edges: Vec<bool>,
+
+        /// Indicates whether ad10 ready polls before ready; the producer updates it before consumers choose their next action.
         ad10_ready_polls_before_ready: usize,
+
+        /// Indicates whether ad24 ready polls before ready; the producer updates it before consumers choose their next action.
         ad24_ready_polls_before_ready: usize,
+
+        /// Indicates whether ad10 ready polls; the producer updates it before consumers choose their next action.
         ad10_ready_polls: usize,
+
+        /// Indicates whether ad24 ready polls; the producer updates it before consumers choose their next action.
         ad24_ready_polls: usize,
+
+        /// Records readiness events in order so tests can verify every externally visible operation.
         readiness_events: Vec<&'static str>,
+
+        /// Queues serial in UART order for the host-side hardware model.
         serial: String,
+
+        /// Records LCD lines in order so tests can verify every externally visible operation.
         lcd_lines: Vec<(u8, String)>,
     }
 
@@ -248,42 +324,51 @@ mod tests {
             self.ad10
         }
 
+        /// Returns the latest LTC2400 sample so callers use the intended display or trigger integration mode.
         fn read_adc24(&mut self) -> i32 {
             self.ad24
         }
 
+        /// Returns the fast integrated LTC2400 sample so callers use the intended display or trigger integration mode.
         fn read_adc24_fast_integrated(&mut self) -> i32 {
             self.ad24_fast
         }
 
+        /// Returns the slow integrated LTC2400 sample so callers use the intended display or trigger integration mode.
         fn read_adc24_slow_integrated(&mut self) -> i32 {
             self.ad24_slow
         }
 
+        /// Exposes the latched LTC2400 polarity or clipping state captured with the conversion sample.
         fn adc24_overload_negative(&self) -> bool {
             self.adc24_overload_negative
         }
 
+        /// Exposes the latched LTC2400 polarity or clipping state captured with the conversion sample.
         fn adc24_overload_positive(&self) -> bool {
             self.adc24_overload_positive
         }
 
+        /// Clears adc10 ready before the next operation is allowed to complete.
         fn clear_adc10_ready(&mut self) {
             self.ad10_ready_polls = 0;
             self.readiness_events.push("clear-ad10");
         }
 
+        /// Returns adc10 ready so the caller can gate the next protocol or conversion step.
         fn adc10_ready(&mut self) -> bool {
             self.ad10_ready_polls += 1;
             self.readiness_events.push("poll-ad10");
             self.ad10_ready_polls > self.ad10_ready_polls_before_ready
         }
 
+        /// Clears adc24 ready before the next operation is allowed to complete.
         fn clear_adc24_ready(&mut self) {
             self.ad24_ready_polls = 0;
             self.readiness_events.push("clear-ad24");
         }
 
+        /// Returns adc24 ready so the caller can gate the next protocol or conversion step.
         fn adc24_ready(&mut self) -> bool {
             self.ad24_ready_polls += 1;
             self.readiness_events.push("poll-ad24");
@@ -298,19 +383,23 @@ mod tests {
             self.trigger_edges.push(positive_edge);
         }
 
+        /// Encodes poll serial byte in the compact representation consumed by registers or the serial protocol.
         fn poll_serial_byte(&mut self) -> Option<u8> {
             self.rx.pop_front()
         }
 
+        /// Appends text to the active serial frame without changing parser state.
         fn serial_write(&mut self, text: &str) {
             self.serial.push_str(text);
         }
 
+        /// Renders LCD write line into the fixed LCD cells used by the front panel.
         fn lcd_write_line(&mut self, row: u8, text: &str) {
             self.lcd_lines.push((row, text.to_string()));
         }
     }
 
+    /// Compares floating-point results with the tolerance appropriate for translated calibration arithmetic.
     fn assert_close(actual: Float, expected: Float) {
         assert!(
             (actual - expected).abs() < 0.00001,
@@ -318,10 +407,12 @@ mod tests {
         );
     }
 
+    /// Builds a byte queue from test text so receive-loop tests exercise the same incremental path as hardware.
     fn serial_rx(text: &str) -> VecDeque<u8> {
         text.as_bytes().iter().copied().collect()
     }
 
+    /// Verifies that switch range applies pascal relay gain and display tables remains faithful to the Pascal behavior.
     #[test]
     fn switch_range_applies_pascal_relay_gain_and_display_tables() {
         let mut state = DeviceState::new(MockHardware::default());
@@ -344,6 +435,7 @@ mod tests {
         assert!(config.dc_gain_10);
     }
 
+    /// Verifies that wait ad10 clears stale flag and waits for next interrupt update remains faithful to the Pascal behavior.
     #[test]
     fn wait_ad10_clears_stale_flag_and_waits_for_next_irq_update() {
         let mut state = DeviceState::new(MockHardware {
@@ -360,6 +452,7 @@ mod tests {
         );
     }
 
+    /// Verifies that wait ad24 clears stale flag and waits for next interrupt update remains faithful to the Pascal behavior.
     #[test]
     fn wait_ad24_clears_stale_flag_and_waits_for_next_irq_update() {
         let mut state = DeviceState::new(MockHardware {
@@ -376,6 +469,7 @@ mod tests {
         );
     }
 
+    /// Verifies that scaling uses pascal per range factors and calibration scales remains faithful to the Pascal behavior.
     #[test]
     fn scaling_uses_pascal_per_range_factors_and_calibration_scales() {
         let mut state = DeviceState::new(MockHardware {
@@ -401,6 +495,7 @@ mod tests {
         assert_close(state.param_scale_24(-1000), 1000.0 * (2.5 / 8_388_608.0));
     }
 
+    /// Verifies that display and serial format follow range tables remains faithful to the Pascal behavior.
     #[test]
     fn display_and_serial_format_follow_range_tables() {
         let mut state = DeviceState::new(MockHardware::default());
@@ -417,6 +512,7 @@ mod tests {
         assert_eq!(state.param_to_str(false), "1.234567");
     }
 
+    /// Verifies that trigger edges timer and mask select pascal subchannels remains faithful to the Pascal behavior.
     #[test]
     fn trigger_edges_timer_and_mask_select_pascal_subchannels() {
         let mut state = DeviceState::new(MockHardware::default());
@@ -439,6 +535,7 @@ mod tests {
         assert_eq!(state.hw.trigger_edges, vec![true]);
     }
 
+    /// Verifies that ad24 integration mode selects pascal sources and fault flags remains faithful to the Pascal behavior.
     #[test]
     fn ad24_integration_mode_selects_pascal_sources_and_fault_flags() {
         let mut state = DeviceState::new(MockHardware {
@@ -462,6 +559,7 @@ mod tests {
         assert!(state.overload_flag());
     }
 
+    /// Verifies that status prompt uses pascal prefix status byte and fault labels remains faithful to the Pascal behavior.
     #[test]
     fn status_prompt_uses_pascal_prefix_status_byte_and_fault_labels() {
         let mut state = DeviceState::new(MockHardware::default());
@@ -483,6 +581,7 @@ mod tests {
         assert_eq!(state.hw.serial, "#2:255=35 [OVRNEG] [OVRPOS]\r\n");
     }
 
+    /// Verifies that check limits clamps pascal byte range and reports parameter error remains faithful to the Pascal behavior.
     #[test]
     fn check_limits_clamps_pascal_byte_range_and_reports_param_error() {
         let mut state = DeviceState::new(MockHardware::default());
@@ -500,6 +599,7 @@ mod tests {
         assert_eq!(state.check_limit_err, ErrorCode::ParamErr);
     }
 
+    /// Verifies that rng set uses pascal check limits before switching range remains faithful to the Pascal behavior.
     #[test]
     fn rng_set_uses_pascal_check_limits_before_switching_range() {
         let mut state = DeviceState::new(MockHardware {
@@ -519,6 +619,7 @@ mod tests {
         );
     }
 
+    /// Verifies that init all restores EEPROM defaults and initialises zero offsets remains faithful to the Pascal behavior.
     #[test]
     fn init_all_restores_eeprom_defaults_and_initialises_zero_offsets() {
         let mut state = DeviceState::new(MockHardware {
@@ -547,6 +648,7 @@ mod tests {
         assert!(state.hw.serial.ends_with("#0:255=0 [OK]\r\n"));
     }
 
+    /// Verifies that check serial buffers ascii handles backspace and parses cr frames remains faithful to the Pascal behavior.
     #[test]
     fn check_ser_buffers_ascii_handles_backspace_and_parses_cr_frames() {
         let mut state = DeviceState::new(MockHardware {

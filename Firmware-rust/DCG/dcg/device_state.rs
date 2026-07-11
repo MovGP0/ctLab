@@ -1,65 +1,176 @@
+//! Coordinates the foreground firmware state machine and its safety-critical transitions.
+
 use super::*;
 
+/// Complete foreground firmware state. It coordinates setpoints, calibrated I/O, panel editing, serial protocol, protection, and periodic work.
 #[derive(Debug, Clone)]
 pub struct DeviceState<H> {
+    /// Owns the hardware adapter, ensuring all side effects are routed through one testable boundary.
     pub hw: H,
+
+    /// Owns the persisted calibration and startup image from which live DDS values are copied without overwriting runtime latches.
     pub eeprom: EepromData,
+
+    /// Owns all derived ADC/DAC conversion factors so measurement, protection, and output programming use one calibration snapshot.
     pub scale: CalibrationScale,
+
+    /// Collects protocol-visible operating flags before they are packed into the legacy status response.
     pub status: RuntimeStatus,
+
+    /// Latches faults so output protection and diagnostic reporting observe the same cause.
     pub faults: FaultFlags,
+
+    /// Number of parser failures accumulated for the ERC diagnostic response.
     pub err_count: u16,
+
+    /// Stores the panel action code included in the next user-service-request status frame.
     pub button_number: u8,
+
+    /// DCG foreground address written before each channel/subchannel response.
     pub main_channel: u8,
+
+    /// Numeric protocol subchannel selected by mnemonic lookup or explicit value syntax for the current response.
     pub sub_channel: u8,
+
+    /// DCG subchannel whose value is currently shown and edited on the front panel.
     pub display_sub_channel: u8,
+
+    /// Stores the requested voltage set; limit checking and calibrated output conversion consume this same value before hardware is updated.
     pub voltage_set: Float,
+
+    /// Stores the requested current set; limit checking and calibrated output conversion consume this same value before hardware is updated.
     pub current_set: Float,
+
+    /// Stores the panel voltage modifier used while editing a selected decimal decade.
     pub voltage_mod: Float,
+
+    /// Stores the panel current modifier used while editing a selected decimal decade.
     pub current_mod: Float,
+
+    /// Latest calibrated output voltage in volts, used with the time-aligned current sample for protection, power, and serial measurement replies.
     pub measured_voltage: Float,
+
+    /// Latest calibrated output current in amperes, used for current protection, power calculation, and serial measurement replies.
     pub measured_current: Float,
+
+    /// Latest output power in watts, calculated from the paired calibrated voltage and current samples.
     pub measured_power: Float,
+
+    /// Latest auxiliary supply voltage in volts, used to detect fuse or supply-path loss before enabling the output relay.
     pub input_voltage: Float,
+
+    /// Accumulates capacity mah across service intervals so capacity/energy requests do not depend on display refresh timing.
     pub capacity_mah: Float,
+
+    /// Accumulates capacity mwh across service intervals so capacity/energy requests do not depend on display refresh timing.
     pub capacity_mwh: Float,
+
+    /// Sets the requested voltage drop during the off phase as a percentage of the energized setpoint.
     pub ripple_percent: Float,
+
+    /// Off-phase voltage in volts calculated from the energized setpoint and ripple percentage before DAC quantization.
     pub ripple_voltage: Float,
+
+    /// Suppresses one ripple phase transition while a setpoint or relay update requires a stable output phase.
     pub no_toggle: bool,
+
+    /// Sets how long the timer keeps the energized voltage DAC word active in each ripple cycle.
     pub pw_on_time_ms: u16,
+
+    /// Sets how long the timer keeps the reduced voltage DAC word active in each ripple cycle.
     pub pw_off_time_ms: u16,
+
+    /// Remaining milliseconds in the current DCG ripple phase; expiry swaps the on/off DAC word and reloads the matching duration.
     pub pw_counter_ms: u16,
     // 255 disabled tracking in Pascal; 0..7 addressed another PSU module.
+
+    /// Peer DCG address receiving paired voltage/current tracking set frames.
     pub track_channel: u8,
+
+    /// Active current shunt used as the index into ADC/DAC offset and scale arrays.
     pub current_range: CurrentRange,
+
+    /// Active voltage relay range used as the index into ADC/DAC offset and scale arrays.
     pub voltage_range: VoltageRange,
+
+    /// Caches the previous current range to suppress redundant writes and detect transitions that require safe blanking.
     pub old_current_range: Option<CurrentRange>,
+
+    /// Caches the previous voltage range to suppress redundant writes and detect transitions that require safe blanking.
     pub old_voltage_range: Option<VoltageRange>,
+
+    /// Current shunt selected by automatic range logic before a command optionally forces another range.
     pub auto_current_range: CurrentRange,
+
+    /// Calibrated voltage DAC code used during the energized ripple phase.
     pub dac_raw_u_on: u16,
+
+    /// Calibrated voltage DAC code used during the off ripple phase.
     pub dac_raw_u_off: u16,
+
+    /// Calibrated current-limit DAC code for the active shunt range.
     pub dac_raw_i: u16,
+
+    /// Lower voltage boundary below which the DCG returns to the low-range relay state.
     pub relay_voltage_low: Float,
+
+    /// Upper voltage boundary above which the DCG advances to the high-range relay state.
     pub relay_voltage_high: Float,
+
+    /// Shadows the active high-voltage relay state so hysteresis only switches hardware when a boundary is crossed.
     pub relay_state_high: bool,
+
+    /// Caches the previous relay state high to suppress redundant writes and detect transitions that require safe blanking.
     pub old_relay_state_high: bool,
+
+    /// Countdown to the next protection-input evaluation in the foreground maintenance schedule.
     pub fault_timer: u8,
+
+    /// Countdown to the next LM75 poll, keeping slow I2C work out of every foreground iteration.
     pub temperature_timer: u8,
     // Active front-panel edit page for the encoder/button UI.
+
+    /// Selects panel modify, which controls the exhaustive branch used by panel handling and output calculation.
     pub panel_modify: Modify,
+
+    /// Counts raw encoder edges toward one logical detent before applying an edit.
     pub inc_rast: i32,
+
+    /// Selects the fine engineering-unit step used for the active panel quantity.
     pub incr_fine: bool,
+
+    /// Marks the first detent of an edit so the value is snapped to the visible decimal grid before acceleration begins.
     pub first_turn: bool,
+
+    /// Stores the signed detent delta awaiting acceleration and setpoint application.
     pub incr_diff: i32,
+
+    /// Stores the accelerated signed engineering-unit delta calculated for the current detent speed.
     pub incr_acc_float: Float,
+
+    /// Defines the decimal divisor used by fine encoder edits for the selected engineering unit.
     pub inc_fine_div: Float,
+
+    /// Defines the decimal divisor used by coarse encoder edits for the selected engineering unit.
     pub inc_coarse_div: Float,
+
+    /// Latest LM75 temperature in degrees Celsius, retained between its slower polling intervals for fan and overtemperature decisions.
     pub temperature_c: Option<Float>,
+
+    /// Prevents panel edits from changing the selected setpoint while the front-panel lock mode is active.
     pub locked: bool,
+
+    /// Records whether the power stage may be connected; faults clear it before DAC and relay updates.
     pub output_enabled: bool,
+
+    /// Buffers ser input so partial serial input and framed output remain independent of hardware receive timing.
     pub ser_input: String,
+
+    /// Buffers param str so partial serial input and framed output remain independent of hardware receive timing.
     pub param_str: String,
 }
 impl<H: DcgHardware> DeviceState<H> {
+    /// Creates a de-energized, internally consistent state image; startup code can then apply EEPROM and hardware initialization without exposing partially configured output.
     pub fn new(hw: H) -> Self {
         Self {
             hw,
@@ -119,23 +230,27 @@ impl<H: DcgHardware> DeviceState<H> {
         }
     }
 
+    /// Installs the persisted calibration image before deriving scales, ensuring no conversion is performed with unrelated defaults.
     pub fn with_eeprom(hw: H, eeprom: EepromData) -> Self {
         let mut state = Self::new(hw);
         state.eeprom = eeprom;
         state
     }
 
+    /// Programs the fan threshold and hysteresis registers so thermal control continues even when foreground firmware is busy.
     pub fn set_lm75_temp(&mut self) {
         // Pascal programmed the LM75 fan threshold and a 3 C hysteresis band
         // through Tos/Thyst when the DCP/LM75 option bit was present.
     }
 
+    /// Polls the LM75 only on its slow cadence and stores `None` when hardware cannot provide a valid temperature.
     pub fn get_lm75_temp(&mut self) {
         // The original code polled the LM75 on a slow cadence because the
         // device has about 100 ms conversion latency.
         self.temperature_c = self.hw.read_temp_c();
     }
 
+    /// Rebuilds calibration factors from EEPROM and active hardware options so later ADC/DAC conversions use one coherent scale set.
     pub fn init_scales(&mut self) {
         let options = self.eeprom.init_options();
         let dac16_present = (options & DAC16_PRESENT_BIT) != 0;
@@ -184,11 +299,13 @@ impl<H: DcgHardware> DeviceState<H> {
         self.inc_rast = i32::from(self.eeprom.inc_rast_def).max(1);
     }
 
+    /// Applies a bounded shunt index and records it before measurement and DAC scaling use the new range.
     pub fn set_shunt(&mut self, range: CurrentRange) {
         self.current_range = range;
         self.hw.set_current_range(range);
     }
 
+    /// Derives range i from calibrated limits instead of hard-coding a board range.
     pub fn calc_range_i(&mut self) {
         let mut range = 0usize;
         for index in 0..4 {
@@ -199,6 +316,7 @@ impl<H: DcgHardware> DeviceState<H> {
         self.current_range = CurrentRange::from_index(range);
     }
 
+    /// Computes calibrated on/off DAC words and blanks output during range changes to avoid delivering a transient pulse.
     pub fn set_level_dac(&mut self) {
         if self.scale.dac_lsb_u[0] == 0.0 || self.scale.dac_lsb_i[0] == 0.0 {
             self.init_scales();
@@ -254,11 +372,13 @@ impl<H: DcgHardware> DeviceState<H> {
         self.hw.set_voltage_dac_off_raw(off_raw);
     }
 
+    /// Rounds the calibrated floating value, applies the stored zero offset, and clamps it to the active DAC width.
     pub(super) fn quantize_dac(&self, raw_without_offset: Float, offset: i16) -> u16 {
         (raw_without_offset + 0.5 + Float::from(offset)).clamp(0.0, self.scale.dac_max as Float)
             as u16
     }
 
+    /// Selects the configured voltage converter path, applies offset and per-range scale, and stores the engineering-unit result for power/protection.
     pub fn get_voltage(&mut self) -> Float {
         let adc = if self.scale.adc16_present {
             self.hw.read_adc16_voltage()
@@ -271,10 +391,12 @@ impl<H: DcgHardware> DeviceState<H> {
         value
     }
 
+    /// Converts the auxiliary ADC10 supply reading through the board divider so relay and fuse checks compare physical volts.
     pub fn get_input_voltage(&mut self) {
         self.input_voltage = self.hw.read_adc10(5) as Float * self.eeprom.uref() * 0.01855;
     }
 
+    /// Selects the configured current converter path, applies shunt-specific offset and scale, then updates measured power from the paired voltage.
     pub fn get_current(&mut self) -> Float {
         let adc = if self.scale.adc16_present {
             self.hw.read_adc16_current()
@@ -288,6 +410,7 @@ impl<H: DcgHardware> DeviceState<H> {
         value
     }
 
+    /// Chooses current-edit divisors: coarse steps use hundredths of an ampere, while fine steps gain another decade below one ampere.
     pub fn inc_fac_i(&mut self) {
         self.inc_coarse_div = 100.0;
         self.inc_fine_div = if self.current_set >= 1.0 {
@@ -297,6 +420,7 @@ impl<H: DcgHardware> DeviceState<H> {
         };
     }
 
+    /// Chooses voltage-edit divisors: coarse steps use tenths of a volt, while fine steps gain another decade below one volt.
     pub fn inc_fac_u(&mut self) {
         self.inc_coarse_div = 10.0;
         self.inc_fine_div = if self.voltage_set >= 1.0 {
@@ -306,6 +430,7 @@ impl<H: DcgHardware> DeviceState<H> {
         };
     }
 
+    /// Snaps the first coarse encoder edit to its display grid, preventing surprising fractional carry-over from remote commands.
     pub fn round_inc_param(&mut self) {
         if self.incr_fine {
             return;
@@ -325,6 +450,7 @@ impl<H: DcgHardware> DeviceState<H> {
         self.first_turn = false;
     }
 
+    /// Applies an accelerated encoder step using the coarse or fine divisor selected for the active engineering unit.
     pub fn set_acc_param(&mut self) {
         let divisor = if self.incr_fine {
             self.inc_fine_div
@@ -346,6 +472,7 @@ impl<H: DcgHardware> DeviceState<H> {
         }
     }
 
+    /// Accumulates encoder edges to the configured detent, applies Pascal acceleration, and updates only the active panel setpoint.
     pub fn apply_encoder_delta(&mut self, raw_delta: i32) -> bool {
         self.incr_diff = self.incr_diff.saturating_add(raw_delta);
         let inc_rast = self.inc_rast.max(1);
@@ -417,6 +544,7 @@ impl<H: DcgHardware> DeviceState<H> {
         true
     }
 
+    /// Resets the first-detent latch and acceleration history when an encoder gesture times out.
     pub(super) fn mark_first_encoder_turn(&mut self) {
         if self.first_turn {
             self.button_number = 4;
@@ -425,44 +553,53 @@ impl<H: DcgHardware> DeviceState<H> {
         }
     }
 
+    /// Maps detent speed through the Pascal acceleration table while preserving direction and clamping the lookup index.
     pub(super) fn accelerated_encoder_delta(scaled_delta: i32) -> i32 {
         let sign = scaled_delta.signum();
         let index = (scaled_delta.unsigned_abs() as usize).min(INCR_ACC_ARRAY.len() - 1);
         sign * INCR_ACC_ARRAY[index]
     }
 
+    /// Rounds through a unit-specific divisor, reproducing the panel's decimal grid without binary-step drift.
     pub(super) fn round_to_increment_divisor(value: Float, divisor: Float) -> Float {
         (value * divisor).round() / divisor
     }
 
+    /// Adds a signed encoder step to an unsigned timer and saturates at representable bounds instead of wrapping.
     pub(super) fn add_signed_u16(value: u16, delta: i32) -> u16 {
         let adjusted = i32::from(value).saturating_add(delta);
         adjusted.clamp(0, i32::from(u16::MAX)) as u16
     }
 
+    /// Uses wrapping byte arithmetic because Pascal panel selectors intentionally rolled through their compact enum range.
     pub(super) fn pascal_add_byte(value: u8, delta: i32) -> u8 {
         value.wrapping_add(delta as u8)
     }
 
+    /// Emits carriage return followed by line feed as separate bytes, preserving the controller-visible legacy line ending without allocation.
     pub fn ser_crlf(&mut self) {
         self.hw.serial_write("\r\n");
     }
 
+    /// Writes `<main-channel>:<subchannel>=`, the DCG foreground reply prefix used before each value.
     pub fn write_ch_prefix(&mut self) {
         self.hw
             .serial_write(&format!("{}:{}=", self.main_channel, self.sub_channel));
     }
 
+    /// Echoes the stored or supplied serial input text verbatim, then terminates the echo with the legacy CR/LF pair.
     pub fn write_ser_inp(&mut self) {
         self.hw.serial_write(&self.ser_input);
         self.ser_crlf();
     }
 
+    /// Emits status only when protocol verbosity or an error requires it, while latching error accounting consistently.
     pub fn ser_prompt(&mut self, err: ErrorCode) {
         let frame = self.status_frame(err);
         self.hw.serial_write(&frame);
     }
 
+    /// Builds the status response with bit-compatible flags and individual fault labels for remote diagnosis.
     pub fn status_frame(&mut self, err: ErrorCode) -> String {
         self.sub_channel = ERR_SUB_CH;
         let mut status = self.status.as_byte() & 0xf0;
@@ -477,21 +614,15 @@ impl<H: DcgHardware> DeviceState<H> {
 
         let mut frame = format!("{}:{}={}", self.main_channel, ERR_SUB_CH, status);
         if self.faults.any() {
-            for (flag, label) in [
-                (self.faults.over_power, FAULT_STR_ARR[0]),
-                (self.faults.fuse_blown, FAULT_STR_ARR[1]),
-                (self.faults.over_voltage, FAULT_STR_ARR[2]),
-                (self.faults.over_temp, FAULT_STR_ARR[3]),
-            ] {
-                if flag {
+            for fault in FaultKind::ALL {
+                if self.faults.is_active(fault) {
                     frame.push(' ');
-                    frame.push_str(label);
+                    frame.push_str(fault.as_str());
                 }
             }
         } else {
-            let index = (err as usize).min(ERR_STR_ARR.len().saturating_sub(1));
             frame.push(' ');
-            frame.push_str(ERR_STR_ARR[index]);
+            frame.push_str(err.as_str());
             if self.status.overload_flag {
                 frame.push_str(" [ICONST]");
             }
@@ -500,10 +631,12 @@ impl<H: DcgHardware> DeviceState<H> {
         frame
     }
 
+    /// Formats param to str with stable precision so LCD and serial representations agree.
     pub fn param_to_str(&self, value: Float) -> String {
         format!("{value:.3}")
     }
 
+    /// Sends addressed voltage subchannel 0 before current subchannel 1, each as a verbose set frame, so a tracked peer receives a coherent operating point.
     pub fn send_track_cmd(&mut self) {
         if self.track_channel == 255 {
             return;
@@ -521,33 +654,40 @@ impl<H: DcgHardware> DeviceState<H> {
         ));
     }
 
+    /// Selects the panel cursor shape that distinguishes full menu selection from digit-level editing.
     pub fn set_cursor(&mut self, _full_cursor: bool) {}
 
+    /// Renders ist leistung in its fixed panel position so updates do not disturb the other row.
     pub fn ist_leistung_on_lcd(&mut self) {
         self.hw
             .lcd_write_line(0, &format!("P {:>6.2}", self.measured_power));
     }
 
+    /// Renders cap in its fixed panel position so updates do not disturb the other row.
     pub fn cap_on_lcd(&mut self) {
         self.hw
             .lcd_write_line(1, &format!("Ah {:>5.2}", self.capacity_mah));
     }
 
+    /// Renders spannung in its fixed panel position so updates do not disturb the other row.
     pub fn spannung_on_lcd(&mut self) {
         self.hw
             .lcd_write_line(0, &format!("U {:>6.3}", self.voltage_set));
     }
 
+    /// Renders ist spannung in its fixed panel position so updates do not disturb the other row.
     pub fn ist_spannung_on_lcd(&mut self) {
         self.hw
             .lcd_write_line(0, &format!("U {:>6.3}", self.measured_voltage));
     }
 
+    /// Renders soll spannung in its fixed panel position so updates do not disturb the other row.
     pub fn soll_spannung_on_lcd(&mut self) {
         self.hw
             .lcd_write_line(0, &format!("Us{:>6.3}", self.voltage_set));
     }
 
+    /// Chooses amperes or milliamperes for the current display so numeric scaling and the shown unit stay synchronized.
     pub fn prefix_i(&self, ma_display: bool) -> &'static str {
         if ma_display {
             "mA"
@@ -556,41 +696,49 @@ impl<H: DcgHardware> DeviceState<H> {
         }
     }
 
+    /// Renders param str in its fixed panel position so updates do not disturb the other row.
     pub fn param_str_on_lcd_lower(&mut self) {
         self.hw.lcd_write_line(1, &self.param_str);
     }
 
+    /// Renders faults in its fixed panel position so updates do not disturb the other row.
     pub fn faults_on_lcd(&mut self) {
         // The lower LCD row showed compact fault mnemonics; in the original
         // firmware the overload bit also doubled as a current-limit indicator.
         if self.status.overload_flag {
-            self.hw.lcd_write_line(1, FAULT_STR_ARR[0]);
+            self.hw.lcd_write_line(1, FaultKind::OverPower.as_str());
         }
     }
 
+    /// Renders strom in its fixed panel position so updates do not disturb the other row.
     pub fn strom_on_lcd(&mut self) {
         self.hw
             .lcd_write_line(1, &format!("I {:>6.3}", self.current_set));
     }
 
+    /// Renders ist strom in its fixed panel position so updates do not disturb the other row.
     pub fn ist_strom_on_lcd(&mut self) {
         self.hw
             .lcd_write_line(1, &format!("I {:>6.3}", self.measured_current));
     }
 
+    /// Renders soll strom in its fixed panel position so updates do not disturb the other row.
     pub fn soll_strom_on_lcd(&mut self) {
         self.hw
             .lcd_write_line(1, &format!("Is{:>6.3}", self.current_set));
     }
 
+    /// Renders integer in its fixed panel position so updates do not disturb the other row.
     pub fn integer_on_lcd(&mut self, value: i32) {
         self.hw.lcd_write_line(1, &format!("{value:>8}"));
     }
 
+    /// Renders options in its fixed panel position so updates do not disturb the other row.
     pub fn options_on_lcd(&mut self) {
         self.hw.lcd_write_line(1, "OPT");
     }
 
+    /// Renders werte in its fixed panel position so updates do not disturb the other row.
     pub fn werte_on_lcd(&mut self) {
         // The default panel page showed measured U/I. In ripple mode Pascal
         // alternated the voltage readout between the main setpoint and the
@@ -599,18 +747,21 @@ impl<H: DcgHardware> DeviceState<H> {
         self.ist_strom_on_lcd();
     }
 
+    /// Formats the current floating-point parameter, writes the addressed channel/subchannel prefix, then appends CR/LF.
     pub fn write_param_ser(&mut self, value: Float) {
         self.write_ch_prefix();
         self.hw.serial_write(&self.param_to_str(value));
         self.ser_crlf();
     }
 
+    /// Writes the addressed channel/subchannel prefix, a base-10 signed integer parameter, and CR/LF.
     pub fn write_param_int_ser(&mut self, value: i32) {
         self.write_ch_prefix();
         self.hw.serial_write(&value.to_string());
         self.ser_crlf();
     }
 
+    /// Normalizes unsafe or unrepresentable settings before they reach DAC or relay calculations, returning an error when the requested value had to be corrected.
     pub fn check_limits(&mut self) -> ErrorCode {
         if self.locked {
             return ErrorCode::LockedErr;
@@ -658,6 +809,7 @@ impl<H: DcgHardware> DeviceState<H> {
         err
     }
 
+    /// Changes voltage relays with hysteresis so measurement noise cannot chatter the power path around a threshold.
     pub fn switch_relais(&mut self) {
         if self.faults.over_temp || self.faults.over_voltage {
             return;
@@ -670,6 +822,7 @@ impl<H: DcgHardware> DeviceState<H> {
         self.old_relay_state_high = self.relay_state_high;
     }
 
+    /// Evaluates protection inputs and de-energizes the output path before publishing updated fault status.
     pub fn fault_check(&mut self) {
         if self.scale.dcp_present {
             if self.temperature_timer == 0 {
@@ -715,6 +868,7 @@ impl<H: DcgHardware> DeviceState<H> {
         }
     }
 
+    /// Runs the slower foreground maintenance work that must not lengthen the timer interrupt, including measurement filtering, protection, telemetry, and display refresh.
     pub fn chores(&mut self) {
         let previous_current = self.measured_current;
         let current = self.get_current();
@@ -755,6 +909,7 @@ impl<H: DcgHardware> DeviceState<H> {
         self.werte_on_lcd();
     }
 
+    /// Drains bounded serial input while continuing foreground service so a slow or partial command cannot starve protection work.
     pub fn check_ser(&mut self) {
         while let Some(input) = self.hw.serial_read_timeout(20) {
             if (' '..='~').contains(&input) {
@@ -772,6 +927,7 @@ impl<H: DcgHardware> DeviceState<H> {
         self.chores();
     }
 
+    /// Decodes serial command without widening the command grammar beyond what existing controllers send.
     pub(super) fn parse_serial_command(&mut self) {
         let mut command = self.ser_input.trim().to_string();
         if command.is_empty() {
@@ -833,17 +989,16 @@ impl<H: DcgHardware> DeviceState<H> {
         }
     }
 
+    /// Decodes sub channel selector without widening the command grammar beyond what existing controllers send.
     pub(super) fn parse_sub_channel_selector(selector: &str) -> Option<u8> {
         if let Ok(sub_channel) = selector.parse::<u8>() {
             return Some(sub_channel);
         }
-        let selector = selector.to_ascii_uppercase();
-        CMD_STR_ARR
-            .iter()
-            .position(|command| *command == selector)
-            .map(|index| CMD2_SUB_CH_ARR[index])
+        let command = CmdWhich::from_str(selector);
+        (command != CmdWhich::Err).then_some(command.default_subchannel())
     }
 
+    /// Routes a validated serial parameter through the same limit, calibration, and output-refresh path used by local edits.
     pub(super) fn apply_serial_value(&mut self, sub_channel: u8, value: &str) -> Result<(), ErrorCode> {
         match sub_channel {
             0 => self.voltage_set = value.parse().map_err(|_| ErrorCode::ParamErr)?,
@@ -876,6 +1031,7 @@ impl<H: DcgHardware> DeviceState<H> {
         Ok(())
     }
 
+    /// Serializes the selected DCG response value after its channel/subchannel prefix and terminates the frame with CR/LF.
     pub(super) fn write_serial_value(&mut self, sub_channel: u8) {
         match sub_channel {
             0 => self.write_param_ser(self.voltage_set),
@@ -904,6 +1060,7 @@ impl<H: DcgHardware> DeviceState<H> {
         }
     }
 
+    /// Implements a serviced delay: elapsed time advances while serial and protection work continue instead of busy-waiting blindly.
     pub fn check_delay(&mut self, _delay_ms: u8) {
         // Delay loops called CheckSer repeatedly so long waits did not starve
         // the command parser, LCD refresh, or periodic measurement updates.
@@ -912,6 +1069,7 @@ impl<H: DcgHardware> DeviceState<H> {
         }
     }
 
+    /// Advances DCG ripple phase duration and periodic service countdowns from one timer tick.
     pub fn on_tick_timer(&mut self) {
         if self.ripple_percent > 0.0 {
             self.capacity_mah = 0.0;
@@ -926,6 +1084,7 @@ impl<H: DcgHardware> DeviceState<H> {
         self.capacity_mwh += self.measured_current * self.measured_voltage / (3600.0 * 5.0);
     }
 
+    /// Restores the Pascal startup order: clear latches, configure communication and display state, apply EEPROM defaults, then program safe outputs.
     pub fn init_all(&mut self) {
         self.init_scales();
         self.status = RuntimeStatus::default();

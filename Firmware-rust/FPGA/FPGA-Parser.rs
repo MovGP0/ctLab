@@ -1,18 +1,26 @@
-//! Serial protocol parser for the FPGA module controller.
+﻿//! Serial protocol parser for the FPGA module controller.
 //!
 //! The command table and offsets are transcribed from `FPGA.pas` 2.62. The
 //! parser retains the c't-Lab channel prefix, direct numeric subchannels,
 //! wildcard forwarding, result frames, verbose markers, and XOR checksum.
+
+/// Syntax failures detected before controller state can change.
 #[path = "fpga_parser/parse_error.rs"]
 mod parse_error;
 pub use parse_error::ParseError;
+
+/// Typed right-hand-side values retained after parsing.
 #[path = "fpga_parser/parameter.rs"]
 mod parameter;
 pub use parameter::Parameter;
+
+/// Normalized routing and operation metadata consumed by dispatch.
 #[path = "fpga_parser/parsed_frame.rs"]
 mod parsed_frame;
 pub use parsed_frame::ParsedFrame;
 
+/// Ordered Pascal mnemonic table; its index must stay aligned with [`COMMAND_OFFSETS`].
+#[rustfmt::skip]
 pub const COMMANDS: [&str; 66] = [
     "STR",
     "IDN",
@@ -82,6 +90,8 @@ pub const COMMANDS: [&str; 66] = [
     "NOP",
 ];
 
+/// Base subchannel for each mnemonic; numeric command arguments are added to these values.
+#[rustfmt::skip]
 pub const COMMAND_OFFSETS: [u16; 66] = [
     255,
     254,
@@ -151,23 +161,35 @@ pub const COMMAND_OFFSETS: [u16; 66] = [
     253,
 ];
 
+/// Resolves a case-insensitive mnemonic while preserving the table's protocol index.
 pub fn command_index(command: &str) -> Option<usize>
 {
     let command = command.trim().to_ascii_uppercase();
     COMMANDS.iter().position(|candidate| *candidate == command)
 }
 
+/// Converts a mnemonic and optional numeric argument into its concrete subchannel.
 pub fn command_subchannel(command: &str, argument: u16) -> Option<u16>
 {
     let index = command_index(command)?;
     COMMAND_OFFSETS[index].checked_add(argument)
 }
 
+/// Computes the bytewise XOR checksum used after the protocol's `$HH` suffix.
 pub fn xor_checksum(bytes: &[u8]) -> u8
 {
     bytes.iter().fold(0, |checksum, byte| checksum ^ byte)
 }
 
+/// Normalizes one serial line into typed routing, operation, and parameter fields.
+///
+/// Checksum validation happens before marker removal so the XOR covers exactly
+/// the bytes transmitted by the sender.
+///
+/// # Errors
+///
+/// Returns [`ParseError`] for an empty line, malformed channel or command syntax,
+/// a missing setter value, or a supplied checksum that does not match the frame.
 pub fn parse_frame(input: &str) -> Result<ParsedFrame, ParseError>
 {
     let input = input.trim_end_matches(['\r', '\n']);
@@ -252,6 +274,7 @@ pub fn parse_frame(input: &str) -> Result<ParsedFrame, ParseError>
     })
 }
 
+/// Separates and decodes an optional terminal `$HH` checksum.
 fn split_checksum(input: &str) -> Result<(&str, Option<u8>), ParseError>
 {
     let Some(position) = input.rfind('$') else
@@ -267,6 +290,7 @@ fn split_checksum(input: &str) -> Result<(&str, Option<u8>), ParseError>
     Ok((&input[..position], Some(checksum)))
 }
 
+/// Separates a mnemonic from its numeric suffix while leaving direct subchannels intact.
 fn split_command_argument(command: &str) -> (&str, u16)
 {
     let command = command.trim();
@@ -284,6 +308,7 @@ fn split_command_argument(command: &str) -> (&str, u16)
     (token, argument)
 }
 
+/// Prefers quoted text, then numeric conversion, and finally unquoted text.
 fn parse_parameter(value: &str) -> Parameter
 {
     let unquoted = value.strip_prefix('"').and_then(|value| value.strip_suffix('"'));

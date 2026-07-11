@@ -1,50 +1,135 @@
+//! Coordinates the foreground firmware state machine and its safety-critical transitions.
+
 use super::*;
 
+/// Complete foreground firmware state. It coordinates setpoints, calibrated I/O, panel editing, serial protocol, protection, and periodic work.
 #[derive(Debug, Clone)]
 pub struct DeviceState<H> {
+    /// Owns the hardware adapter, ensuring all side effects are routed through one testable boundary.
     pub hw: H,
+
+    /// Owns the persisted calibration and startup image from which live DDS values are copied without overwriting runtime latches.
     pub eeprom: EepromData,
+
+    /// Collects protocol-visible operating flags before they are packed into the legacy status response.
     pub status: RuntimeStatus,
+
+    /// Configured multidrop instrument address accepted before DDS command dispatch and emitted in addressed replies.
     pub slave_channel: u8,
+
+    /// Address parsed from the current DDS frame before it is compared with the configured slave channel.
     pub current_channel: u8,
+
+    /// Stores the requested frequency tenths hz; limit checking and calibrated output conversion consume this same value before hardware is updated.
     pub frequency_tenths_hz: i32,
+
+    /// Indexes the preferred one-third-octave frequency table used by coarse panel tuning.
     pub terz_num: u8,
+
+    /// Stores the requested offset mv; limit checking and calibrated output conversion consume this same value before hardware is updated.
     pub offset_mv: i32,
+
+    /// Calibrated amplitude DAC code latched with the current attenuation and waveform routing.
     pub dac_level: Float,
+
+    /// Highest amplitude DAC code allowed by the selected converter and output range.
     pub dac_level_max: Float,
+
+    /// Stores the requested db; limit checking and calibrated output conversion consume this same value before hardware is updated.
     pub db: Float,
+
+    /// Highest logarithmic output request representable by the current DAC full scale and output-stage gain.
     pub db_max: Float,
+
+    /// Output-stage gain used to translate requested RMS/peak level into the amplitude-DAC domain.
     pub pwr_gain: Float,
+
+    /// Amplitude correction applied when the attenuator relay selects the low-level range.
     pub attn_fac: Float,
+
+    /// Defines the amplitude threshold where the attenuator relay changes range to preserve DAC resolution.
     pub attn_switch_point: Float,
+
+    /// Selects waveform, which controls the exhaustive branch used by panel handling and output calculation.
     pub waveform: Waveform,
+
+    /// Stores the requested burst interval; zero leaves the output continuous and nonzero values drive the periodic gate.
     pub burst_mode: u8,
+
+    /// Counts completed system ticks toward the configured burst gate transition.
     pub burst_count: u8,
+
+    /// Chooses whether the configured waveform is currently passed or temporarily forced off by burst timing.
     pub burst_gate_open: bool,
+
+    /// Stores the calibrated input amplitude in millivolts for display, range switching, and overload reporting.
     pub input_level_mv: Float,
+
+    /// Active DDS analog input gain range used to index calibration and hardware relay selection.
     pub range: InputRange,
+
+    /// Caches the previous range to suppress redundant writes and detect transitions that require safe blanking.
     pub old_range: InputRange,
+
+    /// Fixed panel label corresponding to the active DDS input range.
     pub range_str: &'static str,
+
+    /// Calibration multiplier paired with the active analog input gain range for RMS conversion.
     pub input_gain_fac: Float,
+
+    /// Selects panel modify, which controls the exhaustive branch used by panel handling and output calculation.
     pub panel_modify: Modify,
+
+    /// Counts raw encoder edges toward one logical detent before applying an edit.
     pub inc_rast: i32,
+
+    /// Selects the fine engineering-unit step used for the active panel quantity.
     pub incr_fine: bool,
+
+    /// Accumulates raw quadrature edges until one configured detent is complete.
     pub encoder_delta_accum: i32,
+
+    /// Records successful LCD probing so headless boards skip every later display transaction.
     pub lcd_present: bool,
+
+    /// Buffers serial baud reg so partial serial input and framed output remain independent of hardware receive timing.
     pub serial_baud_reg: u8,
+
+    /// Remaining ticks before the DDS burst gate toggles waveform output.
     pub burst_timer_ticks: u8,
+
+    /// Remaining panel-activity indication interval before the LED or busy state is released.
     pub activity_timer_ticks: u8,
+
+    /// Remaining interval for the temporary edited-value page before normal measurement display returns.
     pub display_timer_ticks: u16,
+
+    /// Remaining encoder-gesture interval before acceleration and first-turn rounding reset.
     pub incr_timer_ticks: u16,
+
+    /// Records whether the high-level amplitude path is selected so conversion and relay state remain paired.
     pub level_range_high: bool,
+
+    /// Requests one output/display refresh after a setpoint changes, coalescing multiple parser or panel updates.
     pub changed_flag: bool,
+
+    /// Marks the first detent of an edit so the value is snapped to the visible decimal grid before acceleration begins.
     pub first_turn: bool,
+
+    /// Number of parser failures accumulated for the ERC diagnostic response.
     pub err_count: i32,
+
+    /// Retains the most recent parser result until prompt generation serializes its error code.
     pub err_flag: bool,
+
+    /// Buffers ser input so partial serial input and framed output remain independent of hardware receive timing.
     pub ser_input: String,
+
+    /// Buffers param str so partial serial input and framed output remain independent of hardware receive timing.
     pub param_str: String,
 }
 impl<H: DdsHardware> DeviceState<H> {
+    /// Creates a de-energized, internally consistent state image; startup code can then apply EEPROM and hardware initialization without exposing partially configured output.
     pub fn new(hw: H) -> Self {
         let mut state = Self {
             hw,
@@ -96,10 +181,12 @@ impl<H: DdsHardware> DeviceState<H> {
         state
     }
 
+    /// Narrows through a signed integer first to reproduce the original Pascal conversion for negative or oversized parameters.
     pub(super) fn pascal_byte(value: Float) -> u8 {
         (value as i32) as u8
     }
 
+    /// Formats param with stable precision so LCD and serial representations agree.
     pub(super) fn format_param(value: Float, decimals: usize) -> String {
         if value.abs() < 0.000_05 {
             "0".to_string()
@@ -108,6 +195,7 @@ impl<H: DdsHardware> DeviceState<H> {
         }
     }
 
+    /// Formats param pm with stable precision so LCD and serial representations agree.
     pub(super) fn format_param_pm(value: Float, decimals: usize) -> String {
         let mut text = Self::format_param(value, decimals);
         if !text.starts_with('-') {
@@ -116,14 +204,17 @@ impl<H: DdsHardware> DeviceState<H> {
         text
     }
 
+    /// Formats tenths hz with stable precision so LCD and serial representations agree.
     pub(super) fn format_tenths_hz(value: i32) -> String {
         Self::format_param(value as Float / 10.0, 1)
     }
 
+    /// Uses wrapping byte arithmetic because Pascal panel selectors intentionally rolled through their compact enum range.
     pub(super) fn pascal_add_byte(base: u8, delta: i32) -> u8 {
         base.wrapping_add(delta as u8)
     }
 
+    /// Serializes a local panel action as the legacy user-service-request code for remote observers.
     pub(super) fn emit_user_srq(&mut self, status_offset: u8) {
         let masked_status = self.status.as_byte() & 0x2f;
         self.ser_prompt(
@@ -133,41 +224,48 @@ impl<H: DdsHardware> DeviceState<H> {
         );
     }
 
+    /// Decodes get param for panel without widening the command grammar beyond what existing controllers send.
     pub(super) fn parse_get_param_for_panel(&mut self, sub_ch: u8) {
         let _ = self.parse_get_param(sub_ch, true, "");
     }
 
+    /// Writes `#<slave-channel>:<subchannel>=`, the addressed reply prefix expected by the DDS/SQG and parser protocols.
     pub(super) fn write_ch_prefix(&mut self, sub_ch: u8) {
         self.hw
             .serial_write(&format!("#{}:{}=", self.slave_channel, sub_ch));
     }
 
+    /// Emits carriage return followed by line feed as separate bytes, preserving the controller-visible legacy line ending without allocation.
     pub fn ser_crlf(&mut self) {
         self.hw.serial_write("\r\n");
     }
 
+    /// Echoes the stored or supplied serial input text verbatim, then terminates the echo with the legacy CR/LF pair.
     pub fn write_ser_inp(&mut self, text: &str) {
         self.hw.serial_write(text);
         self.ser_crlf();
     }
 
+    /// Writes the addressed channel/subchannel prefix, the already-formatted parameter text, and CR/LF.
     pub(super) fn write_param_str_ser(&mut self, sub_ch: u8, value: &str) {
         self.write_ch_prefix(sub_ch);
         self.hw.serial_write(value);
         self.ser_crlf();
     }
 
+    /// Formats the byte parameter in base 10 and sends it through the addressed parameter-response path.
     pub(super) fn write_param_byte_ser(&mut self, sub_ch: u8, value: u8) {
         self.write_param_str_ser(sub_ch, &value.to_string());
     }
 
+    /// Emits status only when protocol verbosity or an error requires it, while latching error accounting consistently.
     pub(super) fn ser_prompt(&mut self, err: ErrorCode, status: u8, verbose: bool) {
         if verbose || err != ErrorCode::NoErr {
             self.write_ch_prefix(ERR_SUB_CH);
             self.hw
                 .serial_write(&(status.wrapping_add(err as u8)).to_string());
             self.hw.serial_write(" ");
-            self.hw.serial_write(ERR_LABELS[err as usize]);
+            self.hw.serial_write(err.as_str());
             self.ser_crlf();
         }
 
@@ -177,6 +275,7 @@ impl<H: DdsHardware> DeviceState<H> {
         }
     }
 
+    /// Copies persisted defaults into live setpoints after reset or EEPROM writes without disturbing unrelated runtime latches.
     pub fn patch_copy_from_ee(&mut self) {
         self.waveform = Waveform::from_byte(self.eeprom.init_wave);
         self.pwr_gain = self.eeprom.init_pwr_gain;
@@ -195,6 +294,7 @@ impl<H: DdsHardware> DeviceState<H> {
         self.set_limits();
     }
 
+    /// Advances the interrupt-time phase machine that must keep ADC sampling and output timing deterministic.
     pub fn on_sys_tick(&mut self) {
         self.input_level_mv = self.hw.read_input_level();
         self.status.overload_flag = self.hw.read_input_overload();
@@ -215,6 +315,7 @@ impl<H: DdsHardware> DeviceState<H> {
         }
     }
 
+    /// Applies output-stage gain and waveform crest-factor correction to convert the amplitude-DAC level into RMS millivolts.
     pub fn dac_level_to_rms(&self, mut level: Float) -> Float {
         level *= self.pwr_gain;
         match self.waveform {
@@ -224,6 +325,7 @@ impl<H: DdsHardware> DeviceState<H> {
         }
     }
 
+    /// Removes output-stage gain and applies the inverse waveform factor to obtain the amplitude-DAC level for an RMS request.
     pub fn rms_to_dac_level(&self, mut level: Float) -> Float {
         level /= self.pwr_gain.max(0.001);
         match self.waveform {
@@ -233,30 +335,37 @@ impl<H: DdsHardware> DeviceState<H> {
         }
     }
 
+    /// Converts RMS millivolts to dBV-like protocol level with `20 * log10(level / reference)`.
     pub fn level_to_db(&self, level: Float) -> Float {
         20.0 * (level / DB_REFERENCE_MV).log10()
     }
 
+    /// Converts the logarithmic protocol level back to RMS millivolts using the configured reference.
     pub fn db_to_level(&self, db: Float) -> Float {
         DB_REFERENCE_MV * 10.0_f32.powf(db / 20.0)
     }
 
+    /// Composes logarithmic-to-RMS and RMS-to-DAC conversion for a DBU set operation.
     pub fn db_to_dac_level(&self, db: Float) -> Float {
         self.rms_to_dac_level(self.db_to_level(db))
     }
 
+    /// Converts the current DAC amplitude through waveform/gain correction before logarithmic reporting.
     pub fn dac_level_to_db(&self, level: Float) -> Float {
         self.level_to_db(self.dac_level_to_rms(level))
     }
 
+    /// Applies output-stage gain and crest factor to report the current amplitude-DAC code as peak millivolts.
     pub fn dac_level_to_peak_mv(&self) -> Float {
         self.dac_level * self.pwr_gain * PEAK_FACTOR
     }
 
+    /// Recomputes the maximum logarithmic level from amplitude-DAC full scale after gain or calibration changes.
     pub fn set_limits(&mut self) {
         self.db_max = self.dac_level_to_db(self.dac_level_max);
     }
 
+    /// Selects the measurement gain and updates its label only when the range changes, avoiding redundant relay traffic.
     pub fn switch_range(&mut self) {
         let adc_scale = self
             .eeprom
@@ -285,6 +394,7 @@ impl<H: DdsHardware> DeviceState<H> {
         self.hw.set_input_range(self.range);
     }
 
+    /// Returns `Off` while a burst gate is closed, leaving the configured waveform intact for the next open interval.
     pub(super) fn effective_waveform(&self) -> Waveform {
         if self.burst_mode != 0 && !self.burst_gate_open {
             Waveform::Off
@@ -293,6 +403,7 @@ impl<H: DdsHardware> DeviceState<H> {
         }
     }
 
+    /// Builds the AD9833 tuning value from fixed decimal decades, matching Pascal's truncation without heap formatting.
     pub(super) fn dds_tuning_word(&self) -> u32 {
         let normalized = self.frequency_tenths_hz.max(0);
         let mut divisor = 10_000_000;
@@ -303,6 +414,7 @@ impl<H: DdsHardware> DeviceState<H> {
         })
     }
 
+    /// Substitutes the legacy overload sentinel when the ADC input is saturated; normal readings retain calibrated millivolts.
     pub(super) fn effective_input_level_mv(&self) -> Float {
         if self.status.overload_flag {
             -9_999.0
@@ -311,6 +423,7 @@ impl<H: DdsHardware> DeviceState<H> {
         }
     }
 
+    /// Converts current setpoints into one coherent hardware update so frequency, level, waveform, and range cannot diverge.
     pub fn apply_output_state(&mut self) {
         self.switch_range();
         self.level_range_high = self.dac_level > 1_000.0;
@@ -323,6 +436,7 @@ impl<H: DdsHardware> DeviceState<H> {
         self.hw.set_waveform(self.effective_waveform());
     }
 
+    /// Renders param str in its fixed panel position so updates do not disturb the other row.
     pub fn param_str_on_lcd(&mut self) {
         if !self.lcd_present {
             return;
@@ -330,6 +444,7 @@ impl<H: DdsHardware> DeviceState<H> {
         self.hw.lcd_write_line(1, &self.param_str);
     }
 
+    /// Renders soll werte in its fixed panel position so updates do not disturb the other row.
     pub fn soll_werte_on_lcd(&mut self) {
         if !self.lcd_present {
             return;
@@ -342,6 +457,7 @@ impl<H: DdsHardware> DeviceState<H> {
         );
     }
 
+    /// Normalizes unsafe or unrepresentable settings before they reach DAC or relay calculations, returning an error when the requested value had to be corrected.
     pub fn check_limits(&mut self) -> bool {
         let mut out_of_range = false;
 
@@ -401,6 +517,7 @@ impl<H: DdsHardware> DeviceState<H> {
         out_of_range
     }
 
+    /// Formats the selected runtime or calibration value using the subchannel's protocol units and precision.
     pub(super) fn parse_get_param(
         &mut self,
         sub_ch: u8,
@@ -488,6 +605,7 @@ impl<H: DdsHardware> DeviceState<H> {
         Ok(())
     }
 
+    /// Applies a parsed value to its owning setting, enforcing EEPROM unlock and recalculation side effects where required.
     pub(super) fn parse_set_param(
         &mut self,
         sub_ch: u8,
@@ -604,41 +722,12 @@ impl<H: DdsHardware> DeviceState<H> {
         Ok(())
     }
 
+    /// Resolves a command mnemonic to its protocol-table index so command and subchannel arrays remain paired.
     pub fn cmd2_index(&self, text: &str) -> CmdWhich {
-        CMD_STR_ARR
-            .iter()
-            .position(|candidate| *candidate == text)
-            .and_then(|index| {
-                use CmdWhich::*;
-                Some(match index {
-                    0 => Str,
-                    1 => Idn,
-                    2 => Trg,
-                    3 => Val,
-                    4 => Frq,
-                    5 => Lvl,
-                    6 => Lvp,
-                    7 => Dbv,
-                    8 => Wav,
-                    9 => Bst,
-                    10 => Aux,
-                    11 => Inl,
-                    12 => Rng,
-                    13 => Ofs,
-                    14 => Dsp,
-                    15 => All,
-                    16 => Opt,
-                    17 => Scl,
-                    18 => Wen,
-                    19 => Erc,
-                    20 => Sbd,
-                    21 => Nop,
-                    _ => return None,
-                })
-            })
-            .unwrap_or(CmdWhich::Err)
+        CmdWhich::from_str(text)
     }
 
+    /// Decodes alpha prefix without widening the command grammar beyond what existing controllers send.
     pub(super) fn parse_alpha_prefix<'a>(&self, text: &'a str) -> (&'a str, &'a str) {
         let split = text
             .char_indices()
@@ -647,6 +736,7 @@ impl<H: DdsHardware> DeviceState<H> {
         (&text[..split], &text[split..])
     }
 
+    /// Decodes numeric prefix without widening the command grammar beyond what existing controllers send.
     pub(super) fn parse_numeric_prefix<'a>(&self, text: &'a str) -> (&'a str, &'a str) {
         let split = text
             .char_indices()
@@ -655,6 +745,7 @@ impl<H: DdsHardware> DeviceState<H> {
         (&text[..split], &text[split..])
     }
 
+    /// Decodes subchannel token without widening the command grammar beyond what existing controllers send.
     pub(super) fn parse_subchannel_token(&self, token: &str) -> Result<u8, ErrorCode> {
         let token = token.trim();
         if token.is_empty() {
@@ -666,18 +757,13 @@ impl<H: DdsHardware> DeviceState<H> {
             return token.parse::<u8>().map_err(|_| ErrorCode::ParamErr);
         }
 
-        let upper = token.to_ascii_uppercase();
-        let (cmd_text, suffix_text) = self.parse_alpha_prefix(&upper);
+        let (cmd_text, suffix_text) = self.parse_alpha_prefix(token);
         let which = self.cmd2_index(cmd_text);
         if which == CmdWhich::Err {
             return Err(ErrorCode::SyntaxErr);
         }
 
-        let cmd_index = CMD_STR_ARR
-            .iter()
-            .position(|candidate| *candidate == cmd_text)
-            .ok_or(ErrorCode::SyntaxErr)?;
-        let base = CMD2_SUB_CH_ARR[cmd_index];
+        let base = which.default_subchannel();
         let suffix = if suffix_text.is_empty() {
             0
         } else {
@@ -686,6 +772,7 @@ impl<H: DdsHardware> DeviceState<H> {
         Ok(base.wrapping_add(suffix))
     }
 
+    /// Checks the optional XOR suffix over exactly the bytes covered by the legacy protocol.
     pub(super) fn verify_checksum<'a>(&self, line: &'a str) -> Result<&'a str, ErrorCode> {
         if let Some(pos) = line.find('$') {
             let body = &line[..pos];
@@ -702,6 +789,7 @@ impl<H: DdsHardware> DeviceState<H> {
         }
     }
 
+    /// Validates addressing and checksum, dispatches the command, then emits replies using the original verbose/request rules.
     pub fn process_serial_command(&mut self, line: &str) {
         if line.is_empty() {
             self.ser_prompt(ErrorCode::NoErr, 0, false);
@@ -786,6 +874,7 @@ impl<H: DdsHardware> DeviceState<H> {
         }
     }
 
+    /// Applies a debounced panel action and reports user-service-request status using the same path as serial observers.
     pub fn handle_panel_event(&mut self, event: PanelEvent) {
         match event {
             PanelEvent::EncoderDelta(delta) => {
@@ -966,11 +1055,13 @@ impl<H: DdsHardware> DeviceState<H> {
         }
     }
 
+    /// Runs the slower foreground maintenance work that must not lengthen the timer interrupt, including measurement filtering, protection, telemetry, and display refresh.
     pub fn chores(&mut self) {
         self.apply_output_state();
         self.soll_werte_on_lcd();
     }
 
+    /// Drains bounded serial input while continuing foreground service so a slow or partial command cannot starve protection work.
     pub fn check_ser(&mut self) {
         while let Some(ch) = self.hw.serial_read() {
             match ch {
@@ -989,6 +1080,7 @@ impl<H: DdsHardware> DeviceState<H> {
         }
     }
 
+    /// Implements a serviced delay: elapsed time advances while serial and protection work continue instead of busy-waiting blindly.
     pub fn check_delay(&mut self, delay_steps: u8) {
         for _ in 0..delay_steps {
             self.check_ser();
@@ -996,6 +1088,7 @@ impl<H: DdsHardware> DeviceState<H> {
         }
     }
 
+    /// Restores the Pascal startup order: clear latches, configure communication and display state, apply EEPROM defaults, then program safe outputs.
     pub fn init_all(&mut self) {
         let mut baud_reg = self.eeprom.ee_ser_baud_reg;
         if !(9..=239).contains(&baud_reg) {

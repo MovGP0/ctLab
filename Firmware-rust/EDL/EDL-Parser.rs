@@ -1,28 +1,27 @@
-﻿// Best-effort Rust port of ctLab/Firmware/EDL/EDL-Parser.pas.
-//
-// This keeps the original parser split:
-// - device-specific handlers: parse_get_param / parse_set_param
-// - generic parser helpers: cmd_to_index / parse_extract / parse_sub_ch
-//
-// The original Pascal parser talks directly to firmware globals and serial I/O.
-// This Rust version keeps the same control flow but represents hardware access
-// through explicit state fields and placeholder hook methods.
+﻿//! Serial command parser for the EDL electronic-load firmware.
+//!
+//! The split between device-specific getters/setters and generic channel,
+//! mnemonic, token, and checksum parsing mirrors `EDL-Parser.pas`. Mutable
+//! fields model the Pascal globals so protocol behavior can be tested without
+//! silently replacing hardware-dependent operations.
 
+/// Verbose parser outcome labels.
 #[path = "edl_parser/prompt_code.rs"]
 mod prompt_code;
 pub use prompt_code::PromptCode;
 
+/// Parser-side mode values retaining invalid wire bytes.
 #[path = "edl_parser/mode.rs"]
 mod mode;
 pub use mode::Mode;
 
+/// Parser-side menu values retaining invalid wire bytes.
 #[path = "edl_parser/modify.rs"]
 mod modify;
 pub use modify::Modify;
 
-#[path = "edl_parser/cmd_which.rs"]
-mod cmd_which;
-pub use cmd_which::CmdWhich;
+/// Compiler-checked EDL mnemonic and base-subchannel mapping shared with the foreground state machine.
+pub use crate::edl::CmdWhich;
 
 const OPTION_ARRAY_LEN: usize = 22;
 const DACI_COUNT: usize = 4;
@@ -30,75 +29,30 @@ const ADCU_COUNT: usize = 2;
 const ADCI_COUNT: usize = 4;
 const SHUNT_D: u8 = 3;
 const DEFAULT_DAC_MAX: u16 = 4095;
-const DEFAULT_CMD_STR_ARR: [&str; 31] = [
-    "STR",
-    "IDN",
-    "CHN",
-    "VAL",
-    "ENA",
-    "DCA",
-    "DCP",
-    "DCV",
-    "DCR",
-    "MAH",
-    "MWH",
-    "MSV",
-    "MSA",
-    "RNG",
-    "MSW",
-    "PCA",
-    "RON",
-    "ROF",
-    "RIP",
-    "RAW",
-    "DSP",
-    "ALL",
-    "OFS",
-    "SCL",
-    "OPT",
-    "TMP",
-    "TRM",
-    "WEN",
-    "ERC",
-    "SBD",
-    "NOP",
-];
-const DEFAULT_CMD2_SUB_CH_ARR: [u8; 31] = [
-    255,
-    254,
-    253,
-    0,
-    0,
-    1,
-    3,
-    4,
-    5,
-    7,
-    8,
-    10,
-    11,
-    19,
-    18,
-    21,
-    27,
-    28,
-    29,
-    50,
-    80,
-    99,
-    100,
-    200,
-    150,
-    233,
-    240,
-    250,
-    251,
-    252,
-    0,
-];
+#[rustfmt::skip]
 const DEFAULT_OPTION_ARRAY: [f64; OPTION_ARRAY_LEN] = [
-    0.0, 0.02, 2.5, 10.0, 10.0, 2.5, 50.0, 100.0, 10.0, 1.0, 0.1, 0.002, 0.020, 0.200, 2.0, 25.0,
-    6.1, 4.0, 0.0, 10.0, 0.0, 50.0,
+    0.0,
+    0.02,
+    2.5,
+    10.0,
+    10.0,
+    2.5,
+    50.0,
+    100.0,
+    10.0,
+    1.0,
+    0.1,
+    0.002,
+    0.020,
+    0.200,
+    2.0,
+    25.0,
+    6.1,
+    4.0,
+    0.0,
+    10.0,
+    0.0,
+    50.0,
 ];
 const OPT_GAIN_I: usize = 4;
 const OPT_U_REF: usize = 5;
@@ -112,6 +66,7 @@ const ADC10_COUNT: usize = 6;
 const ADC_MAX_10: f64 = 1023.0;
 const ADC_MAX_16: f64 = 65535.0;
 
+/// Source-faithful protocol state and command dispatch.
 #[path = "edl_parser/edl_parser.rs"]
 mod edl_parser;
 pub use edl_parser::EdlParser;

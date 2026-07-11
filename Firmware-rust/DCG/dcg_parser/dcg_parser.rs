@@ -1,83 +1,236 @@
+//! Implements the DCG command grammar and calibration-write side effects.
+
 use super::*;
 
+/// Pascal-compatible command interpreter with an explicit state image, allowing parser behavior to be tested without energizing hardware.
 pub struct DcgParser {
+    /// Requested DCG voltage setpoint in volts parsed or returned through the DCV subchannel.
     pub dc_volt: f32,
+
+    /// Requested DCG current-limit setpoint in amperes parsed or returned through the DCA subchannel.
     pub dc_amp: f32,
+
+    /// Accumulates ah across service intervals so capacity/energy requests do not depend on display refresh timing.
     pub ah: f32,
+
+    /// Accumulates wh across service intervals so capacity/energy requests do not depend on display refresh timing.
     pub wh: f32,
+
+    /// Accumulates dc volt integrated across service intervals so capacity/energy requests do not depend on display refresh timing.
     pub dc_volt_integrated: f32,
+
+    /// Accumulates dc amp integrated across service intervals so capacity/energy requests do not depend on display refresh timing.
     pub dc_amp_integrated: f32,
+
+    /// Measured DCG current in amperes returned by MSA and used for power integration.
     pub curr_amp: f32,
+
+    /// Measured DCG voltage in volts returned by MSV and used for power integration.
     pub curr_volt: f32,
+
+    /// PCV percentage modifier applied to the voltage setpoint without triggering automatic relay range changes.
     pub dc_volt_mod: f32,
+
+    /// PCA percentage modifier applied to the current setpoint without triggering automatic shunt range changes.
     pub dc_amp_mod: f32,
+
+    /// Latest auxiliary supply voltage in volts, used to detect fuse or supply-path loss before enabling the output relay.
     pub input_voltage: f32,
+
+    /// Latest calibrated output voltage in volts, used with the time-aligned current sample for protection, power, and serial measurement replies.
     pub measured_voltage: f32,
+
+    /// Latest calibrated output current in amperes, used for current protection, power calculation, and serial measurement replies.
     pub measured_current: f32,
+
+    /// Latest DCG temperature in degrees Celsius returned by TMP and evaluated by thermal protection.
     pub temperature: f32,
+
+    /// Requested DCG ripple on-phase duration in milliseconds.
     pub pw_on_time: i32,
+
+    /// Requested DCG ripple off-phase duration in milliseconds.
     pub pw_off_time: i32,
+
+    /// Sets the requested voltage drop during the off phase as a percentage of the energized setpoint.
     pub ripple_percent: i32,
+
+    /// Off-phase voltage in volts calculated from the energized setpoint and ripple percentage before DAC quantization.
     pub ripple_voltage: f32,
+
+    /// Suppresses one ripple phase transition while a setpoint or relay update requires a stable output phase.
     pub no_toggle: bool,
+
+    /// Latest unscaled voltage-converter code, retained for `RAW` diagnostics before the active range's offset and volts-per-count factor are applied.
     pub adc_raw_u: u16,
+
+    /// Latest unscaled current-converter code, retained for `RAW` diagnostics before the active shunt's offset and amperes-per-count factor are applied.
     pub adc_raw_i: u16,
+
+    /// Stores raw AVR ADC samples for the six auxiliary board channels used by supply, temperature, and protection calculations.
     pub adc10: [u16; 6],
+
+    /// Calibrated voltage DAC code used during the energized ripple phase.
     pub dac_raw_uon: u16,
+
+    /// Calibrated voltage DAC code used during the off ripple phase.
     pub dac_raw_uoff: u16,
+
+    /// Calibrated current-limit DAC code for the active shunt range.
     pub dac_raw_i: u16,
+
+    /// Maximum raw code of the selected 12- or 16-bit DAC, used to clamp every calibrated output.
     pub dac_max: u16,
+
+    /// Voltage represented by one DAC count after the active converter width and voltage range are applied.
     pub dac_lsb_u: [f32; 2],
+
+    /// Current represented by one DAC count after the active converter width and shunt are applied.
     pub dac_lsb_i: [f32; 4],
+
+    /// Volts represented by one ADC count for each of the two voltage ranges, indexed by `VoltageRange` after offset subtraction.
     pub adc_lsb_u: [f32; 2],
+
+    /// Amperes represented by one ADC count for each of the four shunt ranges, indexed by `CurrentRange` after offset subtraction.
     pub adc_lsb_i: [f32; 4],
+
+    /// Selects modify, which controls the exhaustive branch used by panel handling and output calculation.
     pub modify: Modify,
+
+    /// Counts raw encoder edges toward one logical detent before applying an edit.
     pub inc_rast: i32,
+
+    /// Persisted number of quadrature edges per logical panel encoder detent.
     pub init_inc_rast: f32,
+
+    /// Per-voltage-range zero codes loaded from EEPROM before converting requested volts to raw DAC words.
     pub dac_u_offsets: [i32; 2],
+
+    /// Per-shunt zero codes loaded from EEPROM before converting requested amperes to raw DAC words.
     pub dac_i_offsets: [i32; 4],
+
+    /// Persisted raw zero-code correction for each of the two voltage ranges, subtracted before voltage scaling.
     pub adc_u_offsets: [i32; 2],
+
+    /// Persisted raw zero-code correction for each of the four current shunts, subtracted before current scaling.
     pub adc_i_offsets: [i32; 4],
+
+    /// Runtime copy of the 25-slot DCG EEPROM option image used by calibration accessors and protected serial writes.
     pub option_array: [f32; 25],
+
+    /// Per-voltage-range gain corrections applied when converting requested volts to DAC counts.
     pub dac_u_scales: [f32; 2],
+
+    /// Per-shunt gain corrections applied when converting requested amperes to DAC counts.
     pub dac_i_scales: [f32; 4],
+
+    /// Persisted gain correction for each voltage range, used to derive calibrated volts per ADC count.
     pub adc_u_scales: [f32; 2],
+
+    /// Persisted gain correction for each current shunt, used to derive calibrated amperes per ADC count.
     pub adc_i_scales: [f32; 4],
+
+    /// Number of parser failures accumulated for the ERC diagnostic response.
     pub err_count: i32,
+
+    /// Stores the AVR UART divisor selected by the protected `SBD` command for reuse after reset.
     pub ee_ser_baud_reg: u8,
+
+    /// Configured multidrop instrument address accepted before SQG/DCG parser command dispatch and emitted in `#channel:subchannel=` replies.
     pub slave_ch: u8,
+
+    /// Address parsed from the current DCG frame before it is compared with the configured slave channel.
     pub current_ch: u8,
+
+    /// Numeric protocol subchannel selected by mnemonic lookup or explicit `VAL` syntax for the current request/set operation.
     pub sub_ch: u8,
+
+    /// Stores the decoded command identity while its subchannel and parameter are validated and dispatched.
     pub cmd_which: CmdWhich,
+
+    /// Marks local panel ownership so a remote mutating command returns `BusyErr` instead of racing the encoder.
     pub busy_flag: bool,
+
+    /// Authorizes exactly the protected EEPROM-setting path after a successful `WEN` command.
     pub ee_unlocked: bool,
+
+    /// Requests one output/display refresh after a setpoint changes, coalescing multiple parser or panel updates.
     pub changed_flag: bool,
+
+    /// Controls whether successful serial commands emit the legacy status prompt in addition to mandatory error replies.
     pub verbose: bool,
+
+    /// Current shunt selected for ADC scaling and current-limit DAC conversion.
     pub i_range: u8,
+
+    /// Caches the previous i range to suppress redundant writes and detect transitions that require safe blanking.
     pub old_i_range: u8,
+
+    /// Automatically chosen current shunt retained separately from a range forced by command syntax.
     pub i_auto_range: u8,
+
+    /// Voltage relay range selected for ADC scaling and voltage DAC conversion.
     pub u_range: u8,
+
+    /// Caches the previous u range to suppress redundant writes and detect transitions that require safe blanking.
     pub old_u_range: u8,
+
+    /// Full-scale voltage in volts derived from the EEPROM option image and used by range/limit checks.
     pub u_max: f32,
+
+    /// Maximum current in amperes for the active shunt, used to clamp DCA and PCA results.
     pub i_max: f32,
+
+    /// Full-scale amperage for each current shunt, indexed by current range during auto-ranging and limit checks.
     pub i_max_array: [f32; 4],
+
+    /// Calibrated voltage threshold around which relay hysteresis changes the DCG voltage range.
     pub switchpoint: f32,
+
+    /// Counts numeric token digits so fixed-width parsing can detect overflow and reproduce Pascal precision.
     pub digits: u8,
+
+    /// Counts digits after the decimal separator to scale the parsed integer into engineering units.
     pub nachkomma: u8,
+
+    /// Stores the parsed floating-point parameter used by engineering-unit setters.
     pub param: f32,
+
+    /// Stores the parsed signed integer parameter used by indexed and timing subchannels.
     pub param_int: i32,
+
+    /// Stores the checked byte-sized parameter used by option, waveform, and selector subchannels.
     pub param_byte: u8,
+
+    /// Buffers param str so partial serial input and framed output remain independent of hardware receive timing.
     pub param_str: String,
+
+    /// Buffers ser inp str so partial serial input and framed output remain independent of hardware receive timing.
     pub ser_inp_str: String,
+
+    /// Buffers ser inp ptr so partial serial input and framed output remain independent of hardware receive timing.
     pub ser_inp_ptr: usize,
+
+    /// Records whether limit enforcement corrected the last parsed value so the response reports `ParamErr`.
     pub check_limit_err: Error,
+
+    /// Countdown keeping the parser-model activity LED asserted for the legacy visible interval.
     pub activity_timer: u8,
+
+    /// Active-low activity LED shadow used by parser-only tests to verify command feedback timing.
     pub led_activity_low: bool,
+
+    /// Counts parser-model display refresh requests caused by setpoint or status changes.
     pub display_refresh_count: u32,
+
+    /// Buffers serial log so partial serial input and framed output remain independent of hardware receive timing.
     pub serial_log: Vec<String>,
+
+    /// Records requested settling delays in the parser model so protected-write sequencing can be asserted without sleeping.
     pub delay_log: Vec<u16>,
 }
 impl Default for DcgParser {
+    /// Creates the parser model with factory DCG limits, calibration arrays, clear error state, and a locked EEPROM-write latch.
     fn default() -> Self {
         Self {
             dc_volt: 0.0,
@@ -159,15 +312,19 @@ impl Default for DcgParser {
     }
 }
 impl DcgParser {
+    /// Converts the parser's integer milli-unit representation to engineering units before validation and display formatting.
     pub fn param_div_1000(&mut self) {
         self.param /= 1000.0;
     }
 
+    /// Converts engineering units back to the integer milli-unit representation used by the legacy serial parameter path.
     pub fn param_mul_1000(&mut self) {
         self.param *= 1000.0;
     }
 
     // Device-specific parser branch.
+
+    /// Formats the selected runtime or calibration value using the subchannel's protocol units and precision.
     pub fn parse_get_param(&mut self) {
         self.digits = 1;
         self.nachkomma = 4;
@@ -377,6 +534,7 @@ impl DcgParser {
         }
     }
 
+    /// Applies a parsed value to its owning setting, enforcing EEPROM unlock and recalculation side effects where required.
     pub fn parse_set_param(&mut self) {
         if self.busy_flag {
             // The Pascal parser rejects writes while a measurement/update cycle
@@ -513,20 +671,16 @@ impl DcgParser {
     }
 
     // General parser branch.
+
+    /// Matches mnemonics case-insensitively against the ordered protocol table, returning `Err` rather than borrowing another command's index.
     pub fn cmd_to_index(&mut self) -> CmdWhich {
-        // Translate the clear-text command token into the command-table index
-        // used by `CMD2_SUB_CH_ARR`.
-        self.param_str = self.param_str.to_ascii_uppercase();
-        for (index, cmd) in CMD_STR_ARR.iter().enumerate() {
-            if self.param_str == *cmd {
-                return CmdWhich::from_index(index);
-            }
-        }
-        CmdWhich::Err
+        CmdWhich::from_str(&self.param_str)
     }
 
     // Extract either a command token or a numeric parameter token from SerInpStr.
     // Returns true for parameter tokens, false for command tokens.
+
+    /// Extracts one command or numeric token using the permissive character ranges accepted by the Pascal parser.
     pub fn parse_extract(&mut self) -> bool {
         self.param_str.clear();
         let bytes = self.ser_inp_str.as_bytes();
@@ -570,6 +724,7 @@ impl DcgParser {
         }
     }
 
+    /// Parses one addressed or implicit-channel command and routes it through request/set handling while preserving echo and checksum semantics.
     pub fn parse_sub_ch(&mut self) {
         if self.ser_inp_str.is_empty() {
             self.serprompt(Error::NoErr);
@@ -657,7 +812,7 @@ impl DcgParser {
 
             // Mnemonic commands contribute the block base; the next extracted
             // token adds the per-command sub-channel offset.
-            let offset = CMD2_SUB_CH_ARR[self.cmd_which.as_index()];
+            let offset = self.cmd_which.default_subchannel();
             let _is_param = self.parse_extract();
             offset
         };
@@ -693,6 +848,7 @@ impl DcgParser {
         }
     }
 
+    /// Formats the current floating-point parameter, writes the addressed channel/subchannel prefix, then appends CR/LF.
     pub(super) fn write_param_ser(&mut self) {
         self.serial_log.push(format!(
             "{}:{}={:.*}",
@@ -700,6 +856,7 @@ impl DcgParser {
         ));
     }
 
+    /// Writes the addressed channel/subchannel prefix, a base-10 signed integer parameter, and CR/LF.
     pub(super) fn write_param_int_ser(&mut self) {
         self.serial_log.push(format!(
             "{}:{}={}",
@@ -707,39 +864,48 @@ impl DcgParser {
         ));
     }
 
+    /// Writes the current addressed reply prefix followed by supplied protocol text and CR/LF.
     pub(super) fn write_framed_text_ser(&mut self, text: &str) {
         self.serial_log
             .push(format!("#{}:{}={}", self.slave_ch, self.sub_ch, text));
     }
 
+    /// Emits the DCG parser status prompt when verbosity or an error requires it and updates error accounting.
     pub(super) fn serprompt(&mut self, error: Error) {
-        self.serial_log.push(format!("{error:?}"));
+        self.serial_log.push(error.as_str().to_owned());
     }
 
+    /// Echoes the stored or supplied serial input text verbatim, then terminates the echo with the legacy CR/LF pair.
     pub(super) fn write_ser_inp(&mut self) {
         self.serial_log.push(self.ser_inp_str.clone());
     }
 
+    /// Selects the configured voltage converter path, applies offset and per-range scale, and stores the engineering-unit result for power/protection.
     pub(super) fn get_voltage(&mut self) {
         self.param = self.measured_voltage;
     }
 
+    /// Selects the configured current converter path, applies shunt-specific offset and scale, then updates measured power from the paired voltage.
     pub(super) fn get_current(&mut self) {
         self.param = self.measured_current;
     }
 
+    /// Converts the auxiliary ADC10 supply reading through the board divider so relay and fuse checks compare physical volts.
     pub(super) fn get_input_voltage(&mut self) {
         self.param = self.input_voltage;
     }
 
+    /// Selects the one-based AVR ADC channel, waits for mux settling, starts conversion, polls completion, then combines ADCL before ADCH as required by the AVR latch rule.
     pub(super) fn get_adc10(&self, channel: usize) -> u16 {
         self.adc10.get(channel).copied().unwrap_or(0)
     }
 
+    /// Renders werte in its fixed panel position so updates do not disturb the other row.
     pub(super) fn werte_on_lcd(&mut self) {
         self.display_refresh_count = self.display_refresh_count.saturating_add(1);
     }
 
+    /// Rebuilds calibration factors from EEPROM and active hardware options so later ADC/DAC conversions use one coherent scale set.
     pub(super) fn init_scales(&mut self) {
         let init_gain_pre = self.option_array[2];
         let init_gain_out = self.option_array[3];
@@ -787,10 +953,12 @@ impl DcgParser {
         self.pw_off_time = self.option_array[24] as i32;
     }
 
+    /// Records the requested post-write settling interval through the hardware seam used by the parser model.
     pub(super) fn mdelay(&mut self, milliseconds: u16) {
         self.delay_log.push(milliseconds);
     }
 
+    /// Normalizes unsafe or unrepresentable settings before they reach DAC or relay calculations, returning an error when the requested value had to be corrected.
     pub(super) fn check_limits(&mut self) {
         self.check_limit_err = Error::NoErr;
 
@@ -842,6 +1010,7 @@ impl DcgParser {
         };
     }
 
+    /// Computes calibrated on/off DAC words and blanks output during range changes to avoid delivering a transient pulse.
     pub(super) fn set_level_dac(&mut self) {
         self.calc_range_i();
 
@@ -888,6 +1057,7 @@ impl DcgParser {
         };
     }
 
+    /// Derives range i from calibrated limits instead of hard-coding a board range.
     pub(super) fn calc_range_i(&mut self) {
         self.i_range = 0;
         for (range, max_current) in self.i_max_array.iter().enumerate() {
@@ -897,10 +1067,12 @@ impl DcgParser {
         }
     }
 
+    /// Clamps a computed raw code to the selected DAC's valid range so calibration cannot wrap the hardware word.
     pub(super) fn clamp_dac(&self, value: f32) -> u16 {
         value.round().clamp(0.0, self.dac_max as f32) as u16
     }
 
+    /// Decodes checksum nybbles explicitly because the wire checksum is hexadecimal even though parameters are decimal.
     pub(super) fn hex_to_int(text: &str) -> Option<u8> {
         u8::from_str_radix(text, 16).ok()
     }

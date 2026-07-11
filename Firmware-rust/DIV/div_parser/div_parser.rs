@@ -1,8 +1,14 @@
+//! Defines DIV command parsing and dispatch for the instrument serial protocol.
+
 #[allow(unused_imports)]
 use super::*;
 
+/// Owns div parser state while decoding one serial command at a time.
 pub struct DivParser<H> {
+    /// Owns the state object that supplies this type's hardware or parser state.
     pub state: ParserState,
+
+    /// Owns parser callbacks that read and mutate the live DIV runtime instead of a duplicate parser model.
     pub hooks: H,
 }
 
@@ -10,6 +16,7 @@ impl<H> DivParser<H>
 where
     H: DivParserHooks,
 {
+    /// Starts a parser with Pascal sentinel channel 255, default 2.5 V range, and the supplied live-runtime hooks.
     pub fn new(hooks: H) -> Self {
         Self {
             state: ParserState::default(),
@@ -17,6 +24,7 @@ where
         }
     }
 
+    /// Parses get parameter and updates only the state owned by that protocol phase.
     pub fn parse_get_param(&mut self) {
         let mut is_integer = false;
 
@@ -150,6 +158,7 @@ where
         }
     }
 
+    /// Parses set parameter and updates only the state owned by that protocol phase.
     pub fn parse_set_param(&mut self) {
         // The Pascal firmware resets the range/limit status before every write command.
         self.state.check_limit_err = ParserError::NoErr;
@@ -274,20 +283,12 @@ where
         }
     }
 
+    /// Maps cmd2index onto the command enum so dispatch uses a bounded match instead of string comparisons.
     pub fn cmd2index(&mut self) -> CmdWhich {
-        let upper = self.state.param_str.to_ascii_uppercase();
-        self.state.param_str = upper;
-
-        // Translate the human-readable command token into the compact command table index.
-        for (index, cmd_str) in CMD_STR_ARR.iter().enumerate() {
-            if self.state.param_str == *cmd_str {
-                return COMMANDS[index];
-            }
-        }
-
-        CmdWhich::Err
+        CmdWhich::from_str(&self.state.param_str)
     }
 
+    /// Parses extract and updates only the state owned by that protocol phase.
     pub fn parse_extract(&mut self) -> bool {
         self.state.param_str.clear();
         let bytes = self.state.ser_inp_str.as_bytes();
@@ -322,6 +323,7 @@ where
         is_param
     }
 
+    /// Parses sub channel and updates only the state owned by that protocol phase.
     pub fn parse_sub_ch(&mut self) {
         if self.state.ser_inp_str.is_empty() {
             // Empty input is treated as a no-op status poll.
@@ -414,7 +416,11 @@ where
                 return;
             }
 
-            let offset = CMD_TO_SUBCH_ARR[self.state.cmd_which as usize];
+            let Some(offset) = self.state.cmd_which.sub_channel() else {
+                self.hooks
+                    .serprompt(&mut self.state, ParserError::SyntaxErr);
+                return;
+            };
             // Text commands map to a base sub-channel, then read an optional numeric suffix.
             let _is_param = self.parse_extract();
             offset

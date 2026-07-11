@@ -1,9 +1,13 @@
+//! Implements the standalone DIV parser and its adapter to live voltmeter state for protocol regression tests.
+
 // Best-effort Rust port of ctLab/Firmware/DIV/DIV-Parser.pas.
 //
 // This file keeps the original parser structure and lookup tables readable,
 // while moving board-specific I/O and ADC behavior behind a hook trait.
 
-use crate::div::{DeviceState as DivDeviceState, DivHardware as DivRuntimeHardware, DivRange};
+use crate::div::{
+    DeviceState as DivDeviceState, DivFault, DivHardware as DivRuntimeHardware, DivRange,
+};
 
 #[path = "div_parser/cmd_which.rs"]
 mod cmd_which;
@@ -24,36 +28,10 @@ pub use div_runtime_adapter::DivRuntimeAdapter;
 mod div_parser;
 pub use div_parser::DivParser;
 
+/// Provides the full identification string returned by the `IDN` command.
 pub const VERS1_STR: &str = "3.10 [DIV by CM/c't 03/2007] ";
 
-pub const CMD_STR_ARR: [&str; 16] = [
-    "STR", "IDN", "TRG", "VAL", "RNG", "DSP", "OFS", "SCL", "ALL", "TRM", "TRT", "TRL", "ERC",
-    "SBD", "WEN", "NOP",
-];
-
-pub const CMD_TO_SUBCH_ARR: [u8; 16] = [
-    255, 254, 249, 0, 19, 80, 100, 200, 99, 240, 247, 248, 251, 252, 250, 0,
-];
-
-const COMMANDS: [CmdWhich; 16] = [
-    CmdWhich::Str,
-    CmdWhich::Idn,
-    CmdWhich::Trg,
-    CmdWhich::Val,
-    CmdWhich::Rng,
-    CmdWhich::Dsp,
-    CmdWhich::Ofs,
-    CmdWhich::Scl,
-    CmdWhich::All,
-    CmdWhich::Trm,
-    CmdWhich::Trt,
-    CmdWhich::Trl,
-    CmdWhich::Erc,
-    CmdWhich::Sbd,
-    CmdWhich::Wen,
-    CmdWhich::Nop,
-];
-
+/// Parses u8 default and updates only the state owned by that protocol phase.
 fn parse_u8_default(value: &str, default: u8) -> u8 {
     value
         .trim()
@@ -69,14 +47,17 @@ fn parse_u8_default(value: &str, default: u8) -> u8 {
         .unwrap_or(default)
 }
 
+/// Parses f32 default and updates only the state owned by that protocol phase.
 fn parse_f32_default(value: &str, default: f32) -> f32 {
     value.trim().parse::<f32>().unwrap_or(default)
 }
 
+/// Parses hex u8 default and updates only the state owned by that protocol phase.
 fn parse_hex_u8_default(value: &str, default: u8) -> u8 {
     u8::from_str_radix(value.trim(), 16).unwrap_or(default)
 }
 
+/// Maps div range from u8 into the typed state used internally, rejecting or defaulting unsupported wire values as the implementation specifies.
 fn div_range_from_u8(value: u8) -> DivRange {
     match value {
         0 => DivRange::Dc250mV,
@@ -98,6 +79,7 @@ fn div_range_from_u8(value: u8) -> DivRange {
     }
 }
 
+/// Chooses the engineering exponent appended to serial values so milli- and micro-ranges keep the original wire units.
 fn range_exponent_suffix(range: DivRange) -> Option<&'static str> {
     match range {
         DivRange::Dc250mV | DivRange::Ac250mV | DivRange::Dc25mA | DivRange::Ac25mA => Some("E-3"),
@@ -106,6 +88,7 @@ fn range_exponent_suffix(range: DivRange) -> Option<&'static str> {
     }
 }
 
+/// Converts serial parameter into the representation used on the wire or display.
 fn format_serial_param(value: f32) -> String {
     format!("{value:.6}")
 }
@@ -114,14 +97,28 @@ fn format_serial_param(value: f32) -> String {
 mod tests {
     use super::*;
 
+    /// Supplies controlled conversions and captures output while parser tests exercise the live DIV runtime adapter.
     #[derive(Debug, Clone, Default)]
     struct MockHardware {
+        /// Queues serial in UART order for the host-side hardware model.
         serial: String,
+
+        /// Records LCD lines in order so tests can verify every externally visible operation.
         lcd_lines: Vec<(u8, String)>,
+
+        /// Tracks last range so conversion, relay, and formatting decisions agree.
         last_range: Option<DivRange>,
+
+        /// Contains ad24 in converter counts until the owning conversion or output routine consumes it.
         ad24: i32,
+
+        /// Contains ad10 in converter counts until the owning conversion or output routine consumes it.
         ad10: [i16; 8],
+
+        /// Indicates whether ad10 ready clears; the producer updates it before consumers choose their next action.
         ad10_ready_clears: usize,
+
+        /// Indicates whether ad24 ready clears; the producer updates it before consumers choose their next action.
         ad24_ready_clears: usize,
     }
 
@@ -130,38 +127,47 @@ mod tests {
             self.ad10[channel_1_based as usize]
         }
 
+        /// Returns the latest LTC2400 sample so callers use the intended display or trigger integration mode.
         fn read_adc24(&mut self) -> i32 {
             self.ad24
         }
 
+        /// Returns the fast integrated LTC2400 sample so callers use the intended display or trigger integration mode.
         fn read_adc24_fast_integrated(&mut self) -> i32 {
             self.ad24
         }
 
+        /// Returns the slow integrated LTC2400 sample so callers use the intended display or trigger integration mode.
         fn read_adc24_slow_integrated(&mut self) -> i32 {
             self.ad24
         }
 
+        /// Exposes the latched LTC2400 polarity or clipping state captured with the conversion sample.
         fn adc24_overload_negative(&self) -> bool {
             false
         }
 
+        /// Exposes the latched LTC2400 polarity or clipping state captured with the conversion sample.
         fn adc24_overload_positive(&self) -> bool {
             false
         }
 
+        /// Clears adc10 ready before the next operation is allowed to complete.
         fn clear_adc10_ready(&mut self) {
             self.ad10_ready_clears += 1;
         }
 
+        /// Returns adc10 ready so the caller can gate the next protocol or conversion step.
         fn adc10_ready(&mut self) -> bool {
             true
         }
 
+        /// Clears adc24 ready before the next operation is allowed to complete.
         fn clear_adc24_ready(&mut self) {
             self.ad24_ready_clears += 1;
         }
 
+        /// Returns adc24 ready so the caller can gate the next protocol or conversion step.
         fn adc24_ready(&mut self) -> bool {
             true
         }
@@ -172,19 +178,23 @@ mod tests {
 
         fn set_trigger_edge(&mut self, _positive_edge: bool) {}
 
+        /// Encodes poll serial byte in the compact representation consumed by registers or the serial protocol.
         fn poll_serial_byte(&mut self) -> Option<u8> {
             None
         }
 
+        /// Appends text to the active serial frame without changing parser state.
         fn serial_write(&mut self, text: &str) {
             self.serial.push_str(text);
         }
 
+        /// Renders LCD write line into the fixed LCD cells used by the front panel.
         fn lcd_write_line(&mut self, row: u8, text: &str) {
             self.lcd_lines.push((row, text.to_string()));
         }
     }
 
+    /// Loads one complete serial frame into the parser and executes it, keeping parser tests concise and consistent.
     fn run_frame(parser: &mut DivParser<DivRuntimeAdapter<'_, MockHardware>>, frame: &str) {
         parser.state.ser_inp_str = frame.to_string();
         parser.parse_sub_ch();
@@ -200,6 +210,48 @@ mod tests {
         parser
     }
 
+    /// Verifies every command owns its mnemonic instead of depending on enum position.
+    #[test]
+    fn command_mnemonics_round_trip_through_enum_methods() {
+        #[rustfmt::skip]
+        let commands = [
+            CmdWhich::Str,
+            CmdWhich::Idn,
+            CmdWhich::Trg,
+            CmdWhich::Val,
+            CmdWhich::Rng,
+            CmdWhich::Dsp,
+            CmdWhich::Ofs,
+            CmdWhich::Scl,
+            CmdWhich::All,
+            CmdWhich::Trm,
+            CmdWhich::Trt,
+            CmdWhich::Trl,
+            CmdWhich::Erc,
+            CmdWhich::Sbd,
+            CmdWhich::Wen,
+            CmdWhich::Nop,
+        ];
+
+        for command in commands {
+            let mnemonic = command.as_str().expect("wire command has a mnemonic");
+            assert_eq!(CmdWhich::from_str(mnemonic), command);
+            assert_eq!(CmdWhich::from_str(&mnemonic.to_ascii_lowercase()), command);
+        }
+        assert_eq!(CmdWhich::Err.as_str(), None);
+        assert_eq!(CmdWhich::from_str("UNKNOWN"), CmdWhich::Err);
+    }
+
+    /// Verifies status and fault labels are attached to their owning enums.
+    #[test]
+    fn status_labels_come_from_typed_variants() {
+        assert_eq!(ParserError::NoErr.as_str(), "[OK]");
+        assert_eq!(ParserError::ChecksumErr.as_str(), "[CHKSUM]");
+        assert_eq!(DivFault::NegativeOverload.as_str(), "[OVRNEG]");
+        assert_eq!(DivFault::PositiveOverload.as_str(), "[OVRPOS]");
+    }
+
+    /// Verifies that busy commands fail before execution remains faithful to the Pascal behavior.
     #[test]
     fn busy_commands_fail_before_execution() {
         let mut parser = new_parser();
@@ -211,6 +263,7 @@ mod tests {
         assert_eq!(parser.hooks.activity_timer_ticks, None);
     }
 
+    /// Verifies that runtime adapter waits use device interrupt handshakes remains faithful to the Pascal behavior.
     #[test]
     fn runtime_adapter_waits_use_device_irq_handshakes() {
         let mut parser = new_parser();
@@ -222,6 +275,7 @@ mod tests {
         assert_eq!(parser.hooks.device.hw.ad24_ready_clears, 1);
     }
 
+    /// Verifies that calibration and range writes hit live device state remains faithful to the Pascal behavior.
     #[test]
     fn calibration_and_range_writes_hit_live_device_state() {
         let mut parser = new_parser();
@@ -246,6 +300,7 @@ mod tests {
         assert!(!parser.state.ee_unlocked);
     }
 
+    /// Verifies that trigger commands update runtime state remains faithful to the Pascal behavior.
     #[test]
     fn trigger_commands_update_runtime_state() {
         let mut parser = new_parser();
@@ -262,6 +317,7 @@ mod tests {
         assert!(parser.hooks.device.hw.serial.ends_with("#1:255=0 [OK]\r\n"));
     }
 
+    /// Verifies that forwarded frames preserve pascal wire format remains faithful to the Pascal behavior.
     #[test]
     fn forwarded_frames_preserve_pascal_wire_format() {
         let mut parser = new_parser();
@@ -272,6 +328,7 @@ mod tests {
         assert_eq!(parser.hooks.device.hw.serial, "#2:19=5\r\n2:IDN?\r\n");
     }
 
+    /// Verifies that replies use prefixed pascal framing remains faithful to the Pascal behavior.
     #[test]
     fn replies_use_prefixed_pascal_framing() {
         let mut parser = new_parser();

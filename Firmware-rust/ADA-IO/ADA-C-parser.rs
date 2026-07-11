@@ -1,7 +1,7 @@
 //! Best-effort Rust port of `ADA-C-parser.pas`.
 //!
 //! This keeps the original parser structure intact:
-//! - command lookup via a fixed command enum/table
+//! - command lookup via allocation-free enum conversions
 //! - `parse_get_param` and `parse_set_param` large dispatches
 //! - `parse_extract`, `cmd_to_index`, and `parse_sub_ch` flow
 //!
@@ -28,13 +28,25 @@ pub use ada_io_parser::AdaIoParser;
 
 #[cfg(test)]
 mod tests {
-    use super::{AdaIoParser, ParseError, Reply};
+    use super::{AdaIoParser, CmdWhich, ParseError, Reply};
 
+    /// Verifies that command and error enums own the exact wire text without positional string tables.
+    #[test]
+    fn enum_text_mappings_preserve_wire_protocol() {
+        assert_eq!(CmdWhich::from_str("  iCs  "), CmdWhich::Ics);
+        assert_eq!(CmdWhich::Ics.as_str(), Some("ICS"));
+        assert_eq!(CmdWhich::from_str("unknown"), CmdWhich::Err);
+        assert_eq!(CmdWhich::Err.as_str(), None);
+        assert_eq!(ParseError::ChecksumErr.as_str(), "[CHKSUM]");
+    }
+
+    /// Appends the protocol's XOR checksum as two hexadecimal digits for valid-frame parser tests.
     fn checksum(frame: &str) -> String {
         let checksum = frame.bytes().fold(0u8, |acc, ch| acc ^ ch);
         format!("{frame}${checksum:02X}")
     }
 
+    /// Compares floating-point results with the tolerance appropriate for translated calibration arithmetic.
     fn assert_float_reply(reply: &Reply, expected_sub_ch: u8, expected_value: f32) {
         match reply {
             Reply::Float { sub_ch, value } => {
@@ -45,6 +57,7 @@ mod tests {
         }
     }
 
+    /// Verifies that omni frames are forwarded and executed locally remains faithful to the Pascal behavior.
     #[test]
     fn omni_frames_are_forwarded_and_executed_locally() {
         let mut parser = AdaIoParser::default();
@@ -65,6 +78,7 @@ mod tests {
         assert_eq!(parser.ctx.activity_timer_ticks, 125);
     }
 
+    /// Verifies that mnemonic commands accept missing subchannel remains faithful to the Pascal behavior.
     #[test]
     fn mnemonic_commands_accept_missing_subchannel() {
         let mut parser = AdaIoParser::default();
@@ -81,6 +95,7 @@ mod tests {
         );
     }
 
+    /// Verifies that omni frames validate checksum before local execution remains faithful to the Pascal behavior.
     #[test]
     fn omni_frames_validate_checksum_before_local_execution() {
         let mut parser = AdaIoParser::default();
@@ -94,6 +109,7 @@ mod tests {
         assert_eq!(parser.ctx.activity_timer_ticks, 0);
     }
 
+    /// Verifies that omni frames with valid checksum refresh activity and execute remains faithful to the Pascal behavior.
     #[test]
     fn omni_frames_with_valid_checksum_refresh_activity_and_execute() {
         let mut parser = AdaIoParser::default();
@@ -107,6 +123,7 @@ mod tests {
         assert_eq!(parser.ctx.activity_timer_ticks, 125);
     }
 
+    /// Verifies that live ADC reads use pascal scaling tables remains faithful to the Pascal behavior.
     #[test]
     fn live_adc_reads_use_pascal_scaling_tables() {
         let mut parser = AdaIoParser::default();
@@ -127,6 +144,7 @@ mod tests {
         assert_float_reply(&replies[0], 10, 1.0);
     }
 
+    /// Verifies that raw ADC aliases return integer samples remains faithful to the Pascal behavior.
     #[test]
     fn raw_adc_aliases_return_integer_samples() {
         let mut parser = AdaIoParser::default();
@@ -144,6 +162,7 @@ mod tests {
         );
     }
 
+    /// Verifies that DAC set updates raw output value remains faithful to the Pascal behavior.
     #[test]
     fn dac_set_updates_raw_output_value() {
         let mut parser = AdaIoParser::default();
@@ -163,6 +182,7 @@ mod tests {
         assert_eq!(parser.ctx.dac_raw_array[0], 0x0800 - 200);
     }
 
+    /// Verifies that port outputs update shift register state without I2C expander remains faithful to the Pascal behavior.
     #[test]
     fn port_outputs_update_shift_register_state_without_i2c_expander() {
         let mut parser = AdaIoParser::default();
@@ -175,6 +195,7 @@ mod tests {
         assert!(parser.ctx.i2c_writes.is_empty());
     }
 
+    /// Verifies that port outputs use pascal I2C expander command when present remains faithful to the Pascal behavior.
     #[test]
     fn port_outputs_use_pascal_i2c_expander_command_when_present() {
         let mut parser = AdaIoParser::default();
@@ -190,6 +211,7 @@ mod tests {
         assert!(parser.ctx.shift_register_writes.is_empty());
     }
 
+    /// Verifies that I2C commands read and write pascal payloads remains faithful to the Pascal behavior.
     #[test]
     fn i2c_commands_read_and_write_pascal_payloads() {
         let mut parser = AdaIoParser::default();
@@ -228,6 +250,7 @@ mod tests {
         assert_eq!(parser.ctx.i2c_writes, vec![(0x48, 0x1234), (0x48, 0x3412)]);
     }
 
+    /// Verifies that EEPROM backed options update runtime and default mirrors remains faithful to the Pascal behavior.
     #[test]
     fn eeprom_backed_options_update_runtime_and_default_mirrors() {
         let mut parser = AdaIoParser::default();
@@ -251,6 +274,7 @@ mod tests {
         assert!(parser.ctx.init_integrate_ad16);
     }
 
+    /// Verifies that idn reply includes pascal feature suffix remains faithful to the Pascal behavior.
     #[test]
     fn idn_reply_includes_pascal_feature_suffix() {
         let mut parser = AdaIoParser::default();
@@ -272,6 +296,7 @@ mod tests {
         );
     }
 
+    /// Verifies that erc set requires value like pascal command table remains faithful to the Pascal behavior.
     #[test]
     fn erc_set_requires_value_like_pascal_command_table() {
         let mut parser = AdaIoParser::default();

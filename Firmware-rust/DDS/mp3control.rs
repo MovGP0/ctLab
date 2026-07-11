@@ -1,15 +1,33 @@
 //! Best-effort Rust port of `mp3control.pas`.
 
+/// Command byte defined by the YAMPP Industrial III auxiliary protocol; changing it would address a different decoder operation.
 pub const YI3_STOP: u8 = 0xF0;
+
+/// Command byte defined by the YAMPP Industrial III auxiliary protocol; changing it would address a different decoder operation.
 pub const YI3_RESET: u8 = 0xF7;
+
+/// Command byte defined by the YAMPP Industrial III auxiliary protocol; changing it would address a different decoder operation.
 pub const YI3_PAUSE: u8 = 0xF8;
+
+/// Command byte defined by the YAMPP Industrial III auxiliary protocol; changing it would address a different decoder operation.
 pub const YI3_LOOP: u8 = 0xF4;
+
+/// Command byte defined by the YAMPP Industrial III auxiliary protocol; changing it would address a different decoder operation.
 pub const YI3_NO_LOOP: u8 = 0xF1;
+
+/// Command byte defined by the YAMPP Industrial III auxiliary protocol; changing it would address a different decoder operation.
 pub const YI3_MID_VOLUME: u8 = 0xA8;
+
+/// Command byte defined by the YAMPP Industrial III auxiliary protocol; changing it would address a different decoder operation.
 pub const YI3_MUTE: u8 = 0x80;
 
+/// Fixes the auxiliary YAMPP frame at eight LSB-first data bits between its start and idle intervals.
 const SER_AUX_DATA_BITS: u8 = 8;
+
+/// Five micro-delay units form one 19.2-kbaud YAMPP data-bit interval on the auxiliary transmit line.
 const SER_AUX_BIT_DELAY_TICKS: u8 = 5;
+
+/// Ten micro-delay units hold the YAMPP line idle high for two bit periods after each byte.
 const SER_AUX_STOP_DELAY_TICKS: u8 = 10;
 
 #[path = "mp3control/mp3_control_hardware.rs"]
@@ -20,6 +38,7 @@ pub use mp3_control_hardware::Mp3ControlHardware;
 mod mp3_control_state;
 pub use mp3_control_state::Mp3ControlState;
 
+/// Bit-bangs the auxiliary UART with the edge spacing and idle level expected by the legacy MP3 controller.
 pub fn ser_aux<H: Mp3ControlHardware>(hw: &mut H, value: u8) {
     let mut current = value;
     let mut bits_remaining = SER_AUX_DATA_BITS;
@@ -42,11 +61,13 @@ pub fn ser_aux<H: Mp3ControlHardware>(hw: &mut H, value: u8) {
     hw.micro_delay(SER_AUX_STOP_DELAY_TICKS);
 }
 
+/// Waits for the decoder command interval, then adds the board's dB correction to the YAMPP mid-volume command.
 pub fn mp3_set_volume<H: Mp3ControlHardware>(state: &Mp3ControlState, hw: &mut H) {
     hw.milli_delay(20);
     ser_aux(hw, YI3_MID_VOLUME.wrapping_add(state.db_correction));
 }
 
+/// Sends the new track and then refreshes volume because the decoder resets its attenuation when changing tracks.
 pub fn mp3_goto_track<H: Mp3ControlHardware>(state: &mut Mp3ControlState, hw: &mut H) {
     // Track numbers are sent directly as single-byte player commands.
     ser_aux(hw, state.track);
@@ -55,6 +76,7 @@ pub fn mp3_goto_track<H: Mp3ControlHardware>(state: &mut Mp3ControlState, hw: &m
     mp3_set_volume(state, hw);
 }
 
+/// Disables decoder-side looping, restores the corrected volume, stops stale playback, and finally advertises the powered state through the shared shift register.
 pub fn mp3_on<H: Mp3ControlHardware>(state: &mut Mp3ControlState, hw: &mut H) {
     // Disable the player's internal repeat mode; the firmware handles repeats itself.
     ser_aux(hw, YI3_NO_LOOP);
@@ -68,6 +90,7 @@ pub fn mp3_on<H: Mp3ControlHardware>(state: &mut Mp3ControlState, hw: &mut H) {
     hw.send_shift_register();
 }
 
+/// Disables looping, mutes before stop for a silent shutdown, then clears the power and current-track shadows before latching them.
 pub fn mp3_off<H: Mp3ControlHardware>(state: &mut Mp3ControlState, hw: &mut H) {
     ser_aux(hw, YI3_NO_LOOP);
     // Mute before stopping so power-down is silent.

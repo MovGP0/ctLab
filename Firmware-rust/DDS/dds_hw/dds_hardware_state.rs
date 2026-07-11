@@ -1,26 +1,63 @@
+//! Implements DDS, DAC, and relay wire transactions without allocating temporary buffers.
+
 use super::*;
 
+/// DDS hardware-side working registers and relay image used to build deterministic DAC and AD9833 transactions.
 #[derive(Clone, Debug)]
 pub struct DdsHardwareState {
+    /// Caches `board_has_two_shift_registers` across bit-level or interrupt phases, allowing the next phase to continue without recomputing or observing a half-written hardware transaction.
     pub board_has_two_shift_registers: bool,
+
+    /// Caches `dss_cmd` across bit-level or interrupt phases, allowing the next phase to continue without recomputing or observing a half-written hardware transaction.
     pub dss_cmd: u16,
+
+    /// Caches `wave_cmd` across bit-level or interrupt phases, allowing the next phase to continue without recomputing or observing a half-written hardware transaction.
     pub wave_cmd: u16,
+
+    /// Caches `switch_state` across bit-level or interrupt phases, allowing the next phase to continue without recomputing or observing a half-written hardware transaction.
     pub switch_state: u8,
+
+    /// Scratch word shifted most-significant bit first; destructive shifts leave the retained calibrated DAC words untouched.
     pub dac_temp: i16,
+
+    /// Caches `level_byte_hi` across bit-level or interrupt phases, allowing the next phase to continue without recomputing or observing a half-written hardware transaction.
     pub level_byte_hi: u8,
+
+    /// Caches `level_byte_lo` across bit-level or interrupt phases, allowing the next phase to continue without recomputing or observing a half-written hardware transaction.
     pub level_byte_lo: u8,
+
+    /// Caches `dds_frequency_word` across bit-level or interrupt phases, allowing the next phase to continue without recomputing or observing a half-written hardware transaction.
     pub dds_frequency_word: i32,
+
+    /// Amplitude attenuation range currently reflected in relay state and level calibration.
     pub level_range: bool,
+
+    /// Stores the requested frequency tenths hz; limit checking and calibrated output conversion consume this same value before hardware is updated.
     pub frequency_tenths_hz: i32,
+
+    /// Stores the requested offset mv; limit checking and calibrated output conversion consume this same value before hardware is updated.
     pub offset_mv: i32,
+
+    /// Calibrated amplitude DAC code latched with the current attenuation and waveform routing.
     pub dac_level: f32,
+
+    /// Caches `attn_switch_point` across bit-level or interrupt phases, allowing the next phase to continue without recomputing or observing a half-written hardware transaction.
     pub attn_switch_point: f32,
+
+    /// Caches `level_scale_low` across bit-level or interrupt phases, allowing the next phase to continue without recomputing or observing a half-written hardware transaction.
     pub level_scale_low: f32,
+
+    /// Caches `level_scale_high` across bit-level or interrupt phases, allowing the next phase to continue without recomputing or observing a half-written hardware transaction.
     pub level_scale_high: f32,
+
+    /// Caches `pwr_gain` across bit-level or interrupt phases, allowing the next phase to continue without recomputing or observing a half-written hardware transaction.
     pub pwr_gain: f32,
+
+    /// Amplitude correction applied when the attenuator relay selects the low-level range.
     pub attn_fac: f32,
 }
 impl Default for DdsHardwareState {
+    /// Creates a DDS hardware shadow with output off, relay bytes clear, and converter scratch registers reset.
     fn default() -> Self {
         Self {
             board_has_two_shift_registers: true,
@@ -44,6 +81,7 @@ impl Default for DdsHardwareState {
     }
 }
 impl DdsHardwareState {
+    /// Bit-bangs the auxiliary UART with the edge spacing and idle level expected by the legacy MP3 controller.
     pub fn ser_aux<IO: DdsHardwareIo>(&self, io: &mut IO, mybyte: u8) {
         let mut value = mybyte;
 
@@ -66,6 +104,7 @@ impl DdsHardwareState {
         io.delay_units(10);
     }
 
+    /// Serializes the 12-bit DAC word with the original hold delays required by the converter and board wiring.
     pub fn shift_out_1257<IO: DdsHardwareIo>(&mut self, io: &mut IO, my_val: i16) {
         let clamped = my_val.clamp(-0x07ff, 0x07ff);
         // The offset DAC is wired around midscale, so 0 V lives at FS/2.
@@ -96,6 +135,7 @@ impl DdsHardwareState {
         io.set_bit(PortKind::ControlBit, B_STRDAC);
     }
 
+    /// Updates the cascaded level/relay shift registers and pulses the latch only after the complete payload is stable.
     pub fn shift_out_level_sr<IO: DdsHardwareIo>(&mut self, io: &mut IO, my_level_sr: i16) {
         // The 4094 chain carries relay state first and the attenuator level bytes after it.
         self.level_byte_hi = ((my_level_sr as u16 >> 8) & 0x00ff) as u8;
@@ -120,6 +160,7 @@ impl DdsHardwareState {
         io.set_bit(PortKind::DdsOut, B_SCLK);
     }
 
+    /// Sends one AD9833 control word inside a critical section so its frame cannot be split by an interrupt.
     pub fn send_dds<IO: DdsHardwareIo>(&self, io: &mut IO) {
         io.set_bit(PortKind::DdsOut, B_SCLK);
         io.clear_bit(PortKind::ControlBit, B_SDATAOUT);
@@ -138,6 +179,7 @@ impl DdsHardwareState {
         io.set_bit(PortKind::DdsOut, B_FSYNC);
     }
 
+    /// Programs the SQG output path while preserving the board-specific shared shift-register payload.
     pub fn set_level_dds_sqg<IO: DdsHardwareIo>(&mut self, io: &mut IO, wave: Waveform) {
         self.switch_state = 0;
 
@@ -171,6 +213,7 @@ impl DdsHardwareState {
         io.end_critical_section();
     }
 
+    /// Programs attenuation, offset, tuning words, and waveform in a safe order so relay transitions cannot expose an unintended level.
     pub fn set_level_dds<IO: DdsHardwareIo>(&mut self, io: &mut IO, wave: Waveform) {
         self.switch_state = 0;
         // Zero the level bytes first to suppress switching clicks while the relays move.
@@ -248,6 +291,7 @@ impl DdsHardwareState {
         io.end_critical_section();
     }
 
+    /// Reproduces the integer Pascal decade sum used by the original DDS firmware.
     pub fn dds_tuning_word_integer(frequency_tenths_hz: i32) -> i32 {
         let mut acc = 0_i32;
         for (digit, factor) in Self::decimal_digits::<8>(frequency_tenths_hz)
@@ -259,6 +303,7 @@ impl DdsHardwareState {
         acc
     }
 
+    /// Reproduces the SQG floating-point decade sum for its different reference clock.
     pub fn dds_tuning_word_sqg(frequency_tenths_hz: i32) -> i32 {
         let mut acc = 0.0_f32;
         for (digit, factor) in Self::decimal_digits::<9>(frequency_tenths_hz)
@@ -270,6 +315,7 @@ impl DdsHardwareState {
         acc as i32
     }
 
+    /// Splits a 28-bit tuning word into the two 14-bit AD9833 register writes required on the wire.
     pub fn dds_frequency_frames(tuning_word: u32) -> [u16; 2] {
         [
             ((tuning_word & 0x3fff) as u16) | DDS_FREQ_REGISTER_WRITE,
@@ -277,6 +323,7 @@ impl DdsHardwareState {
         ]
     }
 
+    /// Sends the AD9833 low 14-bit frequency frame before the high frame, preserving the device's required two-write register sequence.
     pub(super) fn send_tuning_word<IO: DdsHardwareIo>(&mut self, io: &mut IO, tuning_word: u32) {
         let [low_frame, high_frame] = Self::dds_frequency_frames(tuning_word);
         self.dss_cmd = low_frame;
@@ -285,6 +332,7 @@ impl DdsHardwareState {
         self.send_dds(io);
     }
 
+    /// Clocks bit 7 through bit 0 while returning data and clock low after each edge, providing the byte primitive used by DAC and relay chains.
     pub(super) fn shift_byte_msb_first<IO: DdsHardwareIo>(
         &self,
         io: &mut IO,
@@ -304,6 +352,7 @@ impl DdsHardwareState {
         }
     }
 
+    /// Extracts fixed decimal digits arithmetically, avoiding heap formatting while retaining Pascal's decade-based tuning calculation.
     pub(super) fn decimal_digits<const WIDTH: usize>(value: i32) -> [u8; WIDTH] {
         let mut digits = [0; WIDTH];
         let mut remaining = value.max(0) as u32;
@@ -316,6 +365,7 @@ impl DdsHardwareState {
         digits
     }
 
+    /// Updates the front-panel switch LED bit in the shift-register shadow before the next latch.
     pub(super) fn set_led_switch<IO: DdsHardwareIo>(&self, io: &mut IO, high: bool) {
         if high {
             io.set_bit(PortKind::LedOut, LED_SWITCH_BIT);
@@ -324,6 +374,7 @@ impl DdsHardwareState {
         }
     }
 
+    /// Updates the relay-shadow bit that routes square-wave output.
     pub(super) fn set_square_sw(&mut self, high: bool) {
         let bit = if self.board_has_two_shift_registers {
             TWO_SR_SQUARE_SW_BIT
@@ -333,6 +384,7 @@ impl DdsHardwareState {
         self.set_switch_bit(bit, high);
     }
 
+    /// Updates the relay-shadow bit selecting the attenuator range.
     pub(super) fn set_attn_sw(&mut self, high: bool) {
         let bit = if self.board_has_two_shift_registers {
             TWO_SR_ATTN_SW_BIT
@@ -342,6 +394,7 @@ impl DdsHardwareState {
         self.set_switch_bit(bit, high);
     }
 
+    /// Updates the relay-shadow bit enabling the external output stage.
     pub(super) fn set_ext_on(&mut self, high: bool) {
         let bit = if self.board_has_two_shift_registers {
             TWO_SR_EXT_ON_BIT
@@ -351,6 +404,7 @@ impl DdsHardwareState {
         self.set_switch_bit(bit, high);
     }
 
+    /// Updates the relay-shadow bit connecting the offset-DAC path.
     pub(super) fn set_offs_sw(&mut self, high: bool) {
         let bit = if self.board_has_two_shift_registers {
             TWO_SR_OFFS_SW_BIT
@@ -360,12 +414,14 @@ impl DdsHardwareState {
         self.set_switch_bit(bit, high);
     }
 
+    /// Updates the relay-shadow bit routing logic-level output.
     pub(super) fn set_logic_sw(&mut self, high: bool) {
         if !self.board_has_two_shift_registers {
             self.set_switch_bit(THREE_SR_LOGIC_SW_BIT, high);
         }
     }
 
+    /// Updates one relay bit in the shadow byte; the complete byte is latched later to avoid partial output states.
     pub(super) fn set_switch_bit(&mut self, bit: u8, high: bool) {
         if high {
             self.switch_state |= 1 << bit;

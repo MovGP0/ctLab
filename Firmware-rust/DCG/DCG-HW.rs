@@ -8,15 +8,29 @@ use core::marker::PhantomData;
 
 use crate::avrd_support::{Atmega32, AvrdPortIo, Mcu, RegisterPort};
 
+/// Keeps only AVR ADMUX channel bits 0 through 2 while preserving the configured reference bits.
 pub const ADC10_CHANNEL_MASK: u8 = 0x07;
+
+/// Enables the AVR ADC, starts conversion, and selects the divide-by-128 ADC clock in one register write.
 pub const ADCSRA_START_DIV128: u8 = 0xC7;
+
+/// Masks ADSC, which remains set while the AVR conversion is in progress.
 pub const ADCSRA_BUSY_BIT: u8 = 1 << 6;
+
+/// Allows the AVR ADC sample capacitor to settle after changing the analog multiplexer channel.
 pub const ADC10_SETTLE_CYCLES: u16 = 15;
+
+/// Provides the three idle CPU cycles required between LTC1864 channel selection and conversion clocking.
 pub const LTC1864_ACQUISITION_DELAY_CYCLES: u16 = 3;
+
+/// Holds the DCG DAC latch timing after a word so the converter accepts the new code before another edge.
 pub const DAC_POST_WRITE_SETTLE_LOOP_ITERATIONS: u8 = 40;
 
+/// AVR data-space address of SREG, used to save and restore the caller's interrupt-enable state around converter frames.
 #[cfg(target_arch = "avr")]
 const AVR_SREG_ADDRESS: *mut u8 = 0x5f as *mut u8;
+
+/// Masks AVR SREG bit 7 so critical-section code can restore the caller's interrupt-enable state exactly.
 #[cfg(target_arch = "avr")]
 const AVR_SREG_INTERRUPT_ENABLE_MASK: u8 = 0x80;
 
@@ -36,8 +50,10 @@ pub use dcg_avrd::DcgAvrd;
 mod dcg_hardware_state;
 pub use dcg_hardware_state::DcgHardwareState;
 
+/// Concrete DCG hardware adapter binding the generic AVR implementation to the ATmega32 register map.
 pub type DcgAtmega32 = DcgAvrd<Atmega32>;
 
+/// Serializes the 12-bit DAC word with the original hold delays required by the converter and board wiring.
 pub fn shift_out_1257<H: DcgHardware>(hw: &mut H, dac_temp: u16) {
     hw.set_sdata_out(false);
     hw.set_sclk(false);
@@ -77,6 +93,7 @@ pub fn shift_out_1257<H: DcgHardware>(hw: &mut H, dac_temp: u16) {
     hw.set_str_dac(true);
 }
 
+/// Serializes the wider DAC command used by the alternate DCG hardware option.
 pub fn shift_out_1655<H: DcgHardware>(hw: &mut H, dac_temp: u16) {
     hw.set_sclk(false);
     hw.set_sdata_out(false);
@@ -98,6 +115,7 @@ pub fn shift_out_1655<H: DcgHardware>(hw: &mut H, dac_temp: u16) {
     hw.set_str_dac(true);
 }
 
+/// Clocks one complete LTC1864 sample while interrupts are excluded, preventing a partial word from corrupting the measurement.
 pub fn shift_in_1864<H: DcgHardware>(hw: &mut H) -> u16 {
     // Pulling STRAD16 low starts the LTC1864 read cycle. The original code
     // masks interrupts around this routine so all 16 bits are sampled with
@@ -126,6 +144,7 @@ pub fn shift_in_1864<H: DcgHardware>(hw: &mut H) -> u16 {
     result
 }
 
+/// Advances the interrupt-time phase machine that must keep ADC sampling and output timing deterministic.
 pub fn on_sys_tick<H: DcgHardware>(state: &mut DcgHardwareState, hw: &mut H) {
     // The 1 ms SysTick ISR begins by disabling both analog output paths before
     // reading/updating shared converter state.
@@ -187,6 +206,7 @@ pub fn on_sys_tick<H: DcgHardware>(state: &mut DcgHardwareState, hw: &mut H) {
     state.ui_toggle = !state.ui_toggle;
 }
 
+/// Selects the one-based AVR ADC channel, waits for mux settling, starts conversion, polls completion, then combines ADCL before ADCH as required by the AVR latch rule.
 pub fn get_adc10<H: DcgHardware>(hw: &mut H, channel: u8) -> u16 {
     // Hand-coded equivalent of the Pascal getadc() helper: select the mux input,
     // wait for it to settle, start an ADC conversion with prescaler 128, then
