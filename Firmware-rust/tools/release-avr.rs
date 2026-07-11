@@ -284,7 +284,18 @@ fn check_size(options: &Options) -> Result<(), String>
     {
         return Err(format!("budget {budget} exceeds {} physical limit {physical_limit}", options.mcu));
     }
-    println!("{}: .text {text} + .data {data} = {used} bytes; budget {budget}; remaining {}", options.mcu, budget.saturating_sub(used));
+    let usage_basis_points = usage_basis_points(used, budget);
+    let usage_percent = usage_basis_points
+        .map(|basis_points|
+        {
+            format!("{}.{:02}%", basis_points / 100, basis_points % 100)
+        })
+        .unwrap_or_else(|| "n/a".to_string());
+    println!(
+        "{}: .text {text} + .data {data} = {used} bytes; max {budget} bytes; used {usage_percent}; remaining {} bytes",
+        options.mcu,
+        budget.saturating_sub(used),
+    );
     if used > budget
     {
         return Err(format!("flash budget exceeded: {used} used, {budget} allowed"));
@@ -298,6 +309,22 @@ fn check_size(options: &Options) -> Result<(), String>
         }
     }
     Ok(())
+}
+
+/// Converts a byte count into hundredths of one percent of its enforced maximum.
+///
+/// Integer arithmetic keeps the display deterministic and rounds to the nearest
+/// hundredth without introducing floating-point behavior into release checks.
+/// A zero maximum has no meaningful percentage and therefore returns `None`.
+fn usage_basis_points(used: u64, maximum: u64) -> Option<u128>
+{
+    if maximum == 0
+    {
+        return None;
+    }
+    let used = u128::from(used);
+    let maximum = u128::from(maximum);
+    Some((used * 10_000 + maximum / 2) / maximum)
 }
 
 /// Extracts section sizes from the System V output emitted by `avr-size`.
@@ -350,6 +377,12 @@ fn self_test() -> Result<(), String>
     if flash_limit("atmega168")? != 16_384 || flash_limit("atmega644")? != 65_536
     {
         return Err("MCU limit self-test failed".to_string());
+    }
+    if usage_basis_points(114, 32_768) != Some(35)
+        || usage_basis_points(8_192, 16_384) != Some(5_000)
+        || usage_basis_points(1, 0).is_some()
+    {
+        return Err("usage percentage self-test failed".to_string());
     }
     println!("release-avr self-test passed");
     Ok(())
