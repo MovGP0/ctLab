@@ -447,6 +447,10 @@
     [
       "2e98da57-78c6-425d-95a4-616e4b2363c1",
       "TRMSC (True Root-Mean-Square Converter)"
+    ],
+    [
+      "d86b406a-f2c4-4ea0-9f6b-c2be17bd6747",
+      "EDL (Elektronische Last)"
     ]
   ],
   "text_variables": {},
