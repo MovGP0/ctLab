@@ -4,6 +4,9 @@
 	(generator_version "10.0")
 	(uuid "207e0f0e-27e8-440d-b34e-edbac4dab547")
 	(paper "A3")
+	(title_block
+		(title "c't Lab")
+	)
 	(lib_symbols)
 	(sheet
 		(at 274.32 31.75)
@@ -231,6 +234,52 @@
 			(project "ctLab"
 				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
 					(page "4")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 276.86 96.52)
+		(size 19.05 35.56)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "8189cb1f-2262-42b2-9394-86a52ce00fd0")
+		(property "Sheetname" "IO8-32"
+			(at 276.86 95.8084 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "io8-32.kicad_sch"
+			(at 276.86 132.6646 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(page "9")
 				)
 			)
 		)

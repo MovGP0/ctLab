@@ -23669,7 +23669,7 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "2e16ee5d-f76d-4304-a6e5-19882b110816")
+		(uuid "2e16ee5d-f76d-4304-a6e5-19882b110817")
 		(property "Reference" "#PWR0247"
 			(at 477.52 172.72 0)
 			(hide yes)
@@ -23724,7 +23724,7 @@
 			)
 		)
 		(pin "1"
-			(uuid "cf32a161-0072-47f3-9fed-4e4b3d6f3382")
+			(uuid "cf32a161-0072-47f3-9fed-4e4b3d6f3383")
 		)
 		(instances
 			(project "ctLab"
