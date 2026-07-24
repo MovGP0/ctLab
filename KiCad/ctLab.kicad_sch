@@ -446,6 +446,52 @@
 			)
 		)
 	)
+	(sheet
+		(at 312.42 97.79)
+		(size 52.07 39.37)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "f23380ff-f64d-42a7-8850-02f89699e91e")
+		(property "Sheetname" "DIV (Digital Voltmeter)"
+			(at 312.42 97.0784 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "div.kicad_sch"
+			(at 312.42 137.7446 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(page "10")
+				)
+			)
+		)
+	)
 	(sheet_instances
 		(path "/"
 			(page "1")
