@@ -101,6 +101,52 @@
 		)
 	)
 	(sheet
+		(at 35.56 149.86)
+		(size 60.96 39.37)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "3848333b-38a1-4fa9-b820-082fe91b36ee")
+		(property "Sheetname" "ADC192"
+			(at 35.56 149.1484 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "adc192.kicad_sch"
+			(at 35.56 189.8146 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "ctLab"
+				(path "/207e0f0e-27e8-440d-b34e-edbac4dab547"
+					(page "11")
+				)
+			)
+		)
+	)
+	(sheet
 		(at 33.02 92.71)
 		(size 58.42 39.37)
 		(exclude_from_sim no)

@@ -1,0 +1,12 @@
+(kicad_sch
+	(version 20260306)
+	(generator "eeschema")
+	(generator_version "10.0")
+	(uuid "0cfd82a4-6d65-44a2-a63f-a159fd071087")
+	(paper "A4")
+	(title_block
+		(title "ADC192 Daugher Board")
+		(comment 1 "ct.08.06.222-225")
+	)
+	(lib_symbols)
+)
